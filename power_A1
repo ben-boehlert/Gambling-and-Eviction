@@ -1,0 +1,11 @@
+option,panel_choice,estimand,target_h,effect_size,power,mean_est,mean_se,sign_error_rate_sig,severe_mag_error_rate_sig,mean_exaggeration_ratio_sig,n_sims,n_units,n_clusters,start_date,end_date
+A1,counties,overall_att,NA,0,NA,NA,NA,NA,NA,NA,1000,1462,33,2016-01-01,2025-09-01
+A1,counties,overall_att,NA,0.25,NA,NA,NA,NA,NA,NA,1000,1462,33,2016-01-01,2025-09-01
+A1,counties,overall_att,NA,0.5,NA,NA,NA,NA,NA,NA,1000,1462,33,2016-01-01,2025-09-01
+A1,counties,overall_att,NA,0.75,NA,NA,NA,NA,NA,NA,1000,1462,33,2016-01-01,2025-09-01
+A1,counties,overall_att,NA,1,NA,NA,NA,NA,NA,NA,1000,1462,33,2016-01-01,2025-09-01
+A1,counties,overall_att,NA,1.25,NA,NA,NA,NA,NA,NA,1000,1462,33,2016-01-01,2025-09-01
+A1,counties,overall_att,NA,1.5,NA,NA,NA,NA,NA,NA,1000,1462,33,2016-01-01,2025-09-01
+A1,counties,overall_att,NA,2,NA,NA,NA,NA,NA,NA,1000,1462,33,2016-01-01,2025-09-01
+A1,counties,overall_att,NA,2.5,NA,NA,NA,NA,NA,NA,1000,1462,33,2016-01-01,2025-09-01
+A1,counties,overall_att,NA,3,NA,NA,NA,NA,NA,NA,1000,1462,33,2016-01-01,2025-09-01
