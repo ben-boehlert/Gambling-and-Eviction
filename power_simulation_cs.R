@@ -41,16 +41,17 @@ options(progressr.enable = TRUE)
 # 0) CONFIG
 ################################################################################
 
-cfg <- list(
+if (!exists("cfg", inherits = FALSE)) {
+  cfg <- list(
   # Where your CSVs live
   data_dir = ".",   # e.g. "." locally, or "/scratch/..." on Della
   
   # Panel choice:
-  #   - "counties" (recommended; 2016–2025, clean unit-month)
+  #   - "counties" (2016–2025, clean unit-month; state policy at county level)
   #   - "states_ets" (ETS-derived, MUST be collapsed; only 10 states in your file)
   #   - "sites_ets"  (ETS-derived, MUST be collapsed)
   #   - "states_from_counties" (build a full state-month panel by aggregating counties)
-  panel_choice = "counties",  # Counties with state-level treatment assignment
+  panel_choice = "states_from_counties",  # Use state-level panel for state policies
   
   # Outcome preference (script uses first available)
   outcome_preference = c(
@@ -108,7 +109,8 @@ cfg <- list(
   # Parallel settings (strongly recommended on Della)
   use_parallel = TRUE,
   workers = as.integer(Sys.getenv("SLURM_CPUS_PER_TASK", "4"))
-)
+  )
+}
 
 ################################################################################
 # 1) Helpers: parsing and indexing
