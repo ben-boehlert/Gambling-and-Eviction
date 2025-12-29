@@ -1399,33 +1399,376 @@ simulate_power_grid_states_switchers <- function(panel_df,
 }
 
 
+subset_baseline_to_n_clusters <- function(baseline, cluster_var, n_clusters, seed = NULL) {
+  if (!(cluster_var %in% names(baseline))) {
+    stop(glue::glue("cluster_var='{cluster_var}' not in baseline."))
+  }
+  
+  clusters <- sort(unique(baseline[[cluster_var]]))
+  if (n_clusters > length(clusters)) {
+    stop(glue::glue("Requested {n_clusters} clusters but baseline only has {length(clusters)}."))
+  }
+  
+  if (!is.null(seed)) set.seed(seed)
+  chosen <- sample(clusters, size = n_clusters, replace = FALSE)
+  
+  baseline %>% filter(.data[[cluster_var]] %in% chosen)
+}
+
+simulate_power_from_baseline <- function(baseline,
+                                         treat_schedule_std,
+                                         option = c("A1", "A2"),
+                                         cfg,
+                                         cluster_var,
+                                         n_switchers = NULL,
+                                         unit_state_map = NULL,
+                                         scenario_seed = 1L) {
+  option <- match.arg(option)
+  set.seed(scenario_seed)
+  
+  n_units    <- dplyr::n_distinct(baseline$unit_id)
+  n_clusters <- if (cluster_var %in% names(baseline)) dplyr::n_distinct(baseline[[cluster_var]]) else NA_integer_
+  min_date <- min(baseline$month_date, na.rm = TRUE)
+  max_date <- max(baseline$month_date, na.rm = TRUE)
+  
+  enforce_windows <- function(df) {
+    ok <- df %>%
+      dplyr::filter(g_placebo > 0L) %>%
+      dplyr::group_by(unit_id, g_placebo) %>%
+      dplyr::summarise(
+        min_t = min(time_id),
+        max_t = max(time_id),
+        .groups = "drop"
+      ) %>%
+      dplyr::mutate(ok = (min_t <= (g_placebo - cfg$pre_len)) & (max_t >= (g_placebo + cfg$post_len)))
+    
+    ok_units <- ok %>% dplyr::filter(ok) %>% dplyr::pull(unit_id)
+    df %>% dplyr::filter(g_placebo == 0L | unit_id %in% ok_units)
+  }
+  
+  one_draw <- function(effect_size, s) {
+    tryCatch({
+      placebo <- draw_placebo_schedule(
+        treat_schedule_std = treat_schedule_std,
+        cfg = cfg,
+        baseline_df = baseline,
+        n_switchers = n_switchers,
+        unit_state_map = unit_state_map
+      )
+      
+      df_sim <- impose_effect(baseline, placebo, effect_size, cfg)
+      
+      if (identical(cfg$estimand, "event_time")) {
+        df_sim <- enforce_windows(df_sim)
+      }
+      
+      treated_clusters <- if (cluster_var %in% names(df_sim)) {
+        dplyr::n_distinct(df_sim[[cluster_var]][df_sim$g_placebo > 0L])
+      } else {
+        NA_integer_
+      }
+      
+      never_clusters <- if (cluster_var %in% names(df_sim)) {
+        dplyr::n_distinct(df_sim[[cluster_var]][df_sim$g_placebo == 0L])
+      } else {
+        NA_integer_
+      }
+      
+      n_treated_units <- dplyr::n_distinct(df_sim$unit_id[df_sim$g_placebo > 0L])
+      n_never_units   <- dplyr::n_distinct(df_sim$unit_id[df_sim$g_placebo == 0L])
+      n_treated_obs   <- sum(df_sim$g_placebo > 0L, na.rm = TRUE)
+      
+      if (!is.na(treated_clusters) && treated_clusters < 2) {
+        return(tibble::tibble(
+          sim = s, p = NA_real_, est = NA_real_, se = NA_real_,
+          fail = "too_few_treated_clusters",
+          treated_clusters = treated_clusters, never_clusters = never_clusters,
+          n_treated_units = n_treated_units, n_never_units = n_never_units, n_treated_obs = n_treated_obs
+        ))
+      }
+      if (n_treated_units < 2) {
+        return(tibble::tibble(
+          sim = s, p = NA_real_, est = NA_real_, se = NA_real_,
+          fail = "too_few_treated_units",
+          treated_clusters = treated_clusters, never_clusters = never_clusters,
+          n_treated_units = n_treated_units, n_never_units = n_never_units, n_treated_obs = n_treated_obs
+        ))
+      }
+      if (n_never_units < 2) {
+        return(tibble::tibble(
+          sim = s, p = NA_real_, est = NA_real_, se = NA_real_,
+          fail = "too_few_never_units",
+          treated_clusters = treated_clusters, never_clusters = never_clusters,
+          n_treated_units = n_treated_units, n_never_units = n_never_units, n_treated_obs = n_treated_obs
+        ))
+      }
+      if (n_treated_obs == 0) {
+        return(tibble::tibble(
+          sim = s, p = NA_real_, est = NA_real_, se = NA_real_,
+          fail = "no_treated_obs",
+          treated_clusters = treated_clusters, never_clusters = never_clusters,
+          n_treated_units = n_treated_units, n_never_units = n_never_units, n_treated_obs = n_treated_obs
+        ))
+      }
+      
+      keep2 <- c("unit_id", "time_id", "outcome_sim", "g_placebo", cluster_var)
+      if (!is.null(cfg$weights_var) && cfg$weights_var %in% names(df_sim)) {
+        keep2 <- c(keep2, cfg$weights_var)
+      }
+      keep2 <- unique(keep2)
+      keep2 <- keep2[keep2 %in% names(df_sim)]
+      df_sim <- df_sim %>% dplyr::select(dplyr::all_of(keep2))
+      
+      est_raw <- suppressMessages(run_estimator_and_extract_p(df_sim, cfg, cluster_var = cluster_var))
+      
+      tibble::tibble(
+        sim = s,
+        p   = as.numeric(est_raw$p),
+        est = as.numeric(est_raw$est),
+        se  = as.numeric(est_raw$se),
+        fail = est_raw$fail %||% NA_character_,
+        treated_clusters = treated_clusters,
+        never_clusters = never_clusters,
+        n_treated_units = n_treated_units,
+        n_never_units = n_never_units,
+        n_treated_obs = n_treated_obs
+      )
+    }, error = function(e) {
+      tibble::tibble(
+        sim = s, p = NA_real_, est = NA_real_, se = NA_real_,
+        fail = paste0("one_draw_error: ", conditionMessage(e)),
+        treated_clusters = NA_integer_, never_clusters = NA_integer_,
+        n_treated_units = NA_integer_, n_never_units = NA_integer_, n_treated_obs = NA_integer_
+      )
+    })
+  }
+  
+  res_list <- vector("list", length(cfg$effect_grid))
+  
+  for (k in seq_along(cfg$effect_grid)) {
+    eff <- cfg$effect_grid[k]
+    
+    if (isTRUE(cfg$use_parallel)) {
+      draws <- progressr::with_progress({
+        p <- progressr::progressor(steps = cfg$n_sims)
+        furrr::future_map_dfr(
+          1:cfg$n_sims,
+          ~ { p(); one_draw(eff, .x) },
+          .options = furrr::furrr_options(seed = TRUE)
+        )
+      })
+    } else {
+      pb <- utils::txtProgressBar(min = 0, max = cfg$n_sims, style = 3)
+      draws <- purrr::map_dfr(
+        1:cfg$n_sims,
+        \(s) { utils::setTxtProgressBar(pb, s); one_draw(eff, s) }
+      )
+      close(pb)
+    }
+    
+    power <- mean(draws$p <= cfg$alpha, na.rm = TRUE)
+    
+    res_list[[k]] <- tibble::tibble(
+      option = option,
+      panel_choice = cfg$panel_choice,
+      estimand = cfg$estimand,
+      target_h = dplyr::if_else(cfg$estimand == "event_time", cfg$target_h, NA_integer_),
+      effect_size = eff,
+      power = power,
+      mean_est = mean(draws$est, na.rm = TRUE),
+      mean_se  = mean(draws$se,  na.rm = TRUE),
+      n_sims = cfg$n_sims,
+      n_units = n_units,
+      n_clusters = n_clusters,
+      n_switchers = n_switchers %||% NA_integer_,
+      start_date = min_date,
+      end_date   = max_date
+    )
+  }
+  
+  dplyr::bind_rows(res_list)
+}
+
+simulate_power_grid_states_switchers <- function(panel_df,
+                                                 treat_schedule_std,
+                                                 cfg,
+                                                 cluster_var,
+                                                 n_states_grid,
+                                                 n_switchers_grid,
+                                                 option = c("A1", "A2"),
+                                                 seed_base = 1000L) {
+  option <- match.arg(option)
+  
+  baseline_full <- make_baseline_once(panel_df, treat_schedule_std, option = option, cfg = cfg, cluster_var = cluster_var)
+  
+  unit_state_map <- if ("state_abb" %in% names(panel_df)) {
+    panel_df %>% distinct(unit_id, state_abb) %>% filter(!is.na(state_abb))
+  } else {
+    NULL
+  }
+  
+  grid <- tidyr::expand_grid(
+    n_states = as.integer(n_states_grid),
+    n_switchers = as.integer(n_switchers_grid)
+  ) %>%
+    filter(n_states >= (n_switchers + 1L))
+  
+  purrr::pmap_dfr(grid, function(n_states, n_switchers) {
+    scenario_seed <- as.integer(seed_base + 10000L * n_states + n_switchers)
+    
+    baseline_s <- subset_baseline_to_n_clusters(
+      baseline_full,
+      cluster_var = cluster_var,
+      n_clusters = n_states,
+      seed = scenario_seed
+    )
+    
+    simulate_power_from_baseline(
+      baseline = baseline_s,
+      treat_schedule_std = treat_schedule_std,
+      option = option,
+      cfg = cfg,
+      cluster_var = cluster_var,
+      n_switchers = n_switchers,
+      unit_state_map = unit_state_map,
+      scenario_seed = scenario_seed
+    ) %>%
+      mutate(n_states = n_states, n_switchers = n_switchers)
+  })
+}
+
+
 
 ################################################################################
 # 10) RUN
 ################################################################################
 
-# Parallel plan (works locally and on Della; respects SLURM_CPUS_PER_TASK if set)
-if (cfg$use_parallel) {
-  # multisession is safer than multicore on some HPC setups; multicore is faster on Linux.
-  plan(multisession, workers = cfg$workers)
-  message(glue("Parallel ON: workers = {cfg$workers}"))
-} else {
-  plan(sequential)
-  message("Parallel OFF")
+run_power_simulation <- function(cfg) {
+  # Parallel plan (works locally and on Della; respects SLURM_CPUS_PER_TASK if set)
+  if (cfg$use_parallel) {
+    # multisession is safer than multicore on some HPC setups; multicore is faster on Linux.
+    plan(multisession, workers = cfg$workers)
+    message(glue("Parallel ON: workers = {cfg$workers}"))
+  } else {
+    plan(sequential)
+    message("Parallel OFF")
+  }
+  
+  panel_df <- load_panel(cfg)
+  message(glue("Loaded panel: {cfg$panel_choice}"))
+  message(glue("Outcome used: {attr(panel_df, 'outcome_var')}"))
+  message(glue("Units: {n_distinct(panel_df$unit_id)} | Months: {n_distinct(panel_df$time_id)}"))
+  
+  # cluster var
+  cluster_var <- case_when(
+    cfg$cluster_level == "unit" ~ "unit_id",
+    cfg$cluster_level == "state" ~ if ("state_abb" %in% names(panel_df)) "state_abb" else "unit_id",
+    TRUE ~ "unit_id"
+  )
+  
+  # treat schedule
+  treat_schedule <- make_treat_schedule(panel_df, cfg)
+  treat_schedule_std <- standardize_treat_schedule(treat_schedule, panel_df)
+  
+  ts_sum <- treat_schedule_std %>%
+    summarise(
+      n_units = n(),
+      n_treated = sum(ever_treated & g_id > 0),
+      share_treated = mean(ever_treated & g_id > 0),
+      min_g = min(if_else(g_id > 0, g_id, NA_integer_), na.rm = TRUE),
+      max_g = max(if_else(g_id > 0, g_id, NA_integer_), na.rm = TRUE)
+    )
+  print(ts_sum)
+  
+  if (isTRUE(cfg$run_state_switcher_grid)) {
+    power_A1_grid <- simulate_power_grid_states_switchers(
+      panel_df, treat_schedule_std, cfg, cluster_var,
+      n_states_grid = cfg$n_states_grid,
+      n_switchers_grid = cfg$n_switchers_grid,
+      option = "A1",
+      seed_base = 123
+    )
+    power_A2_grid <- simulate_power_grid_states_switchers(
+      panel_df, treat_schedule_std, cfg, cluster_var,
+      n_states_grid = cfg$n_states_grid,
+      n_switchers_grid = cfg$n_switchers_grid,
+      option = "A2",
+      seed_base = 456
+    )
+    
+    power_grid_all <- bind_rows(power_A1_grid, power_A2_grid) %>%
+      arrange(option, n_states, n_switchers, effect_size)
+    
+    write_csv(power_grid_all, file.path(cfg$data_dir, "power_grid_states_switchers.csv"))
+    
+    mde_surface <- power_grid_all %>%
+      group_by(option, estimand, target_h, n_states, n_switchers) %>%
+      summarise(mde_80 = compute_mde(cur_data_all(), power_target = cfg$power_target), .groups = "drop")
+    
+    write_csv(mde_surface, file.path(cfg$data_dir, "mde_surface_states_switchers.csv"))
+    
+    message("\nSaved outputs:")
+    message(glue("  - {file.path(cfg$data_dir, 'power_grid_states_switchers.csv')}"))
+    message(glue("  - {file.path(cfg$data_dir, 'mde_surface_states_switchers.csv')}"))
+  } else {
+    power_A1 <- simulate_power(panel_df, treat_schedule_std, option = "A1", cfg = cfg, cluster_var = cluster_var)
+    power_A2 <- simulate_power(panel_df, treat_schedule_std, option = "A2", cfg = cfg, cluster_var = cluster_var)
+    write_csv(power_A1, "power_A1.csv")
+    power_results <- bind_rows(power_A1, power_A2) %>% arrange(option, effect_size)
+    
+    mde_tbl <- power_results %>%
+      group_by(option, estimand, target_h) %>%
+      summarise(mde_80 = compute_mde(pick(everything()), power_target = cfg$power_target), .groups = "drop")
+    print(mde_tbl)
+    
+    calib <- power_results %>%
+      filter(effect_size == 0) %>%
+      select(option, power) %>%
+      mutate(expected_alpha = cfg$alpha)
+    print(calib)
+    
+    write_csv(power_results, file.path(cfg$data_dir, "power_results.csv"))
+    
+    p <- power_results %>%
+      ggplot(aes(x = effect_size, y = power, color = option)) +
+      geom_line(linewidth = 1) +
+      geom_point() +
+      geom_hline(yintercept = cfg$power_target, linetype = "dashed") +
+      scale_y_continuous(limits = c(0, 1)) +
+      labs(
+        title = "Simulated power curve (staggered adoption, CS estimator)",
+        subtitle = glue("Panel: {cfg$panel_choice} | Estimand: {cfg$estimand}{ifelse(cfg$estimand=='event_time', glue(' (h={cfg$target_h})'), '')} | cluster: {cluster_var} | alpha={cfg$alpha} | sims={cfg$n_sims} | boot={cfg$did_bstrap} ({cfg$did_biters})"),
+        x = "Imposed effect size (outcome units)",
+        y = "Power (Pr[p <= alpha])",
+        color = "Baseline option"
+      ) +
+      theme_minimal()
+    
+    ggsave(file.path(cfg$data_dir, "power_curve.png"), p, width = 8, height = 5, dpi = 300)
+    
+    best_mde <- mde_tbl %>% arrange(option) %>% slice(1)
+    
+    grant_paragraph <- glue(
+      "We will assess statistical power using simulation-based methods that impose known treatment effects on untreated outcome data and re-estimate our staggered-adoption difference-in-differences model across many simulated samples. ",
+      "Consistent with simulation-based power analyses in observational research designs, we introduce effects into pre-treatment (untreated) data to preserve realistic serial correlation and variance structure and compute power as the fraction of simulations rejecting the null at alpha={cfg$alpha}. ",
+      "Using monthly panel data ({n_distinct(panel_df$unit_id)} units; {as.character(min(panel_df$month_date))} to {as.character(max(panel_df$month_date))}), we mimic the empirical adoption pattern by preserving the number of treated units and the distribution of treatment timing (shifted into an untreated window) and estimate effects using the Callaway–Sant’Anna estimator with inference clustered at the {cluster_var} level. ",
+      "Under our preferred specification, the minimum detectable effect for 80% power is approximately {round(best_mde$mde_80, 3)} outcome units."
+    )
+    
+    writeLines(as.character(grant_paragraph), file.path(cfg$data_dir, "grant_ready_paragraph.txt"))
+    cat("\n--- Grant-ready paragraph ---\n")
+    cat(grant_paragraph)
+    cat("\n-----------------------------\n")
+    
+    message("\nSaved outputs:")
+    message(glue("  - {file.path(cfg$data_dir, 'power_results.csv')}"))
+    message(glue("  - {file.path(cfg$data_dir, 'power_curve.png')}"))
+    message(glue("  - {file.path(cfg$data_dir, 'grant_ready_paragraph.txt')}"))
+  }
 }
 
-panel_df <- load_panel(cfg)
-message(glue("Loaded panel: {cfg$panel_choice}"))
-message(glue("Outcome used: {attr(panel_df, 'outcome_var')}"))
-message(glue("Units: {n_distinct(panel_df$unit_id)} | Months: {n_distinct(panel_df$time_id)}"))
-
-# cluster var
-cluster_var <- case_when(
-  cfg$cluster_level == "unit" ~ "unit_id",
-  cfg$cluster_level == "state" ~ if ("state_abb" %in% names(panel_df)) "state_abb" else "unit_id",
-  TRUE ~ "unit_id"
-)
-
+if (sys.nframe() == 0L) {
+  run_power_simulation(cfg)
 # treat schedule
 treat_schedule <- make_treat_schedule(panel_df, cfg)
 treat_schedule_std <- standardize_treat_schedule(treat_schedule, panel_df)

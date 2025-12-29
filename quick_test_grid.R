@@ -44,3 +44,4 @@ cat("Quick grid test: 2 sims × 2 effects × small states/switchers grid\n")
 cat("This should complete quickly and write grid CSV outputs.\n\n")
 
 source("power_simulation_cs.R", echo = FALSE)
+run_power_simulation(cfg)

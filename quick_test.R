@@ -43,3 +43,4 @@ cat("This should complete in < 2 minutes...\n\n")
 
 # Source just the functions we need (not the full script)
 source("power_simulation_cs.R", echo = FALSE)
+run_power_simulation(cfg)
