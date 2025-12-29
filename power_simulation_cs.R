@@ -43,6 +43,72 @@ options(progressr.enable = TRUE)
 
 if (!exists("cfg", inherits = FALSE)) {
   cfg <- list(
+    # Where your CSVs live
+    data_dir = ".",   # e.g. "." locally, or "/scratch/..." on Della
+    
+    # Panel choice:
+    #   - "counties" (2016–2025, clean unit-month; state policy at county level)
+    #   - "states_ets" (ETS-derived, MUST be collapsed; only 10 states in your file)
+    #   - "sites_ets"  (ETS-derived, MUST be collapsed)
+    #   - "states_from_counties" (build a full state-month panel by aggregating counties)
+    panel_choice = "states_from_counties",  # Use state-level panel for state policies
+    
+    # Outcome preference (script uses first available)
+    outcome_preference = c(
+      "filings_per_1k_renters",
+      "filings_count_per_1k_renters",
+      "filings_count",
+      "filings_2020",
+      "filings_avg",
+      "percent_of_historical_average"
+    ),
+    
+    # Optional weights (did supports weightsname). For county: renters is a natural weight.
+    weights_var = "renter_occupied_housing_units",  # set NULL to disable weights
+    
+    # Treatment definition from sports_gambling_legalization_dates.csv
+    # Choose one: "online_start_date", "retail_start_date", "first_start_date"
+    treat_date_col = "online_start_date",
+    
+    # Simulation grid
+    n_sims = 50,
+    effect_grid = c(0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3),
+    alpha = 0.05,
+    power_target = 0.80,
+    run_state_switcher_grid = TRUE,
+    n_states_grid = c(10, 15, 20, 25, 30, 32),
+    n_switchers_grid = c(3, 5, 8, 10, 12, 15),
+    
+    # Estimand:
+    #   - "overall_att" => aggte(type="simple") overall ATT p-value
+    #   - "event_time"  => aggte(type="dynamic") p-value at target_h
+    estimand = "overall_att",
+    target_h = 12,
+    
+    # Required windows (months) around *placebo* adoption inside untreated baseline
+    pre_len = 12,
+    post_len = 12,
+    
+    # Effect path shape
+    effect_shape = "step",  # "step" | "ramp" | "delayed"
+    delay_h = 6,
+    
+    # Inference for did::att_gt
+    # If you will bootstrap in the paper, keep did_bstrap=TRUE here.
+    # Reduce did_biters for feasibility; you can do a “final confirm” with bigger biters at the MDE.
+    did_bstrap = TRUE,
+    did_biters = 50,
+    did_cband = FALSE,
+    
+    # Clustering choice:
+    #   - "unit" => cluster at unit_id
+    #   - "state" => cluster at state (works for counties/sites if state is available/derived)
+    # NOTE: For counties, MUST use "state" since treatment is state-level
+    cluster_level = "state",
+    
+    # Parallel settings (strongly recommended on Della)
+    use_parallel = TRUE,
+    workers = as.integer(Sys.getenv("SLURM_CPUS_PER_TASK", "4"))
   # Where your CSVs live
   data_dir = ".",   # e.g. "." locally, or "/scratch/..." on Della
   
@@ -1090,7 +1156,7 @@ simulate_power <- function(panel_df, treat_schedule_std, option = c("A1", "A2"),
       pb <- utils::txtProgressBar(min = 0, max = cfg$n_sims, style = 3)
       draws <- purrr::map_dfr(
         1:cfg$n_sims,
-        \(s) { utils::setTxtProgressBar(pb, s); one_draw(eff, s) }
+        function(s) { utils::setTxtProgressBar(pb, s); one_draw(eff, s) }
       )
       close(pb)
     }
