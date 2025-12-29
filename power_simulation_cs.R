@@ -41,7 +41,8 @@ options(progressr.enable = TRUE)
 # 0) CONFIG
 ################################################################################
 
-cfg <- list(
+if (!exists("cfg", inherits = FALSE)) {
+  cfg <- list(
   # Where your CSVs live
   data_dir = ".",   # e.g. "." locally, or "/scratch/..." on Della
   
@@ -108,7 +109,8 @@ cfg <- list(
   # Parallel settings (strongly recommended on Della)
   use_parallel = TRUE,
   workers = as.integer(Sys.getenv("SLURM_CPUS_PER_TASK", "4"))
-)
+  )
+}
 
 ################################################################################
 # 1) Helpers: parsing and indexing
