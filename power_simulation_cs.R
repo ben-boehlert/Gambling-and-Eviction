@@ -1638,10 +1638,195 @@ simulate_power_grid_states_switchers <- function(panel_df,
 }
 
 
+subset_baseline_to_n_clusters <- function(baseline, cluster_var, n_clusters, seed = NULL) {
+  if (!(cluster_var %in% names(baseline))) {
+    stop(glue::glue("cluster_var='{cluster_var}' not in baseline."))
+  }
+  
+  clusters <- sort(unique(baseline[[cluster_var]]))
+  if (n_clusters > length(clusters)) {
+    stop(glue::glue("Requested {n_clusters} clusters but baseline only has {length(clusters)}."))
+  }
+  
+  if (!is.null(seed)) set.seed(seed)
+  chosen <- sample(clusters, size = n_clusters, replace = FALSE)
+  
+  baseline %>% filter(.data[[cluster_var]] %in% chosen)
+}
 
-################################################################################
-# 10) RUN
-################################################################################
+simulate_power_from_baseline <- function(baseline,
+                                         treat_schedule_std,
+                                         option = c("A1", "A2"),
+                                         cfg,
+                                         cluster_var,
+                                         n_switchers = NULL,
+                                         unit_state_map = NULL,
+                                         scenario_seed = 1L) {
+  option <- match.arg(option)
+  set.seed(scenario_seed)
+  
+  n_units    <- dplyr::n_distinct(baseline$unit_id)
+  n_clusters <- if (cluster_var %in% names(baseline)) dplyr::n_distinct(baseline[[cluster_var]]) else NA_integer_
+  min_date <- min(baseline$month_date, na.rm = TRUE)
+  max_date <- max(baseline$month_date, na.rm = TRUE)
+  
+  enforce_windows <- function(df) {
+    ok <- df %>%
+      dplyr::filter(g_placebo > 0L) %>%
+      dplyr::group_by(unit_id, g_placebo) %>%
+      dplyr::summarise(
+        min_t = min(time_id),
+        max_t = max(time_id),
+        .groups = "drop"
+      ) %>%
+      dplyr::mutate(ok = (min_t <= (g_placebo - cfg$pre_len)) & (max_t >= (g_placebo + cfg$post_len)))
+    
+    ok_units <- ok %>% dplyr::filter(ok) %>% dplyr::pull(unit_id)
+    df %>% dplyr::filter(g_placebo == 0L | unit_id %in% ok_units)
+  }
+  
+  one_draw <- function(effect_size, s) {
+    tryCatch({
+      placebo <- draw_placebo_schedule(
+        treat_schedule_std = treat_schedule_std,
+        cfg = cfg,
+        baseline_df = baseline,
+        n_switchers = n_switchers,
+        unit_state_map = unit_state_map
+      )
+      
+      df_sim <- impose_effect(baseline, placebo, effect_size, cfg)
+      
+      if (identical(cfg$estimand, "event_time")) {
+        df_sim <- enforce_windows(df_sim)
+      }
+      
+      treated_clusters <- if (cluster_var %in% names(df_sim)) {
+        dplyr::n_distinct(df_sim[[cluster_var]][df_sim$g_placebo > 0L])
+      } else {
+        NA_integer_
+      }
+      
+      never_clusters <- if (cluster_var %in% names(df_sim)) {
+        dplyr::n_distinct(df_sim[[cluster_var]][df_sim$g_placebo == 0L])
+      } else {
+        NA_integer_
+      }
+      
+      n_treated_units <- dplyr::n_distinct(df_sim$unit_id[df_sim$g_placebo > 0L])
+      n_never_units   <- dplyr::n_distinct(df_sim$unit_id[df_sim$g_placebo == 0L])
+      n_treated_obs   <- sum(df_sim$g_placebo > 0L, na.rm = TRUE)
+      
+      if (!is.na(treated_clusters) && treated_clusters < 2) {
+        return(tibble::tibble(
+          sim = s, p = NA_real_, est = NA_real_, se = NA_real_,
+          fail = "too_few_treated_clusters",
+          treated_clusters = treated_clusters, never_clusters = never_clusters,
+          n_treated_units = n_treated_units, n_never_units = n_never_units, n_treated_obs = n_treated_obs
+        ))
+      }
+      if (n_treated_units < 2) {
+        return(tibble::tibble(
+          sim = s, p = NA_real_, est = NA_real_, se = NA_real_,
+          fail = "too_few_treated_units",
+          treated_clusters = treated_clusters, never_clusters = never_clusters,
+          n_treated_units = n_treated_units, n_never_units = n_never_units, n_treated_obs = n_treated_obs
+        ))
+      }
+      if (n_never_units < 2) {
+        return(tibble::tibble(
+          sim = s, p = NA_real_, est = NA_real_, se = NA_real_,
+          fail = "too_few_never_units",
+          treated_clusters = treated_clusters, never_clusters = never_clusters,
+          n_treated_units = n_treated_units, n_never_units = n_never_units, n_treated_obs = n_treated_obs
+        ))
+      }
+      if (n_treated_obs == 0) {
+        return(tibble::tibble(
+          sim = s, p = NA_real_, est = NA_real_, se = NA_real_,
+          fail = "no_treated_obs",
+          treated_clusters = treated_clusters, never_clusters = never_clusters,
+          n_treated_units = n_treated_units, n_never_units = n_never_units, n_treated_obs = n_treated_obs
+        ))
+      }
+      
+      keep2 <- c("unit_id", "time_id", "outcome_sim", "g_placebo", cluster_var)
+      if (!is.null(cfg$weights_var) && cfg$weights_var %in% names(df_sim)) {
+        keep2 <- c(keep2, cfg$weights_var)
+      }
+      keep2 <- unique(keep2)
+      keep2 <- keep2[keep2 %in% names(df_sim)]
+      df_sim <- df_sim %>% dplyr::select(dplyr::all_of(keep2))
+      
+      est_raw <- suppressMessages(run_estimator_and_extract_p(df_sim, cfg, cluster_var = cluster_var))
+      
+      tibble::tibble(
+        sim = s,
+        p   = as.numeric(est_raw$p),
+        est = as.numeric(est_raw$est),
+        se  = as.numeric(est_raw$se),
+        fail = est_raw$fail %||% NA_character_,
+        treated_clusters = treated_clusters,
+        never_clusters = never_clusters,
+        n_treated_units = n_treated_units,
+        n_never_units = n_never_units,
+        n_treated_obs = n_treated_obs
+      )
+    }, error = function(e) {
+      tibble::tibble(
+        sim = s, p = NA_real_, est = NA_real_, se = NA_real_,
+        fail = paste0("one_draw_error: ", conditionMessage(e)),
+        treated_clusters = NA_integer_, never_clusters = NA_integer_,
+        n_treated_units = NA_integer_, n_never_units = NA_integer_, n_treated_obs = NA_integer_
+      )
+    })
+  }
+  
+  res_list <- vector("list", length(cfg$effect_grid))
+  
+  for (k in seq_along(cfg$effect_grid)) {
+    eff <- cfg$effect_grid[k]
+    
+    if (isTRUE(cfg$use_parallel)) {
+      draws <- progressr::with_progress({
+        p <- progressr::progressor(steps = cfg$n_sims)
+        furrr::future_map_dfr(
+          1:cfg$n_sims,
+          ~ { p(); one_draw(eff, .x) },
+          .options = furrr::furrr_options(seed = TRUE)
+        )
+      })
+    } else {
+      pb <- utils::txtProgressBar(min = 0, max = cfg$n_sims, style = 3)
+      draws <- purrr::map_dfr(
+        1:cfg$n_sims,
+        \(s) { utils::setTxtProgressBar(pb, s); one_draw(eff, s) }
+      )
+      close(pb)
+    }
+    
+    power <- mean(draws$p <= cfg$alpha, na.rm = TRUE)
+    
+    res_list[[k]] <- tibble::tibble(
+      option = option,
+      panel_choice = cfg$panel_choice,
+      estimand = cfg$estimand,
+      target_h = dplyr::if_else(cfg$estimand == "event_time", cfg$target_h, NA_integer_),
+      effect_size = eff,
+      power = power,
+      mean_est = mean(draws$est, na.rm = TRUE),
+      mean_se  = mean(draws$se,  na.rm = TRUE),
+      n_sims = cfg$n_sims,
+      n_units = n_units,
+      n_clusters = n_clusters,
+      n_switchers = n_switchers %||% NA_integer_,
+      start_date = min_date,
+      end_date   = max_date
+    )
+  }
+  
+  dplyr::bind_rows(res_list)
+}
 
 run_power_simulation <- function(cfg) {
   # Parallel plan (works locally and on Della; respects SLURM_CPUS_PER_TASK if set)
