@@ -26,6 +26,19 @@ cat(paste(rep("=", 80), collapse = ""), "\n\n", sep = "")
 # HELPER FUNCTIONS
 ################################################################################
 
+# Select last m_pre pre-periods and first r_post post-periods around treatment
+get_pre_post_periods <- function(months, treatment_date, m_pre, r_post) {
+  ordered_months <- sort(unique(months))
+  pre_months <- ordered_months[ordered_months < treatment_date]
+  post_months <- ordered_months[ordered_months >= treatment_date]
+
+  if (length(pre_months) < m_pre || length(post_months) < r_post) {
+    return(NULL)
+  }
+
+  c(tail(pre_months, m_pre), head(post_months, r_post))
+}
+
 # Moving-block bootstrap for residuals
 # Preserves within-state autocorrelation
 moving_block_bootstrap <- function(residuals, block_length = 3) {
@@ -102,15 +115,14 @@ run_scheme_a_simulation <- function(
     )
 
   # Filter to m pre-periods and r post-periods
-  pre_periods <- sort(unique(sim_data$month[sim_data$month < treatment_start]))[1:m_pre]
-  post_periods <- sort(unique(sim_data$month[sim_data$month >= treatment_start]))[1:r_post]
+  window_months <- get_pre_post_periods(sim_data$month, treatment_start, m_pre, r_post)
 
-  if (length(pre_periods) < m_pre || length(post_periods) < r_post) {
+  if (is.null(window_months)) {
     return(NULL)  # Not enough data
   }
 
   sim_data <- sim_data %>%
-    filter(month %in% c(pre_periods, post_periods))
+    filter(month %in% window_months)
 
   # Add effect size by manipulating outcome (lines 266-273)
   # Following Black et al.: reduce outcome by effect_size for treated units in post period
@@ -174,6 +186,28 @@ run_scheme_b_simulation <- function(
     return(NULL)
   }
 
+  treated_info <- treated_info %>%
+    mutate(treatment_date = as.Date(format(treatment_date, "%Y-%m-01")))
+
+  # Keep treated states with enough pre/post periods
+  eligible_states <- data %>%
+    mutate(month = as.Date(month)) %>%
+    semi_join(treated_info, by = "state") %>%
+    group_by(state) %>%
+    summarise(
+      pre_n = sum(month < treatment_date[1]),
+      post_n = sum(month >= treatment_date[1]),
+      .groups = "drop"
+    ) %>%
+    filter(pre_n >= m_pre, post_n >= r_post)
+
+  treated_info <- treated_info %>%
+    semi_join(eligible_states, by = "state")
+
+  if (nrow(treated_info) == 0) {
+    return(NULL)
+  }
+
   # Permute treatment dates across states (preserving timing distribution)
   permuted_dates <- sample(treated_info$treatment_date)
   treated_info$permuted_date <- permuted_dates
@@ -186,6 +220,30 @@ run_scheme_b_simulation <- function(
       pseudo_post = if_else(!is.na(permuted_date) & month >= permuted_date, 1, 0, missing = 0),
       D = pseudo_post
     )
+
+  # Filter treated states to m pre and r post months around permuted date
+  treated_filtered <- sim_data %>%
+    filter(pseudo_treated) %>%
+    group_by(state) %>%
+    group_modify(~ {
+      window_months <- get_pre_post_periods(.x$month, .x$permuted_date[1], m_pre, r_post)
+      if (is.null(window_months)) {
+        return(tibble())
+      }
+      .x %>% filter(month %in% window_months)
+    }) %>%
+    ungroup()
+
+  if (nrow(treated_filtered) == 0) {
+    return(NULL)
+  }
+
+  # Keep never-treated states in the same calendar window as treated states
+  window_months_all <- sort(unique(treated_filtered$month))
+  control_filtered <- sim_data %>%
+    filter(!pseudo_treated, month %in% window_months_all)
+
+  sim_data <- bind_rows(treated_filtered, control_filtered)
 
   # Add effect (staggered)
   sim_data <- sim_data %>%
