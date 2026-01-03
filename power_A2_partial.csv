@@ -1,4 +1,3 @@
 option,panel_choice,estimand,target_h,effect_size,power,mean_est,mean_se,sign_error_rate_sig,severe_mag_error_rate_sig,mean_exaggeration_ratio_sig,n_sims,n_units,n_clusters,start_date,end_date
-A2,counties,overall_att,NA,0,0,-0.16736702877650328,1.2069112559308302,NA,NA,NA,50,659,25,2016-01-01,2025-09-01
-A2,counties,overall_att,NA,0.25,0.02,0.02299521595172025,1.4872565234681023,1,1,5.556382224031508,50,659,25,2016-01-01,2025-09-01
-A2,counties,overall_att,NA,0.5,0.02,0.2530759907873656,1.4920160203973998,0,1,2.748129369804264,50,659,25,2016-01-01,2025-09-01
+A2,states_from_counties,overall_att,NA,0,0,-0.03565039897304999,0.48865292148217193,NA,NA,NA,3,25,25,2016-01-01,2025-09-01
+A2,states_from_counties,overall_att,NA,1.5,0,0.3549547536041014,0.4245956462103014,NA,NA,NA,3,25,25,2016-01-01,2025-09-01

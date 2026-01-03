@@ -1,0 +1,9 @@
+option,estimand,target_h,n_states,n_switchers,mde_80
+A1,overall_att,NA,10,3,1
+A1,overall_att,NA,10,5,NA
+A1,overall_att,NA,12,3,NA
+A1,overall_att,NA,12,5,1
+A2,overall_att,NA,10,3,1
+A2,overall_att,NA,10,5,1
+A2,overall_att,NA,12,3,1
+A2,overall_att,NA,12,5,NA
