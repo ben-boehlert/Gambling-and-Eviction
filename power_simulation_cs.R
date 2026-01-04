@@ -71,13 +71,13 @@ if (!exists("cfg", inherits = FALSE)) {
     treat_date_col = "online_start_date",
     
     # Simulation grid
-    n_sims = 50,
-    effect_grid = c(0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3),
+    n_sims = 25,
+    effect_grid = c(0, 1, 2, 3),
     alpha = 0.05,
     power_target = 0.80,
     run_state_switcher_grid = TRUE,
-    n_states_grid = c(10, 15, 20, 25, 30, 32),
-    n_switchers_grid = c(3, 5, 8, 10, 12, 15),
+    n_states_grid = c(10, 15, 20, 25),
+    n_switchers_grid = c(3, 5, 8, 10),
     
     # Estimand:
     #   - "overall_att" => aggte(type="simple") overall ATT p-value
@@ -1397,7 +1397,6 @@ simulate_power_grid_states_switchers <- function(panel_df,
       mutate(n_states = n_states, n_switchers = n_switchers)
   })
 }
-
 run_power_simulation <- function(cfg) {
   # Parallel plan (works locally and on Della; respects SLURM_CPUS_PER_TASK if set)
   if (cfg$use_parallel) {
