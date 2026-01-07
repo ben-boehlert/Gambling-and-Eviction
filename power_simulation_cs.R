@@ -71,7 +71,7 @@ if (!exists("cfg", inherits = FALSE)) {
     treat_date_col = "online_start_date",
     
     # Simulation grid
-    n_sims = 25,
+    n_sims = 100,
     effect_grid = c(0, 1, 2, 3),
     alpha = 0.05,
     power_target = 0.80,
@@ -404,7 +404,7 @@ prep_panel_sites_ets <- function(cfg) {
 }
 
 load_panel <- function(cfg) {
-  switch(
+  df <- switch(
     cfg$panel_choice,
     "counties" = prep_panel_counties(cfg),
     "states_from_counties" = prep_panel_states_from_counties(cfg),
@@ -412,6 +412,16 @@ load_panel <- function(cfg) {
     "sites_ets" = prep_panel_sites_ets(cfg),
     stop("cfg$panel_choice must be one of: counties, states_from_counties, states_ets, sites_ets")
   )
+
+  # Optional: Restrict to pre-COVID period
+  # Based on diagnostic analysis showing parallel trends hold pre-COVID but violated post-COVID
+  if (!is.null(cfg$restrict_to_precovid) && cfg$restrict_to_precovid) {
+    cutoff <- if (!is.null(cfg$precovid_cutoff)) cfg$precovid_cutoff else as.Date("2020-03-01")
+    df <- df %>% filter(month_date < cutoff)
+    message(sprintf("Restricting panel to pre-COVID: before %s", cutoff))
+  }
+
+  df
 }
 
 ################################################################################
@@ -592,7 +602,9 @@ residualize_outcome <- function(df_untreated) {
     outcome_mean <- mean(df_untreated$outcome, na.rm = TRUE)
     return(
       df_untreated %>%
-        mutate(outcome = resid(m) + outcome_mean)
+        mutate(outcome = resid(m) + outcome_mean) %>%
+        # Remove treatment indicators to prevent leakage
+        select(-any_of(c("g_id", "ever_treated")))
     )
   }
 
@@ -603,8 +615,16 @@ residualize_outcome <- function(df_untreated) {
   outcome_new <- df_untreated$outcome  # Start with original
   outcome_new[!obs_removed] <- resid(m) + outcome_mean  # Replace non-singletons with residuals
 
-  df_untreated %>%
+  df_result <- df_untreated %>%
     mutate(outcome = outcome_new)
+
+  # CRITICAL FIX: Remove real treatment indicators to prevent them from
+  # leaking into placebo assignment. Units that were treated in reality
+  # have different characteristics (trends, levels) than never-treated units.
+  # If we keep g_id/ever_treated in the data, the placebo scheduler might
+  # use this information (even indirectly), causing spurious Type I errors.
+  df_result %>%
+    select(-any_of(c("g_id", "ever_treated")))
 }
 
 ################################################################################
@@ -773,12 +793,11 @@ as_est_list <- function(x) {
 }
 
 att_gt_safe <- function(df_in, cfg, cluster_var) {
-  # Convert to data.frame to avoid tibble/data.table conversion issues in did package
   df_in <- as.data.frame(df_in)
-
+  
   args <- list(
     yname = "outcome_sim",
-    tname = "time_id_seq",  # Use remapped sequential time variable
+    tname = "time_id_seq",
     idname = "unit_id",
     gname = "gname",
     data = df_in,
@@ -787,27 +806,27 @@ att_gt_safe <- function(df_in, cfg, cluster_var) {
     bstrap = cfg$did_bstrap,
     biters = cfg$did_biters,
     cband = cfg$did_cband,
-    clustervars = cluster_var,
-    est_method = "ipw"  # Use IPW instead of DR to avoid fastglm segfault
+    est_method = "ipw"
   )
-
+  
+  # only cluster if bootstrapping
+  if (isTRUE(cfg$did_bstrap)) {
+    args$clustervars <- cluster_var
+  }
+  
   if (!is.null(cfg$weights_var) && cfg$weights_var %in% names(df_in)) {
     args$weightsname <- cfg$weights_var
   }
-
-  # Some did versions expose allow_unbalanced_panel; add it if available
-  if ("allow_unbalanced_panel" %in% names(formals(did::att_gt))) {
-    args$allow_unbalanced_panel <- TRUE
-  }
-  # If did exposes a cores/ncores argument, force it to 1 to avoid nested parallelism
+  
   fmls <- names(formals(did::att_gt))
+  if ("allow_unbalanced_panel" %in% fmls) args$allow_unbalanced_panel <- TRUE
   if ("cores"  %in% fmls) args$cores  <- 1L
   if ("ncores" %in% fmls) args$ncores <- 1L
   if ("parallel" %in% fmls) args$parallel <- FALSE
-
-  # Call att_gt - errors will be caught by tryCatch in run_estimator_and_extract_p
+  
   do.call(did::att_gt, args)
 }
+
 normalize_est <- function(x) {
   # Always return list(p, est, se)
   if (is.null(x)) return(list(p = NA_real_, est = NA_real_, se = NA_real_))
@@ -851,11 +870,16 @@ run_estimator_and_extract_p <- function(df_sim, cfg, cluster_var) {
     left_join(time_mapping, by = "time_id") %>%
     left_join(g_mapping, by = "g_placebo") %>%
     mutate(
-      # Create gname: 0 for never-treated, sequential time_id for treated
-      gname = if_else(is.na(g_placebo) | g_placebo == 0L, 0L, coalesce(g_placebo_seq, 0L))
+      # IMPORTANT: gname must be double so did can set Inf internally
+      gname = if_else(
+        is.na(g_placebo) | g_placebo == 0L,
+        0,  # double (NOT 0L)
+        as.numeric(coalesce(g_placebo_seq, 0L))
+      )
     )
 
-  if (all(df_in$gname == 0L)) return(out)
+  if (all(df_in$gname == 0)) return(out)
+  
   
   tryCatch({
     att <- att_gt_safe(df_in, cfg, cluster_var = cluster_var)
@@ -1104,7 +1128,7 @@ simulate_power <- function(panel_df, treat_schedule_std, option = c("A1", "A2"),
     print(draws %>% dplyr::count(fail, sort = TRUE))
     print(mean(is.na(draws$p)))
     
-    power <- mean(draws$p <= cfg$alpha, na.rm = TRUE)
+    power <- mean(!is.na(draws$p) & draws$p <= cfg$alpha)
     
     sig <- draws %>% dplyr::filter(!is.na(p), p <= cfg$alpha)
     sign_error <- if (eff == 0 || nrow(sig) == 0) NA_real_ else mean(sign(sig$est) != sign(eff), na.rm = TRUE)
@@ -1327,7 +1351,7 @@ simulate_power_from_baseline <- function(baseline,
       close(pb)
     }
     
-    power <- mean(draws$p <= cfg$alpha, na.rm = TRUE)
+    power <- mean(!is.na(draws$p) & draws$p <= cfg$alpha)
     
     res_list[[k]] <- tibble::tibble(
       option = option,
@@ -1375,15 +1399,17 @@ simulate_power_grid_states_switchers <- function(panel_df,
     filter(n_states >= (n_switchers + 1L))
   
   purrr::pmap_dfr(grid, function(n_states, n_switchers) {
+    # Use separate seeds for baseline subsetting vs power simulation
+    baseline_seed <- as.integer(seed_base + 10000L * n_states)
     scenario_seed <- as.integer(seed_base + 10000L * n_states + n_switchers)
-    
+
     baseline_s <- subset_baseline_to_n_clusters(
       baseline_full,
       cluster_var = cluster_var,
       n_clusters = n_states,
-      seed = scenario_seed
+      seed = baseline_seed
     )
-    
+
     simulate_power_from_baseline(
       baseline = baseline_s,
       treat_schedule_std = treat_schedule_std,

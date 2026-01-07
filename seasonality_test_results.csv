@@ -1,0 +1,3 @@
+method,rejection_rate,na_rate
+No seasonality,0.04,0
+With month FE,0.02,0

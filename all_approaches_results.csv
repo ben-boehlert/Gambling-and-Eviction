@@ -1,0 +1,5 @@
+approach,period,month_fe,diff_trend_t,diff_trend_p,type_i_error,parallel_trends_hold,type_i_acceptable,recommended
+Pre-COVID only,2016-2020,No,-1.49,0.14,0.12,TRUE,FALSE,FALSE
+Pre-COVID + month FE,2016-2020,Yes,-1.49,0.14,0.02,TRUE,TRUE,TRUE
+Full period,2016-2025,No,-5.18,0,0.24,FALSE,FALSE,FALSE
+Full period + month FE,2016-2025,Yes,-5.42,0,0.32,FALSE,FALSE,FALSE
