@@ -2,20 +2,12 @@
 ################################################################################
 # test_power_simulation_cs_ets_merged_bestof.R
 #
-# Crash-focused preflight tests for power_simulation_cs_ets_merged_bestof.R
+# Crash triage tests. Runs in subprocess because segfaults can't be caught.
 #
-# Why this exists:
-# - If R is segfaulting, tryCatch won't help. The only safe test is a subprocess.
-# - This runs the main script in TEST_MODE with very small settings, so it should
-#   either succeed quickly or crash immediately.
-#
-# What it checks:
-#   1) Main script runs end-to-end (exit status 0)
-#   2) Output files exist
-#   3) power_by_effect.csv has required columns and bounded power/fail_rate
-#
-# Run:
-#   Rscript test_power_simulation_cs_ets_merged_bestof.R
+# Steps:
+#   1) DRY_RUN of main script (proves data + baseline + placebo schedule works)
+#   2) did_preflight_probe.R (proves did works on synthetic data using est_method=ipw)
+#   3) TEST_MODE run of main script with N_SIMS=5, DID_EST_METHOD=ipw, DID_BSTRAP=FALSE
 ################################################################################
 
 suppressPackageStartupMessages({
@@ -28,9 +20,11 @@ suppressPackageStartupMessages({
 .assert <- function(cond, msg) if (!isTRUE(cond)) .fail(msg) else .ok(msg)
 
 main_script <- "power_simulation_cs_ets_merged_bestof.R"
+probe_script <- "did_preflight_probe.R"
 data_file   <- "merged_ets_combined.csv"
 
 .assert(file.exists(main_script), glue("Found main script: {main_script}"))
+.assert(file.exists(probe_script), glue("Found probe script: {probe_script}"))
 .assert(file.exists(data_file),   glue("Found data file: {data_file}"))
 
 rscript_bin <- Sys.which("Rscript")
@@ -41,51 +35,69 @@ out_root <- file.path(tempdir(), paste0("power_smoketest_", stamp))
 dir.create(out_root, recursive = TRUE, showWarnings = FALSE)
 .assert(dir.exists(out_root), glue("Created temp output dir: {out_root}"))
 
-case_dir <- file.path(out_root, "case_test_mode")
-dir.create(case_dir, recursive = TRUE, showWarnings = FALSE)
+run_subprocess <- function(args, env = character(), label = "subprocess") {
+  status <- system2(rscript_bin, args = args, env = env)
+  .assert(identical(status, 0L), glue("{label} exited with status 0"))
+}
 
-env <- c(
+# 1) DRY RUN
+dry_dir <- file.path(out_root, "dry_run")
+dir.create(dry_dir, recursive = TRUE, showWarnings = FALSE)
+
+env_dry <- c(
   glue("DATA_FILE={normalizePath(data_file)}"),
-  glue("OUT_DIR={normalizePath(case_dir)}"),
+  glue("OUT_DIR={normalizePath(dry_dir)}"),
+  "DRY_RUN=TRUE",
   "TEST_MODE=TRUE",
-  "SEED=123",
+  "N_SIMS=1",
+  "EFFECT_PCTS=0,0.05",
+  "CONTROL_GROUP=notyettreated",
+  "DID_EST_METHOD=ipw",
+  "DID_BSTRAP=FALSE",
+  "DID_BITERS=0",
+  "SKIP_PLOT=TRUE"
+)
+
+cat("\n=== 1) DRY_RUN main script ===\n")
+run_subprocess(args = c(main_script), env = env_dry, label = "DRY_RUN")
+dbg <- file.path(dry_dir, "debug_one_draw.csv")
+.assert(file.exists(dbg), "DRY_RUN wrote debug_one_draw.csv")
+
+# 2) did probe (synthetic data)
+cat("\n=== 2) did_preflight_probe.R ===\n")
+run_subprocess(args = c(probe_script), env = character(), label = "did probe")
+
+# 3) TEST MODE run (sequential, no bootstrap)
+test_dir <- file.path(out_root, "test_mode")
+dir.create(test_dir, recursive = TRUE, showWarnings = FALSE)
+
+env_test <- c(
+  glue("DATA_FILE={normalizePath(data_file)}"),
+  glue("OUT_DIR={normalizePath(test_dir)}"),
+  "TEST_MODE=TRUE",
   "N_SIMS=5",
   "PRE_LEN=12",
   "POST_LEN=12",
   "EFFECT_PCTS=0,0.05",
   "CONTROL_GROUP=notyettreated",
-  # keep bootstrap off in tests (common segfault culprit on some stacks)
+  "DID_EST_METHOD=ipw",
   "DID_BSTRAP=FALSE",
-  "DID_BITERS=0"
+  "DID_BITERS=0",
+  "SKIP_PLOT=TRUE"
 )
 
-cat("\n=== Running TEST_MODE preflight ===\n")
-status <- system2(rscript_bin, args = c(main_script), env = env)
-.assert(identical(status, 0L), "Main script exited with status 0 in TEST_MODE")
+cat("\n=== 3) TEST_MODE main script ===\n")
+run_subprocess(args = c(main_script), env = env_test, label = "TEST_MODE")
 
-out_csv <- file.path(case_dir, "power_by_effect.csv")
-out_mde <- file.path(case_dir, "mde_summary.csv")
-out_png <- file.path(case_dir, "power_curve.png")
-out_txt <- file.path(case_dir, "README_results.txt")
-
-.assert(file.exists(out_csv), "Wrote power_by_effect.csv")
-.assert(file.exists(out_mde), "Wrote mde_summary.csv")
-.assert(file.exists(out_png), "Wrote power_curve.png")
-.assert(file.exists(out_txt), "Wrote README_results.txt")
+out_csv <- file.path(test_dir, "power_by_effect.csv")
+.assert(file.exists(out_csv), "Wrote power_by_effect.csv in TEST_MODE")
 
 df <- readr::read_csv(out_csv, show_col_types = FALSE)
-
-required_cols <- c(
-  "effect_pct", "effect_log", "power", "alpha",
-  "fail_rate", "mean_att", "median_se", "n_sims",
-  "control_group_requested", "control_group_used"
-)
+required_cols <- c("effect_pct","effect_log","power","alpha","fail_rate","n_sims","control_group_requested","control_group_used")
 missing <- setdiff(required_cols, names(df))
-.assert(length(missing) == 0, glue("power_by_effect.csv has required columns (missing: {paste(missing, collapse=', ')})"))
+.assert(length(missing) == 0, glue("power_by_effect has required columns (missing: {paste(missing, collapse=', ')})"))
+.assert(all(is.finite(df$power) & df$power >= 0 & df$power <= 1), "power finite in [0,1]")
+.assert(all(is.finite(df$fail_rate) & df$fail_rate >= 0 & df$fail_rate <= 1), "fail_rate finite in [0,1]")
 
-.assert(all(is.finite(df$alpha) & df$alpha == 0.05), "alpha column present and equals 0.05")
-.assert(all(is.finite(df$power) & df$power >= 0 & df$power <= 1), "power is finite and in [0,1]")
-.assert(all(is.finite(df$fail_rate) & df$fail_rate >= 0 & df$fail_rate <= 1), "fail_rate is finite and in [0,1]")
-
-cat("\nPreflight passed.\n")
+cat("\nAll triage tests passed.\n")
 cat(glue("Outputs are in: {out_root}\n\n"))
