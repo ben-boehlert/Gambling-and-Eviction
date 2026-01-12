@@ -1,4 +1,0 @@
-Specification,Period,N_obs,N_states,Diff_Trend_Coef,T_stat,P_value,Type_I_Error,Parallel_Trends
-Annual data,2000-2023 (Idaho excl.),789,50,-0.928,-3.7,<0.001,N/A,VIOLATED
-Monthly (LSC),2016-2025 (full),2318,32,-0.027,-5.18,<0.001,24%,VIOLATED
-Monthly (LSC),2016-2020 (pre-COVID),1266,31,-0.008,-1.49,0.14,12%,OK

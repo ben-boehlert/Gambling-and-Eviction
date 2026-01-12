@@ -1,2 +1,0 @@
-n_states,n_switchers,n_never,n_sims,outcome,alpha,err_mode,rho_used,min_pool,exclude_start,exclude_end,drop_start,drop_end,type1_at_effect0,fail_rate_effect0,p0_q05,p0_q50,p0_q95,mean_att0,mean_se0
-37,23,14,2000,log1p_filings_count,0.05,iid_month,NA,10,2020-03-01,2021-06-01,NA,NA,0.0525,0,0.04869481362830071,0.49283917301392616,0.9229491142325154,-3.3821966898602983e-4,0.016185758163923866

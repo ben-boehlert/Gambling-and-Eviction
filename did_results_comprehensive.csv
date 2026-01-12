@@ -1,7 +1,0 @@
-Specification,N_obs,N_units,ATT,SE,p_value,pct_change
-Annual (state-year),794,51,0.3393,0.3457,0.331,40.3941
-City (full 36),779317,36,-0.0431,0.0575,0.4627,-4.2195
-"City (cleaned, drop always-treated states)",661315,28,-0.0559,0.0643,0.4008,-5.4329
-"City (cleaned, 2022+)",424531,28,0.0231,0.044,0.6091,2.3324
-Expanded monthly (state + city agg),1391,20,-0.1107,0.1585,0.4933,-10.4822
-Expanded (2022+),911,20,0.0304,0.0969,0.7576,3.0824

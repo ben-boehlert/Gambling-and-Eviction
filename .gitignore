@@ -1,0 +1,60 @@
+# R
+.Rhistory
+.RData
+*.RData
+.Rproj.user
+*.Rproj
+
+# Output directories (regenerable from scripts)
+data/output/
+*_out/
+*_power_out*/
+
+# Backup directories (local only)
+backup_*/
+
+# Archive directory (old development code - 800MB)
+archive/
+
+# Large data files (uncomment if not sharing data publicly)
+# data/raw/*.csv
+# *.csv
+
+# System files
+.DS_Store
+Thumbs.db
+*~
+.directory
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.bak
+
+# Log files (keep simulation logs in data/output/ which is already excluded)
+*.log
+
+# LaTeX (if generating documents)
+*.aux
+*.out
+*.toc
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+
+# Python (if any)
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# Keep important files (negative patterns)
+!README.md
+!INSTALL_PACKAGES.R
+!data/raw/combined_monthly_panel.csv
+!data/raw/state_month_panel_with_treatment.csv
