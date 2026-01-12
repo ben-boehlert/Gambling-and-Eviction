@@ -1,0 +1,499 @@
+=== TWFE POWER SIM === 
+SCRIPT: R 
+WD: /scratch/gpfs/DESMOND/ben/eviction_gambling 
+R: R version 4.4.2 (2024-10-31) 
+DATA_FILE: combined_monthly_panel.csv 
+TREAT_FILE: state_month_panel_with_treatment.csv 
+OUT_DIR: twfe_power_out_no_maine_2024_with_covid 
+OUTCOME: log1p_filings_count  RATE_EPS=0.01 
+N_SIMS: 2000  BATCH_SIZE=50  ALPHA=0.05  SEED=123 
+EFFECT_PCTS: 0, 0.03, 0.04, 0.05, 0.06 
+N_WORKERS: 20  SLURM_CPUS_PER_TASK= 
+ERR_MODE: iid_month (rho=estimate, clip=0.98) MIN_POOL=10 
+EXCLUDE (resid pool only): none 
+DROP (analysis panel): none 
+FILTERS: EXCLUDE_STATES=ME  MAX_DATE=2024-12-31 
+====================== 
+Excluded states: ME (38 -> 37) 
+MAX_DATE filter: 2024-12-31 (3625 -> 3397 rows) 
+Panel: states=37 (switchers=23, never=14); months=156; rows=3397 
+Fitting FE on untreated observations: y ~ 1 | id + t 
+WARNING: non-finite yhat after FE prediction; dropping those rows. 
+Residual pool: kept=1974/2263 untreated obs; ERR_MODE=iid_month 
+Parallel: starting PSOCK cluster with 20 workers 
+=== Effect 0 (log=0) === 
+Batch 1-50/2000: elapsed=2.4s 
+Batch 51-100/2000: elapsed=1.7s 
+Batch 101-150/2000: elapsed=1.9s 
+Batch 151-200/2000: elapsed=1.8s 
+Batch 201-250/2000: elapsed=1.8s 
+Batch 251-300/2000: elapsed=1.9s 
+Batch 301-350/2000: elapsed=1.8s 
+Batch 351-400/2000: elapsed=1.8s 
+Batch 401-450/2000: elapsed=1.9s 
+Batch 451-500/2000: elapsed=1.9s 
+Batch 501-550/2000: elapsed=1.9s 
+Batch 551-600/2000: elapsed=1.8s 
+Batch 601-650/2000: elapsed=1.8s 
+Batch 651-700/2000: elapsed=1.8s 
+Batch 701-750/2000: elapsed=1.6s 
+Batch 751-800/2000: elapsed=1.8s 
+Batch 801-850/2000: elapsed=1.9s 
+Batch 851-900/2000: elapsed=2s 
+Batch 901-950/2000: elapsed=1.9s 
+Batch 951-1000/2000: elapsed=1.9s 
+Batch 1001-1050/2000: elapsed=1.8s 
+Batch 1051-1100/2000: elapsed=1.7s 
+Batch 1101-1150/2000: elapsed=1.8s 
+Batch 1151-1200/2000: elapsed=1.7s 
+Batch 1201-1250/2000: elapsed=2.1s 
+Batch 1251-1300/2000: elapsed=2.2s 
+Batch 1301-1350/2000: elapsed=1.9s 
+Batch 1351-1400/2000: elapsed=1.8s 
+Batch 1401-1450/2000: elapsed=2s 
+Batch 1451-1500/2000: elapsed=1.8s 
+Batch 1501-1550/2000: elapsed=1.7s 
+Batch 1551-1600/2000: elapsed=1.8s 
+Batch 1601-1650/2000: elapsed=1.9s 
+Batch 1651-1700/2000: elapsed=1.9s 
+Batch 1701-1750/2000: elapsed=2s 
+Batch 1751-1800/2000: elapsed=1.8s 
+Batch 1801-1850/2000: elapsed=2s 
+Batch 1851-1900/2000: elapsed=2.3s 
+Batch 1901-1950/2000: elapsed=1.9s 
+Batch 1951-2000/2000: elapsed=1.9s 
+=== Effect 0.03 (log=0.02956) === 
+Batch 1-50/2000: elapsed=2s 
+Batch 51-100/2000: elapsed=1.7s 
+Batch 101-150/2000: elapsed=2.1s 
+Batch 151-200/2000: elapsed=1.8s 
+Batch 201-250/2000: elapsed=1.8s 
+Batch 251-300/2000: elapsed=1.9s 
+Batch 301-350/2000: elapsed=1.9s 
+Batch 351-400/2000: elapsed=1.9s 
+Batch 401-450/2000: elapsed=1.9s 
+Batch 451-500/2000: elapsed=1.7s 
+Batch 501-550/2000: elapsed=1.7s 
+Batch 551-600/2000: elapsed=1.8s 
+Batch 601-650/2000: elapsed=1.8s 
+Batch 651-700/2000: elapsed=1.9s 
+Batch 701-750/2000: elapsed=2.1s 
+Batch 751-800/2000: elapsed=1.8s 
+Batch 801-850/2000: elapsed=1.9s 
+Batch 851-900/2000: elapsed=1.8s 
+Batch 901-950/2000: elapsed=1.9s 
+Batch 951-1000/2000: elapsed=1.7s 
+Batch 1001-1050/2000: elapsed=1.7s 
+Batch 1051-1100/2000: elapsed=1.7s 
+Batch 1101-1150/2000: elapsed=1.8s 
+Batch 1151-1200/2000: elapsed=2s 
+Batch 1201-1250/2000: elapsed=2s 
+Batch 1251-1300/2000: elapsed=2s 
+Batch 1301-1350/2000: elapsed=2.1s 
+Batch 1351-1400/2000: elapsed=2s 
+Batch 1401-1450/2000: elapsed=1.8s 
+Batch 1451-1500/2000: elapsed=2.1s 
+Batch 1501-1550/2000: elapsed=1.9s 
+Batch 1551-1600/2000: elapsed=1.9s 
+Batch 1601-1650/2000: elapsed=1.8s 
+Batch 1651-1700/2000: elapsed=1.9s 
+Batch 1701-1750/2000: elapsed=1.7s 
+Batch 1751-1800/2000: elapsed=1.9s 
+Batch 1801-1850/2000: elapsed=2.2s 
+Batch 1851-1900/2000: elapsed=2.1s 
+Batch 1901-1950/2000: elapsed=2s 
+Batch 1951-2000/2000: elapsed=2s 
+=== Effect 0.04 (log=0.03922) === 
+Batch 1-50/2000: elapsed=1.8s 
+Batch 51-100/2000: elapsed=1.7s 
+Batch 101-150/2000: elapsed=1.9s 
+Batch 151-200/2000: elapsed=1.8s 
+Batch 201-250/2000: elapsed=2.7s 
+Batch 251-300/2000: elapsed=2.7s 
+Batch 301-350/2000: elapsed=1.8s 
+Batch 351-400/2000: elapsed=1.8s 
+Batch 401-450/2000: elapsed=1.8s 
+Batch 451-500/2000: elapsed=2.3s 
+Batch 501-550/2000: elapsed=1.8s 
+Batch 551-600/2000: elapsed=1.7s 
+Batch 601-650/2000: elapsed=2s 
+Batch 651-700/2000: elapsed=2.2s 
+Batch 701-750/2000: elapsed=2.3s 
+Batch 751-800/2000: elapsed=2s 
+Batch 801-850/2000: elapsed=1.8s 
+Batch 851-900/2000: elapsed=2s 
+Batch 901-950/2000: elapsed=1.7s 
+Batch 951-1000/2000: elapsed=2s 
+Batch 1001-1050/2000: elapsed=1.8s 
+Batch 1051-1100/2000: elapsed=1.9s 
+Batch 1101-1150/2000: elapsed=1.9s 
+Batch 1151-1200/2000: elapsed=1.9s 
+Batch 1201-1250/2000: elapsed=1.9s 
+Batch 1251-1300/2000: elapsed=2.3s 
+Batch 1301-1350/2000: elapsed=1.7s 
+Batch 1351-1400/2000: elapsed=1.8s 
+Batch 1401-1450/2000: elapsed=1.7s 
+Batch 1451-1500/2000: elapsed=2.1s 
+Batch 1501-1550/2000: elapsed=1.9s 
+Batch 1551-1600/2000: elapsed=1.9s 
+Batch 1601-1650/2000: elapsed=2s 
+Batch 1651-1700/2000: elapsed=2.2s 
+Batch 1701-1750/2000: elapsed=1.9s 
+Batch 1751-1800/2000: elapsed=1.9s 
+Batch 1801-1850/2000: elapsed=1.7s 
+Batch 1851-1900/2000: elapsed=1.8s 
+Batch 1901-1950/2000: elapsed=1.9s 
+Batch 1951-2000/2000: elapsed=1.9s 
+=== Effect 0.05 (log=0.04879) === 
+Batch 1-50/2000: elapsed=1.9s 
+Batch 51-100/2000: elapsed=2.1s 
+Batch 101-150/2000: elapsed=1.7s 
+Batch 151-200/2000: elapsed=2.1s 
+Batch 201-250/2000: elapsed=1.7s 
+Batch 251-300/2000: elapsed=2s 
+Batch 301-350/2000: elapsed=1.9s 
+Batch 351-400/2000: elapsed=1.6s 
+Batch 401-450/2000: elapsed=2.1s 
+Batch 451-500/2000: elapsed=2.1s 
+Batch 501-550/2000: elapsed=2.1s 
+Batch 551-600/2000: elapsed=1.8s 
+Batch 601-650/2000: elapsed=1.9s 
+Batch 651-700/2000: elapsed=1.9s 
+Batch 701-750/2000: elapsed=1.9s 
+Batch 751-800/2000: elapsed=2.3s 
+Batch 801-850/2000: elapsed=2.2s 
+Batch 851-900/2000: elapsed=2.5s 
+Batch 901-950/2000: elapsed=1.8s 
+Batch 951-1000/2000: elapsed=2.2s 
+Batch 1001-1050/2000: elapsed=2.2s 
+Batch 1051-1100/2000: elapsed=1.9s 
+Batch 1101-1150/2000: elapsed=1.7s 
+Batch 1151-1200/2000: elapsed=1.7s 
+Batch 1201-1250/2000: elapsed=2.1s 
+Batch 1251-1300/2000: elapsed=1.8s 
+Batch 1301-1350/2000: elapsed=2.1s 
+Batch 1351-1400/2000: elapsed=2.2s 
+Batch 1401-1450/2000: elapsed=2.2s 
+Batch 1451-1500/2000: elapsed=1.7s 
+Batch 1501-1550/2000: elapsed=1.9s 
+Batch 1551-1600/2000: elapsed=2.1s 
+Batch 1601-1650/2000: elapsed=2.1s 
+Batch 1651-1700/2000: elapsed=1.9s 
+Batch 1701-1750/2000: elapsed=1.9s 
+Batch 1751-1800/2000: elapsed=1.8s 
+Batch 1801-1850/2000: elapsed=1.8s 
+Batch 1851-1900/2000: elapsed=1.9s 
+Batch 1901-1950/2000: elapsed=1.9s 
+Batch 1951-2000/2000: elapsed=1.9s 
+=== Effect 0.06 (log=0.05827) === 
+Batch 1-50/2000: elapsed=1.9s 
+Batch 51-100/2000: elapsed=2s 
+Batch 101-150/2000: elapsed=1.7s 
+Batch 151-200/2000: elapsed=1.9s 
+Batch 201-250/2000: elapsed=1.9s 
+Batch 251-300/2000: elapsed=2s 
+Batch 301-350/2000: elapsed=1.9s 
+Batch 351-400/2000: elapsed=2.2s 
+Batch 401-450/2000: elapsed=2.1s 
+Batch 451-500/2000: elapsed=1.8s 
+Batch 501-550/2000: elapsed=2s 
+Batch 551-600/2000: elapsed=2s 
+Batch 601-650/2000: elapsed=1.9s 
+Batch 651-700/2000: elapsed=1.7s 
+Batch 701-750/2000: elapsed=1.9s 
+Batch 751-800/2000: elapsed=1.9s 
+Batch 801-850/2000: elapsed=2.1s 
+Batch 851-900/2000: elapsed=2s 
+Batch 901-950/2000: elapsed=1.9s 
+Batch 951-1000/2000: elapsed=2.2s 
+Batch 1001-1050/2000: elapsed=2.8s 
+Batch 1051-1100/2000: elapsed=2.6s 
+Batch 1101-1150/2000: elapsed=3.3s 
+Batch 1151-1200/2000: elapsed=3s 
+Batch 1201-1250/2000: elapsed=2s 
+Batch 1251-1300/2000: elapsed=1.9s 
+Batch 1301-1350/2000: elapsed=1.9s 
+Batch 1351-1400/2000: elapsed=2.1s 
+Batch 1401-1450/2000: elapsed=1.9s 
+Batch 1451-1500/2000: elapsed=2s 
+Batch 1501-1550/2000: elapsed=1.8s 
+Batch 1551-1600/2000: elapsed=2s 
+Batch 1601-1650/2000: elapsed=2s 
+Batch 1651-1700/2000: elapsed=1.7s 
+Batch 1701-1750/2000: elapsed=1.9s 
+Batch 1751-1800/2000: elapsed=2s 
+Batch 1801-1850/2000: elapsed=1.8s 
+Batch 1851-1900/2000: elapsed=2s 
+Batch 1901-1950/2000: elapsed=1.8s 
+Batch 1951-2000/2000: elapsed=2.2s 
+=== DONE === 
+=== TWFE POWER SIM === 
+SCRIPT: R 
+WD: /scratch/gpfs/DESMOND/ben/eviction_gambling 
+R: R version 4.4.2 (2024-10-31) 
+DATA_FILE: combined_monthly_panel.csv 
+TREAT_FILE: state_month_panel_with_treatment.csv 
+OUT_DIR: twfe_power_out_no_maine_2024_with_covid 
+OUTCOME: log1p_filings_count  RATE_EPS=0.01 
+N_SIMS: 2000  BATCH_SIZE=50  ALPHA=0.05  SEED=123 
+EFFECT_PCTS: 0, 0.06, 0.07, 0.08, 0.09, 0.1 
+N_WORKERS: 20  SLURM_CPUS_PER_TASK= 
+ERR_MODE: iid_month (rho=estimate, clip=0.98) MIN_POOL=10 
+EXCLUDE (resid pool only): none 
+DROP (analysis panel): none 
+FILTERS: EXCLUDE_STATES=ME  MAX_DATE=2024-12-31 
+====================== 
+Excluded states: ME (38 -> 37) 
+MAX_DATE filter: 2024-12-31 (3625 -> 3397 rows) 
+Panel: states=37 (switchers=23, never=14); months=156; rows=3397 
+Fitting FE on untreated observations: y ~ 1 | id + t 
+WARNING: non-finite yhat after FE prediction; dropping those rows. 
+Residual pool: kept=2263/2263 untreated obs; ERR_MODE=iid_month 
+Parallel: starting PSOCK cluster with 20 workers 
+=== Effect 0 (log=0) === 
+Batch 1-50/2000: elapsed=2.6s 
+Batch 51-100/2000: elapsed=1.9s 
+Batch 101-150/2000: elapsed=1.9s 
+Batch 151-200/2000: elapsed=1.9s 
+Batch 201-250/2000: elapsed=1.8s 
+Batch 251-300/2000: elapsed=2s 
+Batch 301-350/2000: elapsed=2s 
+Batch 351-400/2000: elapsed=2.4s 
+Batch 401-450/2000: elapsed=1.9s 
+Batch 451-500/2000: elapsed=1.8s 
+Batch 501-550/2000: elapsed=2s 
+Batch 551-600/2000: elapsed=1.8s 
+Batch 601-650/2000: elapsed=1.9s 
+Batch 651-700/2000: elapsed=1.7s 
+Batch 701-750/2000: elapsed=1.9s 
+Batch 751-800/2000: elapsed=1.8s 
+Batch 801-850/2000: elapsed=1.9s 
+Batch 851-900/2000: elapsed=2.1s 
+Batch 901-950/2000: elapsed=2s 
+Batch 951-1000/2000: elapsed=1.9s 
+Batch 1001-1050/2000: elapsed=2s 
+Batch 1051-1100/2000: elapsed=2s 
+Batch 1101-1150/2000: elapsed=1.9s 
+Batch 1151-1200/2000: elapsed=1.9s 
+Batch 1201-1250/2000: elapsed=2.1s 
+Batch 1251-1300/2000: elapsed=2.1s 
+Batch 1301-1350/2000: elapsed=1.9s 
+Batch 1351-1400/2000: elapsed=1.8s 
+Batch 1401-1450/2000: elapsed=1.8s 
+Batch 1451-1500/2000: elapsed=1.8s 
+Batch 1501-1550/2000: elapsed=1.8s 
+Batch 1551-1600/2000: elapsed=1.9s 
+Batch 1601-1650/2000: elapsed=1.8s 
+Batch 1651-1700/2000: elapsed=2s 
+Batch 1701-1750/2000: elapsed=2.7s 
+Batch 1751-1800/2000: elapsed=2.6s 
+Batch 1801-1850/2000: elapsed=1.9s 
+Batch 1851-1900/2000: elapsed=1.9s 
+Batch 1901-1950/2000: elapsed=2.3s 
+Batch 1951-2000/2000: elapsed=1.9s 
+=== Effect 0.06 (log=0.05827) === 
+Batch 1-50/2000: elapsed=2.1s 
+Batch 51-100/2000: elapsed=1.9s 
+Batch 101-150/2000: elapsed=1.9s 
+Batch 151-200/2000: elapsed=2s 
+Batch 201-250/2000: elapsed=1.8s 
+Batch 251-300/2000: elapsed=1.9s 
+Batch 301-350/2000: elapsed=1.9s 
+Batch 351-400/2000: elapsed=2.2s 
+Batch 401-450/2000: elapsed=2.2s 
+Batch 451-500/2000: elapsed=1.8s 
+Batch 501-550/2000: elapsed=1.8s 
+Batch 551-600/2000: elapsed=1.8s 
+Batch 601-650/2000: elapsed=2.2s 
+Batch 651-700/2000: elapsed=2.3s 
+Batch 701-750/2000: elapsed=1.8s 
+Batch 751-800/2000: elapsed=1.8s 
+Batch 801-850/2000: elapsed=2s 
+Batch 851-900/2000: elapsed=2.1s 
+Batch 901-950/2000: elapsed=2.1s 
+Batch 951-1000/2000: elapsed=1.9s 
+Batch 1001-1050/2000: elapsed=2.1s 
+Batch 1051-1100/2000: elapsed=1.8s 
+Batch 1101-1150/2000: elapsed=1.8s 
+Batch 1151-1200/2000: elapsed=1.9s 
+Batch 1201-1250/2000: elapsed=1.8s 
+Batch 1251-1300/2000: elapsed=2s 
+Batch 1301-1350/2000: elapsed=1.9s 
+Batch 1351-1400/2000: elapsed=1.9s 
+Batch 1401-1450/2000: elapsed=1.8s 
+Batch 1451-1500/2000: elapsed=1.8s 
+Batch 1501-1550/2000: elapsed=1.8s 
+Batch 1551-1600/2000: elapsed=2.1s 
+Batch 1601-1650/2000: elapsed=2s 
+Batch 1651-1700/2000: elapsed=1.9s 
+Batch 1701-1750/2000: elapsed=1.8s 
+Batch 1751-1800/2000: elapsed=1.9s 
+Batch 1801-1850/2000: elapsed=2.1s 
+Batch 1851-1900/2000: elapsed=1.8s 
+Batch 1901-1950/2000: elapsed=1.8s 
+Batch 1951-2000/2000: elapsed=2s 
+=== Effect 0.07 (log=0.06766) === 
+Batch 1-50/2000: elapsed=1.8s 
+Batch 51-100/2000: elapsed=2s 
+Batch 101-150/2000: elapsed=2s 
+Batch 151-200/2000: elapsed=1.8s 
+Batch 201-250/2000: elapsed=1.9s 
+Batch 251-300/2000: elapsed=1.8s 
+Batch 301-350/2000: elapsed=1.8s 
+Batch 351-400/2000: elapsed=2s 
+Batch 401-450/2000: elapsed=1.9s 
+Batch 451-500/2000: elapsed=2s 
+Batch 501-550/2000: elapsed=2s 
+Batch 551-600/2000: elapsed=1.9s 
+Batch 601-650/2000: elapsed=2.1s 
+Batch 651-700/2000: elapsed=2s 
+Batch 701-750/2000: elapsed=2s 
+Batch 751-800/2000: elapsed=1.8s 
+Batch 801-850/2000: elapsed=2s 
+Batch 851-900/2000: elapsed=1.9s 
+Batch 901-950/2000: elapsed=1.8s 
+Batch 951-1000/2000: elapsed=1.8s 
+Batch 1001-1050/2000: elapsed=1.9s 
+Batch 1051-1100/2000: elapsed=1.9s 
+Batch 1101-1150/2000: elapsed=2.3s 
+Batch 1151-1200/2000: elapsed=2s 
+Batch 1201-1250/2000: elapsed=1.9s 
+Batch 1251-1300/2000: elapsed=2s 
+Batch 1301-1350/2000: elapsed=2s 
+Batch 1351-1400/2000: elapsed=1.8s 
+Batch 1401-1450/2000: elapsed=1.9s 
+Batch 1451-1500/2000: elapsed=1.8s 
+Batch 1501-1550/2000: elapsed=2.8s 
+Batch 1551-1600/2000: elapsed=2.5s 
+Batch 1601-1650/2000: elapsed=2.1s 
+Batch 1651-1700/2000: elapsed=2.1s 
+Batch 1701-1750/2000: elapsed=1.6s 
+Batch 1751-1800/2000: elapsed=1.8s 
+Batch 1801-1850/2000: elapsed=1.9s 
+Batch 1851-1900/2000: elapsed=1.9s 
+Batch 1901-1950/2000: elapsed=2.2s 
+Batch 1951-2000/2000: elapsed=1.8s 
+=== Effect 0.08 (log=0.07696) === 
+Batch 1-50/2000: elapsed=1.9s 
+Batch 51-100/2000: elapsed=1.9s 
+Batch 101-150/2000: elapsed=1.8s 
+Batch 151-200/2000: elapsed=2.2s 
+Batch 201-250/2000: elapsed=1.8s 
+Batch 251-300/2000: elapsed=1.7s 
+Batch 301-350/2000: elapsed=2s 
+Batch 351-400/2000: elapsed=1.9s 
+Batch 401-450/2000: elapsed=1.9s 
+Batch 451-500/2000: elapsed=2s 
+Batch 501-550/2000: elapsed=2.4s 
+Batch 551-600/2000: elapsed=1.8s 
+Batch 601-650/2000: elapsed=2s 
+Batch 651-700/2000: elapsed=2.1s 
+Batch 701-750/2000: elapsed=2s 
+Batch 751-800/2000: elapsed=1.8s 
+Batch 801-850/2000: elapsed=1.9s 
+Batch 851-900/2000: elapsed=1.9s 
+Batch 901-950/2000: elapsed=2.2s 
+Batch 951-1000/2000: elapsed=2s 
+Batch 1001-1050/2000: elapsed=1.7s 
+Batch 1051-1100/2000: elapsed=1.9s 
+Batch 1101-1150/2000: elapsed=1.9s 
+Batch 1151-1200/2000: elapsed=2s 
+Batch 1201-1250/2000: elapsed=1.9s 
+Batch 1251-1300/2000: elapsed=1.7s 
+Batch 1301-1350/2000: elapsed=2.3s 
+Batch 1351-1400/2000: elapsed=2.2s 
+Batch 1401-1450/2000: elapsed=1.8s 
+Batch 1451-1500/2000: elapsed=2s 
+Batch 1501-1550/2000: elapsed=2.1s 
+Batch 1551-1600/2000: elapsed=2s 
+Batch 1601-1650/2000: elapsed=2s 
+Batch 1651-1700/2000: elapsed=2s 
+Batch 1701-1750/2000: elapsed=1.8s 
+Batch 1751-1800/2000: elapsed=1.9s 
+Batch 1801-1850/2000: elapsed=1.9s 
+Batch 1851-1900/2000: elapsed=1.9s 
+Batch 1901-1950/2000: elapsed=2s 
+Batch 1951-2000/2000: elapsed=2s 
+=== Effect 0.09 (log=0.08618) === 
+Batch 1-50/2000: elapsed=1.8s 
+Batch 51-100/2000: elapsed=2s 
+Batch 101-150/2000: elapsed=1.8s 
+Batch 151-200/2000: elapsed=1.7s 
+Batch 201-250/2000: elapsed=1.7s 
+Batch 251-300/2000: elapsed=1.7s 
+Batch 301-350/2000: elapsed=2s 
+Batch 351-400/2000: elapsed=1.8s 
+Batch 401-450/2000: elapsed=2.1s 
+Batch 451-500/2000: elapsed=2.2s 
+Batch 501-550/2000: elapsed=2s 
+Batch 551-600/2000: elapsed=1.9s 
+Batch 601-650/2000: elapsed=2.1s 
+Batch 651-700/2000: elapsed=2.1s 
+Batch 701-750/2000: elapsed=1.9s 
+Batch 751-800/2000: elapsed=2.1s 
+Batch 801-850/2000: elapsed=2.1s 
+Batch 851-900/2000: elapsed=1.8s 
+Batch 901-950/2000: elapsed=2.2s 
+Batch 951-1000/2000: elapsed=1.9s 
+Batch 1001-1050/2000: elapsed=2s 
+Batch 1051-1100/2000: elapsed=1.9s 
+Batch 1101-1150/2000: elapsed=1.8s 
+Batch 1151-1200/2000: elapsed=2s 
+Batch 1201-1250/2000: elapsed=1.8s 
+Batch 1251-1300/2000: elapsed=1.9s 
+Batch 1301-1350/2000: elapsed=1.9s 
+Batch 1351-1400/2000: elapsed=2.4s 
+Batch 1401-1450/2000: elapsed=2.7s 
+Batch 1451-1500/2000: elapsed=2.1s 
+Batch 1501-1550/2000: elapsed=1.9s 
+Batch 1551-1600/2000: elapsed=2.1s 
+Batch 1601-1650/2000: elapsed=1.9s 
+Batch 1651-1700/2000: elapsed=1.8s 
+Batch 1701-1750/2000: elapsed=2.2s 
+Batch 1751-1800/2000: elapsed=2s 
+Batch 1801-1850/2000: elapsed=2.2s 
+Batch 1851-1900/2000: elapsed=1.8s 
+Batch 1901-1950/2000: elapsed=2.1s 
+Batch 1951-2000/2000: elapsed=1.7s 
+=== Effect 0.1 (log=0.09531) === 
+Batch 1-50/2000: elapsed=1.7s 
+Batch 51-100/2000: elapsed=1.8s 
+Batch 101-150/2000: elapsed=1.8s 
+Batch 151-200/2000: elapsed=2s 
+Batch 201-250/2000: elapsed=2s 
+Batch 251-300/2000: elapsed=1.8s 
+Batch 301-350/2000: elapsed=2.8s 
+Batch 351-400/2000: elapsed=3.4s 
+Batch 401-450/2000: elapsed=2.4s 
+Batch 451-500/2000: elapsed=2s 
+Batch 501-550/2000: elapsed=2.3s 
+Batch 551-600/2000: elapsed=2.2s 
+Batch 601-650/2000: elapsed=1.9s 
+Batch 651-700/2000: elapsed=1.8s 
+Batch 701-750/2000: elapsed=1.9s 
+Batch 751-800/2000: elapsed=1.9s 
+Batch 801-850/2000: elapsed=2s 
+Batch 851-900/2000: elapsed=1.7s 
+Batch 901-950/2000: elapsed=2s 
+Batch 951-1000/2000: elapsed=1.9s 
+Batch 1001-1050/2000: elapsed=2.1s 
+Batch 1051-1100/2000: elapsed=2.9s 
+Batch 1101-1150/2000: elapsed=2.7s 
+Batch 1151-1200/2000: elapsed=2.5s 
+Batch 1201-1250/2000: elapsed=2s 
+Batch 1251-1300/2000: elapsed=2.2s 
+Batch 1301-1350/2000: elapsed=1.9s 
+Batch 1351-1400/2000: elapsed=1.7s 
+Batch 1401-1450/2000: elapsed=1.9s 
+Batch 1451-1500/2000: elapsed=1.9s 
+Batch 1501-1550/2000: elapsed=1.6s 
+Batch 1551-1600/2000: elapsed=1.9s 
+Batch 1601-1650/2000: elapsed=1.9s 
+Batch 1651-1700/2000: elapsed=2.1s 
+Batch 1701-1750/2000: elapsed=1.9s 
+Batch 1751-1800/2000: elapsed=2.3s 
+Batch 1801-1850/2000: elapsed=2s 
+Batch 1851-1900/2000: elapsed=2s 
+Batch 1901-1950/2000: elapsed=1.8s 
+Batch 1951-2000/2000: elapsed=2.3s 
+=== DONE === 

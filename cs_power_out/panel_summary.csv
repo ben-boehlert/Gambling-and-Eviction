@@ -1,0 +1,2 @@
+n_states,n_switchers,n_never_treated,n_rows,min_month,max_month,n_months,share_untreated_obs
+38,23,15,3721,2012-01-01,2025-11-01,167,0.6753560870733674

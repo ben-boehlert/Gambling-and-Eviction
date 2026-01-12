@@ -1,0 +1,2 @@
+n_states,n_switchers,n_never,n_sims,outcome,did_method,did_control_group,did_bstrap,did_biters,alpha,err_mode,rho_used,share_months_with_any_untreated,type1_at_effect0,fail_rate_effect0,p0_q05,p0_q50,p0_q95,mean_att0,mean_se0
+38,23,15,20,log1p_filings_count,ipw,nevertreated,TRUE,500,0.05,ar1,0.8025419127372326,1,0,0,0.34354512725861647,0.7013268773299771,0.9439619125198351,0.005195483831218465,0.1749322528319487
