@@ -16,6 +16,9 @@ backup_*/
 # Archive directory (old development code - 800MB)
 archive/
 
+# Deprecated directory (old analyses and outputs)
+deprecated/
+
 # Large data files (uncomment if not sharing data publicly)
 # data/raw/*.csv
 # *.csv

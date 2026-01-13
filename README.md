@@ -20,8 +20,8 @@ cd scripts
 
 ```
 analysis/       Main power simulation and analysis scripts
-  ├─ power_simulation_twfe_*.R  ← MAIN FILE (use this)
-  └─ power_simulation_cs_*.R    ← Work-in-progress (CS-DiD, known issues)
+  ├─ power_simulation_twfe_statepanel_staggered_parallel_fixed.R  ← PRIMARY ANALYSIS
+  └─ power_simulation_cs_statepanel_staggered_parallel_merged.R   ← CS-DiD (experimental, SE issues)
 data_prep/      Data merging and preparation
 plots/          Visualization scripts
 utils/          Diagnostic and utility tools

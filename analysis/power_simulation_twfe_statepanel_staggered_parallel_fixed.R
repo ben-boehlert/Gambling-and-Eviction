@@ -132,8 +132,8 @@ ALPHA      <- parse_num(getenv1("ALPHA", "0.05"), 0.05)
 SEED       <- parse_int(getenv1("SEED", "123"), 123L)
 
 BATCH_SIZE <- parse_int(getenv1("BATCH_SIZE", "50"), 50L)
-MIN_POOL   <- parse_int(getenv1("MIN_POOL", "10"), 10L)
-if (!is.finite(MIN_POOL) || MIN_POOL < 2L) MIN_POOL <- 2L
+MIN_STATES_PER_MONTH <- parse_int(getenv1("MIN_STATES_PER_MONTH", "5"), 5L)
+if (!is.finite(MIN_STATES_PER_MONTH) || MIN_STATES_PER_MONTH < 2L) MIN_STATES_PER_MONTH <- 2L
 
 ERR_MODE <- tolower(getenv1("ERR_MODE", "iid_month"))
 if (!ERR_MODE %in% c("iid_month", "ar1")) stop("ERR_MODE must be iid_month or ar1", call. = FALSE)
@@ -185,8 +185,9 @@ log_line(RUN_LOG, glue("OUTCOME: {OUTCOME}  RATE_EPS={RATE_EPS}"))
 log_line(RUN_LOG, glue("N_SIMS: {N_SIMS}  BATCH_SIZE={BATCH_SIZE}  ALPHA={ALPHA}  SEED={SEED}"))
 log_line(RUN_LOG, glue("EFFECT_PCTS: {paste(EFFECT_PCTS, collapse=', ')}"))
 log_line(RUN_LOG, glue("N_WORKERS: {N_WORKERS}  SLURM_CPUS_PER_TASK={getenv1('SLURM_CPUS_PER_TASK','')}"))
-log_line(RUN_LOG, glue("ERR_MODE: {ERR_MODE} (rho={ifelse(is.finite(ERR_AR1_RHO), ERR_AR1_RHO, 'estimate')}, clip={ERR_AR1_CLIP}) MIN_POOL={MIN_POOL}"))
-log_line(RUN_LOG, glue("EXCLUDE (resid pool only): {if (!is.na(EXCLUDE_START) && !is.na(EXCLUDE_END)) glue('[{EXCLUDE_START},{EXCLUDE_END})') else 'none'}"))
+log_line(RUN_LOG, glue("ERR_MODE: {ERR_MODE} (rho={ifelse(is.finite(ERR_AR1_RHO), ERR_AR1_RHO, 'estimate')}, clip={ERR_AR1_CLIP}) MIN_STATES_PER_MONTH={MIN_STATES_PER_MONTH}"))
+exclude_str <- if (!is.na(EXCLUDE_START) && !is.na(EXCLUDE_END)) glue('[{EXCLUDE_START},{EXCLUDE_END})') else 'none'
+log_line(RUN_LOG, glue("EXCLUDE (resid pool only): {exclude_str}"))
 log_line(RUN_LOG, glue("DROP (analysis panel): {if (!is.na(DROP_START) && !is.na(DROP_END)) glue('[{DROP_START},{DROP_END})') else 'none'}"))
 log_line(RUN_LOG, glue("FILTERS: EXCLUDE_STATES={ifelse(nzchar(EXCLUDE_STATES), EXCLUDE_STATES, 'none')}  MAX_DATE={ifelse(is.finite(MAX_DATE), as.character(MAX_DATE), 'none')}"))
 log_line(RUN_LOG, "======================")
@@ -288,13 +289,18 @@ panel <- panel_raw %>%
   filter(state_abb %in% unique(treat$state_abb))
 
 # Apply optional state and date filters
+n_rows_initial <- nrow(panel)
+log_line(RUN_LOG, glue("Initial panel rows: {n_rows_initial}"))
+
 if (length(EXCLUDE_STATES_VEC) > 0) {
   n_before <- n_distinct(panel$state_abb)
+  n_rows_before <- nrow(panel)
   panel <- panel %>% filter(!state_abb %in% EXCLUDE_STATES_VEC)
   n_after <- n_distinct(panel$state_abb)
+  n_rows_after <- nrow(panel)
   cat(glue("Excluded {length(EXCLUDE_STATES_VEC)} state(s): {paste(EXCLUDE_STATES_VEC, collapse=', ')}"), "\n")
-  cat(glue("States: {n_before} -> {n_after}"), "\n")
-  log_line(RUN_LOG, glue("Excluded states: {paste(EXCLUDE_STATES_VEC, collapse=', ')} ({n_before} -> {n_after})"))
+  cat(glue("States: {n_before} -> {n_after}; rows: {n_rows_before} -> {n_rows_after}"), "\n")
+  log_line(RUN_LOG, glue("Excluded states: {paste(EXCLUDE_STATES_VEC, collapse=', ')} ({n_before} -> {n_after} states; {n_rows_before} -> {n_rows_after} rows)"))
 }
 
 if (is.finite(MAX_DATE)) {
@@ -359,7 +365,8 @@ panel_summary <- tibble(
   share_untreated_obs = mean(panel$untreated_obs, na.rm = TRUE)
 )
 safe_write_csv(panel_summary, file.path(OUT_DIR, "panel_summary.csv"))
-log_line(RUN_LOG, glue("Panel: states={n_states} (switchers={n_switch}, never={n_never}); months={panel_summary$n_months}; rows={nrow(panel)}"))
+n_rows_before_fe_fit <- nrow(panel)
+log_line(RUN_LOG, glue("Panel before FE fit: states={n_states} (switchers={n_switch}, never={n_never}); months={panel_summary$n_months}; rows={n_rows_before_fe_fit}"))
 
 # ----------------------------- outcome ----------------------------------------
 
@@ -391,24 +398,49 @@ log_line(RUN_LOG, "Fitting FE on untreated observations: y ~ 1 | id + t")
 fe_fit <- fixest::feols(y ~ 1 | id + t, data = base_fe, warn = FALSE, notes = FALSE)
 
 panel$yhat <- as.numeric(predict(fe_fit, newdata = panel))
+n_rows_before_yhat_drop <- nrow(panel)
 if (any(!is.finite(panel$yhat))) {
-  log_line(RUN_LOG, "WARNING: non-finite yhat after FE prediction; dropping those rows.")
+  n_non_finite <- sum(!is.finite(panel$yhat))
+  log_line(RUN_LOG, glue("WARNING: {n_non_finite} non-finite yhat rows after FE prediction; dropping them."))
   panel <- panel[is.finite(panel$yhat), , drop = FALSE]
+  n_rows_after_yhat_drop <- nrow(panel)
+  log_line(RUN_LOG, glue("Rows after dropping non-finite yhat: {n_rows_before_yhat_drop} -> {n_rows_after_yhat_drop}"))
   base_fe <- panel %>% filter(untreated_obs, is.finite(y))
   fe_fit <- fixest::feols(y ~ 1 | id + t, data = base_fe, warn = FALSE, notes = FALSE)
   panel$yhat <- as.numeric(predict(fe_fit, newdata = panel))
+} else {
+  log_line(RUN_LOG, glue("All yhat values finite after FE prediction (no rows dropped)."))
 }
+
+n_rows_final_analysis <- nrow(panel)
+log_line(RUN_LOG, glue("Final analysis panel N: {n_rows_final_analysis}"))
 
 # residuals on FE fit sample
 base_fe$ehat <- as.numeric(residuals(fe_fit))
 
-MIN_STATES_PER_MONTH <- parse_int(getenv1("MIN_STATES_PER_MONTH", "15"), 15L)
+# Build residual pool with exclusion window and min states per month threshold
+n_untreated_before_exclude <- nrow(base_fe)
+exclude_active <- !is.na(EXCLUDE_START) && !is.na(EXCLUDE_END)
 
-pool_dat <- base_fe %>%
-  filter(!in_window(month_date, EXCLUDE_START, EXCLUDE_END)) %>%
-  group_by(month_date) %>%
-  filter(n_distinct(state_abb) >= MIN_STATES_PER_MONTH) %>%
-  ungroup()
+pool_dat_before_month_filter <- if (exclude_active) {
+  base_fe %>% filter(!in_window(month_date, EXCLUDE_START, EXCLUDE_END))
+} else {
+  base_fe
+}
+n_untreated_after_exclude <- nrow(pool_dat_before_month_filter)
+
+# Count states per month and filter months with insufficient untreated states
+month_state_counts <- pool_dat_before_month_filter %>%
+  group_by(month_date, t) %>%
+  summarise(n_states = n_distinct(state_abb), .groups = "drop")
+
+months_retained <- month_state_counts %>%
+  filter(n_states >= MIN_STATES_PER_MONTH)
+n_months_retained <- nrow(months_retained)
+n_months_fallback_global <- nrow(month_state_counts) - n_months_retained
+
+pool_dat <- pool_dat_before_month_filter %>%
+  filter(t %in% months_retained$t)
 
 # pools by t
 resid_pool_by_t <- split(pool_dat$ehat, pool_dat$t)
@@ -416,7 +448,18 @@ global_pool <- pool_dat$ehat
 global_pool <- global_pool[is.finite(global_pool)]
 if (length(global_pool) < 20) stop("Too few finite residuals in global pool.", call. = FALSE)
 
-log_line(RUN_LOG, glue("Residual pool: kept={nrow(pool_dat)}/{nrow(base_fe)} untreated obs; ERR_MODE={ERR_MODE}"))
+log_line(RUN_LOG, glue("Residual pool construction:"))
+log_line(RUN_LOG, glue("  Untreated obs before exclusion window: {n_untreated_before_exclude}"))
+if (exclude_active) {
+  log_line(RUN_LOG, glue("  Exclusion window [{EXCLUDE_START}, {EXCLUDE_END}): dropped {n_untreated_before_exclude - n_untreated_after_exclude} obs"))
+  log_line(RUN_LOG, glue("  Untreated obs after exclusion: {n_untreated_after_exclude}"))
+} else {
+  log_line(RUN_LOG, glue("  No exclusion window applied"))
+}
+log_line(RUN_LOG, glue("  MIN_STATES_PER_MONTH threshold: {MIN_STATES_PER_MONTH}"))
+log_line(RUN_LOG, glue("  Months with >={MIN_STATES_PER_MONTH} untreated states (month-specific pool): {n_months_retained}"))
+log_line(RUN_LOG, glue("  Months with <{MIN_STATES_PER_MONTH} untreated states (fallback to global pool): {n_months_fallback_global}"))
+log_line(RUN_LOG, glue("  Final residual pool size: {nrow(pool_dat)} obs across {n_months_retained} months; ERR_MODE={ERR_MODE}"))
 
 # AR(1) calibration objects
 rho_used <- NA_real_
@@ -437,7 +480,7 @@ if (ERR_MODE == "ar1") {
   if (!is.finite(sd_global) || sd_global <= 0) sd_global <- 1
 
   sd_by_t <- sd_by_t %>%
-    mutate(sd_e = if_else(is.finite(sd_e) & sd_e > 1e-8 & n >= MIN_POOL, sd_e, sd_global))
+    mutate(sd_e = if_else(is.finite(sd_e) & sd_e > 1e-8 & n >= MIN_STATES_PER_MONTH, sd_e, sd_global))
 
   sd_map <- setNames(sd_by_t$sd_e, as.character(sd_by_t$t))
 
@@ -477,16 +520,16 @@ if (ERR_MODE == "ar1") {
 
 # ----------------------------- error drawing ----------------------------------
 
-draw_errors_iid_month <- function(tt, resid_pool_by_t, global_pool, min_pool) {
+draw_errors_iid_month <- function(tt, resid_pool_by_t, global_pool, min_states_per_month) {
   vapply(tt, function(tt_i) {
     pool <- resid_pool_by_t[[as.character(tt_i)]]
-    if (is.null(pool) || length(pool) < min_pool) pool <- global_pool
+    if (is.null(pool) || length(pool) < min_states_per_month) pool <- global_pool
     sample(pool, size = 1L, replace = TRUE)
   }, FUN.VALUE = 0.0)
 }
 
 draw_errors_ar1 <- function(panel_t, idx_by_id, std_pool_by_t, std_global_pool,
-                            sd_row, rho_used, sigma_u, min_pool) {
+                            sd_row, rho_used, sigma_u, min_states_per_month) {
   e_draw <- numeric(length(panel_t))
   for (idx in idx_by_id) {
     m <- length(idx)
@@ -494,7 +537,7 @@ draw_errors_ar1 <- function(panel_t, idx_by_id, std_pool_by_t, std_global_pool,
 
     z_innov <- vapply(panel_t[idx], function(tt_i) {
       pool <- std_pool_by_t[[as.character(tt_i)]]
-      if (is.null(pool) || length(pool) < min_pool) pool <- std_global_pool
+      if (is.null(pool) || length(pool) < min_states_per_month) pool <- std_global_pool
       sample(pool, size = 1L, replace = TRUE)
     }, FUN.VALUE = 0.0)
 
@@ -521,9 +564,9 @@ one_sim_twfe <- function(seed, effect_log) {
   set.seed(seed)
 
   e_draw <- if (ERR_MODE == "iid_month") {
-    draw_errors_iid_month(panel$t, resid_pool_by_t, global_pool, MIN_POOL)
+    draw_errors_iid_month(panel$t, resid_pool_by_t, global_pool, MIN_STATES_PER_MONTH)
   } else {
-    draw_errors_ar1(panel$t, idx_by_id, std_pool_by_t, std_global_pool, sd_row, rho_used, sigma_u, MIN_POOL)
+    draw_errors_ar1(panel$t, idx_by_id, std_pool_by_t, std_global_pool, sd_row, rho_used, sigma_u, MIN_STATES_PER_MONTH)
   }
 
   y_sim <- panel$yhat + e_draw + ifelse(panel$post_treat, effect_log, 0.0)
@@ -590,7 +633,7 @@ if (use_parallel) {
   parallel::clusterExport(
     cl,
     varlist = c(
-      "panel","resid_pool_by_t","global_pool","MIN_POOL",
+      "panel","resid_pool_by_t","global_pool","MIN_STATES_PER_MONTH",
       "ERR_MODE","idx_by_id","std_pool_by_t","std_global_pool","sd_row","rho_used","sigma_u",
       "draw_errors_iid_month","draw_errors_ar1","one_sim_twfe","one_sim_twfe_worker"
     ),
@@ -730,7 +773,7 @@ diag <- tibble(
   alpha = ALPHA,
   err_mode = ERR_MODE,
   rho_used = rho_used,
-  min_pool = MIN_POOL,
+  min_states_per_month = MIN_STATES_PER_MONTH,
   exclude_start = ifelse(is.na(EXCLUDE_START), NA_character_, as.character(EXCLUDE_START)),
   exclude_end   = ifelse(is.na(EXCLUDE_END),   NA_character_, as.character(EXCLUDE_END)),
   drop_start    = ifelse(is.na(DROP_START),    NA_character_, as.character(DROP_START)),
