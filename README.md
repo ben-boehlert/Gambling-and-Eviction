@@ -11,6 +11,7 @@ cd scripts
 
 ## Documentation
 
+- **[Documentation Index](docs/README.md)** - Complete documentation navigation
 - **[Complete Replication Guide](docs/README_REPLICATION.md)** - Full instructions for reproducing all analyses
 - **[Quick Start Guide](docs/QUICK_START_GUIDE.md)** - Get started quickly
 - **[Power Analysis Summary](docs/POWER_ANALYSIS_SUMMARY.md)** - Overview of power simulation results
@@ -19,17 +20,29 @@ cd scripts
 ## Repository Structure
 
 ```
-analysis/       Main power simulation and analysis scripts
-  ├─ power_simulation_twfe_statepanel_staggered_parallel_fixed.R  ← PRIMARY ANALYSIS
-  └─ power_simulation_cs_statepanel_staggered_parallel_merged.R   ← CS-DiD (experimental, SE issues)
-data_prep/      Data merging and preparation
-plots/          Visualization scripts
+analysis/       Main power simulation and analysis scripts (see analysis/README.md)
+  ├─ main/          Primary analyses (TWFE and CS-DiD power simulations)
+  ├─ pretrends/     Pre-trends diagnostics and evaluation
+  ├─ data_prep/     Data preparation scripts
+  ├─ visualization/ Plotting scripts
+  ├─ diagnostics/   Debugging and diagnostic tools
+  └─ exploratory/   Exploratory analyses
+data_prep/      Original data merging and preparation scripts
+plots/          Visualization utility scripts
 utils/          Diagnostic and utility tools
 scripts/        Shell scripts for replication (START HERE)
 data/           Data files (raw inputs and outputs)
-docs/           Documentation
+docs/           Documentation (see docs/README.md)
+  └─ methodology/ Detailed methodology documentation
 figures/        Generated visualizations
+patches/        CS-DiD package bug fixes (see patches/README.md)
 ```
+
+## Recent Updates
+
+- **CS-DiD Issues Documented**: Critical bugs discovered in the `did` package during development. See [patches/](patches/) for fixes and [docs/methodology/CS_DID_PVALUE_FIX.md](docs/methodology/CS_DID_PVALUE_FIX.md) for detailed analysis
+- **Modern Pre-trends Methods**: Implemented Roth (2022) and Rambachan & Roth (2023) diagnostics for robust pre-trends evaluation
+- **Activity-Based Treatment**: Alternative treatment timing using gambling handle data shows 66% improvement in pre-trends F-statistic (see [docs/methodology/ACTIVITY_BASED_TREATMENT.md](docs/methodology/ACTIVITY_BASED_TREATMENT.md))
 
 ## Main Results
 
@@ -48,6 +61,14 @@ Install dependencies:
 ```R
 source("INSTALL_PACKAGES.R")
 ```
+
+## Research Archive
+
+The [archive/](archive/) directory (excluded from GitHub via .gitignore) contains diagnostic notes and research process documentation showing how methodological issues were identified and resolved. This material demonstrates the rigorous investigation conducted during development but is not required for replication.
+
+## Contributing
+
+This is a research replication package. For questions about methodology or data, please open an issue.
 
 ## Citation
 

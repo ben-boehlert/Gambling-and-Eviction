@@ -1,0 +1,38 @@
+--- a/analysis/power_simulation_cs_reg_statepanel_staggered_parallel_REVISED.R
++++ b/analysis/power_simulation_cs_reg_statepanel_staggered_parallel_REVISED.R
+@@ -6,7 +6,7 @@
+ # Parallelized version with staggered treatment adoption
+ #
+ # CHANGES IN THIS VERSION:
+-# [X] Use est_method="reg" (avoids fastglm IPW bug)
++# [X] Use est_method="ipw" (avoids segfault with unbalanced panels)
+ # [X] Compute p-values manually using 2*pnorm(-abs(z))
+ # [X] Add null diagnostics (first 200 p-values)
+ # [X] Report SE inflation metrics
+@@ -171,7 +171,7 @@ OUT_DIR <- getenv1("OUT_DIR", "/tmp/cs_test_out")
+ NULL_DIAGNOSTICS_N <- parse_int(getenv1("NULL_DIAGNOSTICS_N", "200"), 200)
+
+ # DID options - CRITICAL: Use est_method="reg" to avoid fastglm bug
+-# DID options - CRITICAL: Use est_method="reg" to avoid fastglm bug
++# DID options - CRITICAL: Use est_method="ipw" to avoid segfault with unbalanced panels
+ did_control_group <- getenv1("DID_CONTROL_GROUP", "notyettreated")
+ did_allow_unbalanced <- parse_bool(getenv1("DID_ALLOW_UNBALANCED_PANEL", "TRUE"), TRUE)
+ did_bstrap <- parse_bool(getenv1("DID_BSTRAP", "TRUE"), TRUE)
+@@ -204,7 +204,7 @@ log_line(RUN_LOG, "========================================")
+ log_line(RUN_LOG, glue("n_sims: {n_sims}"))
+ log_line(RUN_LOG, glue("effect_pct: {effect_pct}"))
+ log_line(RUN_LOG, glue("alpha: {alpha}"))
+-log_line(RUN_LOG, glue("DID: est_method=reg, control_group={did_control_group}, bstrap={did_bstrap}, biters={did_biters}, cband={did_cband}, allow_unbalanced={did_allow_unbalanced}"))
++log_line(RUN_LOG, glue("DID: est_method=ipw, control_group={did_control_group}, bstrap={did_bstrap}, biters={did_biters}, cband={did_cband}, allow_unbalanced={did_allow_unbalanced}"))
+ log_line(RUN_LOG, glue("AGG_TYPE: {AGG_TYPE}"))
+ log_line(RUN_LOG, glue("Using historical FE residuals from: {RESID_RDS}"))
+ if (residual_resampling_mode == "month") {
+@@ -635,7 +635,7 @@ worker_run_one_sim <- function(sim_idx, seed) {
+       panel = TRUE,
+       control_group = did_control_group,
+       allow_unbalanced_panel = did_allow_unbalanced,
+-      est_method = "reg",
++      est_method = "ipw",
+       faster_mode = FALSE,
+       bstrap = did_bstrap,
+       biters = did_biters,

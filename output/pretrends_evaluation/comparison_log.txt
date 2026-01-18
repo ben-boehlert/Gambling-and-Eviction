@@ -1,0 +1,121 @@
+[2026-01-18 10:15:34] [INFO] ================================================================================ 
+[2026-01-18 10:15:34] [INFO] COMPARING PRE-TREND VIOLATIONS TO TREATMENT EFFECTS 
+[2026-01-18 10:15:34] [INFO] ================================================================================ 
+[2026-01-18 10:15:34] [INFO] Specification: baseline 
+[2026-01-18 10:15:34] [INFO] Input directory: /Users/bb1806/Documents/GitHub/Gambling-and-Eviction/output/pretrends_evaluation/baseline 
+[2026-01-18 10:15:34] [INFO] Output directory: /Users/bb1806/Documents/GitHub/Gambling-and-Eviction/output/pretrends_evaluation 
+[2026-01-18 10:15:34] [INFO] 
+--- Loading Data --- 
+[2026-01-18 10:15:35] [INFO] Loaded 36 event study coefficients 
+[2026-01-18 10:15:35] [INFO] Loaded HonestDiD results for M=0, 0.5, 1, 1.5, 2 
+[2026-01-18 10:15:35] [INFO] MDE (80% power): 0.0303 
+[2026-01-18 10:15:35] [INFO] δ* (equivalence test): NA 
+[2026-01-18 10:15:35] [INFO] Pre-trends F-test p-value: 1e-04 
+[2026-01-18 10:15:35] [INFO] 
+--- Separating Pre and Post Periods --- 
+[2026-01-18 10:15:35] [INFO] Pre-treatment periods: 11 (e = -12 to -2) 
+[2026-01-18 10:15:35] [INFO] Post-treatment periods: 25 (e = 0 to 24) 
+[2026-01-18 10:15:35] [INFO] 
+--- Characterizing Pre-trend Violations --- 
+[2026-01-18 10:15:35] [INFO] Max absolute pre-trend: 0.1946 at e=-6 
+[2026-01-18 10:15:35] [INFO] Mean absolute pre-trend: 0.1241 
+[2026-01-18 10:15:35] [INFO] RMS of pre-trends: 0.131 
+[2026-01-18 10:15:35] [INFO] SD of pre-trends: 0.0884 
+[2026-01-18 10:15:35] [INFO] Linear trend slope: 0.015005 (SE=0.007349) 
+[2026-01-18 10:15:35] [INFO] Linear trend t-stat: 2.042, p-value: 0.0716 
+[2026-01-18 10:15:35] [INFO] Linear trend R²: 0.3166 
+[2026-01-18 10:15:35] [INFO] Quadratic coefficient: -0.0064, p-value: 0.0044 
+[2026-01-18 10:15:35] [INFO] Quadratic model R²: 0.7658 
+[2026-01-18 10:15:35] [INFO] Monotonicity: 6 increases, 4 decreases, monotonic=FALSE 
+[2026-01-18 10:15:35] [INFO] Durbin-Watson statistic: 0.992, p-value: 0.009 
+[2026-01-18 10:15:35] [INFO] Significant pre-trends (p<0.05): 0 out of 11 
+[2026-01-18 10:15:35] [INFO] 
+--- Characterizing Treatment Effects --- 
+[2026-01-18 10:15:35] [INFO] Mean treatment effect: 0.1592 
+[2026-01-18 10:15:35] [INFO] Median treatment effect: 0.1337 
+[2026-01-18 10:15:35] [INFO] Max absolute treatment effect: 0.363 at e=22 
+[2026-01-18 10:15:35] [INFO] RMS of treatment effects: 0.1917 
+[2026-01-18 10:15:35] [INFO] Significant post-treatment effects (p<0.05): 10 out of 25 
+[2026-01-18 10:15:35] [INFO] Average p-value of treatment effects: 0.2731 
+[2026-01-18 10:15:35] [INFO] Dynamic pattern: 
+[2026-01-18 10:15:35] [INFO]   Early (e=0-6): mean=0.1058, 1/7 sig 
+[2026-01-18 10:15:35] [INFO]   Mid (e=7-12): mean=0.0772, 1/6 sig 
+[2026-01-18 10:15:35] [INFO]   Late (e=13+): mean=0.2314, 8/12 sig 
+[2026-01-18 10:15:35] [INFO] 
+--- Direct Comparison: Pre-trends vs Effects --- 
+[2026-01-18 10:15:35] [INFO] Ratio (mean effect / max pretrend): 0.84 
+[2026-01-18 10:15:35] [INFO] Ratio (max effect / max pretrend): 1.87 
+[2026-01-18 10:15:35] [INFO] Ratio (RMS effect / RMS pretrend): 1.46 
+[2026-01-18 10:15:35] [INFO] Interpretation: CONCERNING - Effects not larger than pre-trends 
+[2026-01-18 10:15:35] [INFO] Signal-to-noise ratio: 1.8 
+[2026-01-18 10:15:35] [INFO] Interpretation: Mean effect is 1.8 SDs of pre-trend noise 
+[2026-01-18 10:15:35] [INFO] Effect-to-MDE ratio: 5.25 
+[2026-01-18 10:15:35] [INFO]   → Effect larger than MDE: adequately powered 
+[2026-01-18 10:15:35] [INFO] 
+--- HonestDiD Sensitivity Analysis --- 
+[2026-01-18 10:15:35] [INFO] Breakdown M value: 0 
+[2026-01-18 10:15:35] [INFO]   → Results lose significance at M=0 
+[2026-01-18 10:15:35] [INFO] 
+Results by M value: 
+[2026-01-18 10:15:35] [INFO]   M=0: [-0.107, 0.352], width=0.459, sig=NO 
+[2026-01-18 10:15:35] [INFO]   M=0.5: [-0.581, 0.827], width=1.408, sig=NO 
+[2026-01-18 10:15:35] [INFO]   M=1: [-1.075, 1.316], width=2.391, sig=NO 
+[2026-01-18 10:15:35] [INFO]   M=1.5: [-1.573, 1.819], width=3.392, sig=NO 
+[2026-01-18 10:15:35] [INFO]   M=2: [-2.074, 2.314], width=4.388, sig=NO 
+[2026-01-18 10:15:35] [INFO] 
+Precision degradation: 
+[2026-01-18 10:15:35] [INFO]   M=0: width is 0% larger than M=0 
+[2026-01-18 10:15:35] [INFO]   M=0.5: width is 206.8% larger than M=0 
+[2026-01-18 10:15:35] [INFO]   M=1: width is 421% larger than M=0 
+[2026-01-18 10:15:35] [INFO]   M=1.5: width is 638.9% larger than M=0 
+[2026-01-18 10:15:35] [INFO]   M=2: width is 855.9% larger than M=0 
+[2026-01-18 10:15:35] [INFO] 
+--- Pattern Investigation --- 
+[2026-01-18 10:15:35] [INFO] Pre-trend slope: 0.015005 
+[2026-01-18 10:15:35] [INFO] Post-treatment slope: 0.010523 
+[2026-01-18 10:15:35] [INFO] Slope ratio (post/pre): 0.7 
+[2026-01-18 10:15:35] [INFO]   → CONCERNING: Slopes are similar (potential extrapolation) 
+[2026-01-18 10:15:35] [INFO] Extrapolation test: 
+[2026-01-18 10:15:35] [INFO]   Correlation (actual vs extrapolated): 0.711 
+[2026-01-18 10:15:35] [INFO]   Mean extrapolation error: -0.2262 
+[2026-01-18 10:15:35] [INFO]   RMS extrapolation error: 0.2405 
+[2026-01-18 10:15:35] [INFO]   → CONCERNING: High correlation suggests extrapolation 
+[2026-01-18 10:15:35] [INFO] Placebo test (early pre-trends predicting late pre-trends): 
+[2026-01-18 10:15:35] [INFO]   Correlation: -0.434 
+[2026-01-18 10:15:35] [INFO]   → REASSURING: Pre-trends not highly predictable (noise) 
+[2026-01-18 10:15:35] [INFO] 
+--- Creating Output Tables --- 
+[2026-01-18 10:15:35] [INFO] Saved: /Users/bb1806/Documents/GitHub/Gambling-and-Eviction/output/pretrends_evaluation/comparison_table.csv 
+[2026-01-18 10:15:35] [INFO] Saved: /Users/bb1806/Documents/GitHub/Gambling-and-Eviction/output/pretrends_evaluation/honestdid_detailed.csv 
+[2026-01-18 10:15:35] [INFO] Saved: /Users/bb1806/Documents/GitHub/Gambling-and-Eviction/output/pretrends_evaluation/pretrend_pattern_analysis.csv 
+[2026-01-18 10:15:35] [INFO] 
+================================================================================ 
+[2026-01-18 10:15:35] [INFO] SUMMARY 
+[2026-01-18 10:15:35] [INFO] ================================================================================ 
+[2026-01-18 10:15:35] [INFO] 
+1. PRE-TREND VIOLATIONS: 
+[2026-01-18 10:15:35] [INFO]    - Max: 0.1946 at e=-6 
+[2026-01-18 10:15:35] [INFO]    - RMS: 0.131 
+[2026-01-18 10:15:35] [INFO]    - Linear slope: 0.015005 (p=0.0716) 
+[2026-01-18 10:15:35] [INFO] 
+2. TREATMENT EFFECTS: 
+[2026-01-18 10:15:35] [INFO]    - Mean: 0.1592 
+[2026-01-18 10:15:35] [INFO]    - Max: 0.363 at e=22 
+[2026-01-18 10:15:35] [INFO]    - Significant periods: 10/25 
+[2026-01-18 10:15:35] [INFO] 
+3. COMPARISON: 
+[2026-01-18 10:15:35] [INFO]    - Effect/Pretrend ratio: 0.84x 
+[2026-01-18 10:15:35] [INFO]    - Signal-to-noise: 1.8 
+[2026-01-18 10:15:35] [INFO]    - Assessment: WEAK 
+[2026-01-18 10:15:35] [INFO] 
+4. HONESTDID ROBUSTNESS: 
+[2026-01-18 10:15:35] [INFO]    - Results robust up to M=0 
+[2026-01-18 10:15:35] [INFO]    - M=1 significant: NO 
+[2026-01-18 10:15:35] [INFO] 
+5. OVERALL CONCLUSION: 
+[2026-01-18 10:15:35] [INFO]    ✗ Treatment effects show WEAK robustness 
+[2026-01-18 10:15:35] [INFO]      Warning: Significant sensitivity to pre-trend violations 
+[2026-01-18 10:15:35] [INFO] 
+================================================================================ 
+[2026-01-18 10:15:35] [INFO] Analysis complete. Output files created in: /Users/bb1806/Documents/GitHub/Gambling-and-Eviction/output/pretrends_evaluation 
+[2026-01-18 10:15:35] [INFO] ================================================================================ 

@@ -1,0 +1,183 @@
+================================================================================ 
+PRE-TRENDS EVALUATION: MODERN METHODS 
+================================================================================ 
+Working directory: /Users/bb1806/Documents/GitHub/Gambling-and-Eviction 
+Data file: data/raw/combined_monthly_panel.csv 
+Gambling file: data/raw/sports_gambling_legalization_dates.csv 
+Output directory: output/pretrends_evaluation 
+Outcome: log1p_filings_count 
+================================================================================ 
+
+--- Loading Data --- 
+Building state panel from county and state observations... 
+  States with county data: 32 
+  States using state-level data: 6 
+  Total states in panel: 38 
+  Date range: 2012-01-01 to 2025-11-01 
+  Total observations: 3721 
+Treated states (online gambling): 16 
+Never-treated states: 22 
+
+================================================================================ 
+RUNNING ANALYSIS FOR ALL SPECIFICATIONS 
+================================================================================ 
+
+============================================================ 
+SPECIFICATION: Baseline 
+============================================================ 
+Description: Full sample excluding Maine, -12 to +24 months 
+Building panel for: Baseline 
+  Excluded states: ME 
+  States: 37 
+  Treated states: 16 
+  Never-treated: 21 
+  Observations: 2524 
+--- TWFE Event Study: Baseline --- 
+  Estimating TWFE model... 
+  Pre-trends F-test: F(11, 2296) = 3.456, p = 1e-04 
+
+--- Power Analysis (Roth 2022) --- 
+  MDE (slope) for 50% power: 0.0193 
+  MDE (slope) for 80% power: 0.0303 
+
+--- HonestDiD Sensitivity Analysis (Rambachan & Roth 2023) --- 
+  Pre-periods: 11, Post-periods: 25 
+  Computed sensitivity for M = 0 
+  Computed sensitivity for M = 0.5 
+  Computed sensitivity for M = 1 
+  Computed sensitivity for M = 1.5 
+  Computed sensitivity for M = 2 
+
+--- Equivalence Testing --- 
+  Cannot rule out large violations (delta* > 0.20) 
+  RMS of pre-trends: 0.131 
+
+--- Callaway-Sant'Anna DiD (2021) --- 
+  DISABLED: CS-DiD causing segfault even with est_method='reg' 
+  Issue: All est_methods (reg/ipw/dr) use fastglm for propensity scores 
+  Root cause: fastglm's colMax_dense() crashes on this data structure 
+  Attempted fix: est_method='reg' still calls fastglm internally 
+  Solution: Either fix data structure or use balanced panel 
+
+============================================================ 
+SPECIFICATION: No COVID 
+============================================================ 
+Description: Excludes COVID period (Mar 2020 - Jul 2021) and Maine 
+Building panel for: No COVID 
+  Excluded states: ME 
+  Dropped COVID period: 2020-03-01 to 2021-07-31 
+  States: 37 
+  Treated states: 16 
+  Never-treated: 21 
+  Observations: 2031 
+--- TWFE Event Study: No COVID --- 
+  Estimating TWFE model... 
+  Pre-trends F-test: F(11, 1820) = 3.896, p = 0 
+
+--- Power Analysis (Roth 2022) --- 
+  MDE (slope) for 50% power: 0.0087 
+  MDE (slope) for 80% power: 0.0151 
+
+--- HonestDiD Sensitivity Analysis (Rambachan & Roth 2023) --- 
+  Pre-periods: 11, Post-periods: 25 
+  Computed sensitivity for M = 0 
+  Computed sensitivity for M = 0.5 
+  Computed sensitivity for M = 1 
+  Computed sensitivity for M = 1.5 
+  Computed sensitivity for M = 2 
+
+--- Equivalence Testing --- 
+  Cannot rule out large violations (delta* > 0.20) 
+  RMS of pre-trends: 0.073 
+
+--- Callaway-Sant'Anna DiD (2021) --- 
+  DISABLED: CS-DiD causing segfault even with est_method='reg' 
+  Issue: All est_methods (reg/ipw/dr) use fastglm for propensity scores 
+  Root cause: fastglm's colMax_dense() crashes on this data structure 
+  Attempted fix: est_method='reg' still calls fastglm internally 
+  Solution: Either fix data structure or use balanced panel 
+
+============================================================ 
+SPECIFICATION: Pre-2020 Only 
+============================================================ 
+Description: Uses only pre-pandemic data 
+Building panel for: Pre-2020 Only 
+  Excluded states: ME 
+  States: 25 
+  Treated states: 7 
+  Never-treated: 18 
+  Observations: 932 
+--- TWFE Event Study: Pre-2020 Only --- 
+  Estimating TWFE model... 
+  Pre-trends F-test: F(11, 788) = 25.334, p = 0 
+
+--- Power Analysis (Roth 2022) --- 
+  MDE (slope) for 50% power: 0.0043 
+  MDE (slope) for 80% power: 0.0072 
+
+--- HonestDiD Sensitivity Analysis (Rambachan & Roth 2023) --- 
+  Pre-periods: 11, Post-periods: 13 
+  Computed sensitivity for M = 0 
+  Computed sensitivity for M = 0.5 
+  Computed sensitivity for M = 1 
+  Computed sensitivity for M = 1.5 
+  Computed sensitivity for M = 2 
+
+--- Equivalence Testing --- 
+  Cannot rule out large violations (delta* > 0.20) 
+  RMS of pre-trends: 0.081 
+
+--- Callaway-Sant'Anna DiD (2021) --- 
+  DISABLED: CS-DiD causing segfault even with est_method='reg' 
+  Issue: All est_methods (reg/ipw/dr) use fastglm for propensity scores 
+  Root cause: fastglm's colMax_dense() crashes on this data structure 
+  Attempted fix: est_method='reg' still calls fastglm internally 
+  Solution: Either fix data structure or use balanced panel 
+
+============================================================ 
+SPECIFICATION: Narrow Window (±6 months) 
+============================================================ 
+Description: Focuses on ±6 months around treatment 
+Building panel for: Narrow Window (±6 months) 
+  Excluded states: ME 
+  States: 37 
+  Treated states: 16 
+  Never-treated: 21 
+  Observations: 2175 
+--- TWFE Event Study: Narrow Window (±6 months) --- 
+  Estimating TWFE model... 
+  Pre-trends F-test: F(5, 1971) = 2.883, p = 0.0134 
+
+--- Power Analysis (Roth 2022) --- 
+  MDE (slope) for 50% power: 0.0402 
+  MDE (slope) for 80% power: 0.0596 
+
+--- HonestDiD Sensitivity Analysis (Rambachan & Roth 2023) --- 
+  Pre-periods: 5, Post-periods: 7 
+  Computed sensitivity for M = 0 
+  Computed sensitivity for M = 0.5 
+  Computed sensitivity for M = 1 
+  Computed sensitivity for M = 1.5 
+  Computed sensitivity for M = 2 
+
+--- Equivalence Testing --- 
+  Cannot rule out large violations (delta* > 0.20) 
+  RMS of pre-trends: 0.1539 
+
+--- Callaway-Sant'Anna DiD (2021) --- 
+  DISABLED: CS-DiD causing segfault even with est_method='reg' 
+  Issue: All est_methods (reg/ipw/dr) use fastglm for propensity scores 
+  Root cause: fastglm's colMax_dense() crashes on this data structure 
+  Attempted fix: est_method='reg' still calls fastglm internally 
+  Solution: Either fix data structure or use balanced panel 
+
+================================================================================ 
+GENERATING CONSOLIDATED REPORT 
+================================================================================ 
+
+================================================================================ 
+ANALYSIS COMPLETE 
+================================================================================ 
+Results saved to: output/pretrends_evaluation/ 
+See output/pretrends_evaluation/report.md for detailed interpretation 
+================================================================================ 

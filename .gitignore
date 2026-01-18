@@ -56,6 +56,18 @@ __pycache__/
 *$py.class
 .ipynb_checkpoints/
 
+# Additional log files
+*_run.log
+progress_*.csv
+
+# Diagnostic and test output directories
+diagnostic_*/
+*_test_*/
+*_test_[0-9]*/
+
+# Did package source (should be installed, not included)
+did-master/
+
 # Keep important files (negative patterns)
 !README.md
 !INSTALL_PACKAGES.R

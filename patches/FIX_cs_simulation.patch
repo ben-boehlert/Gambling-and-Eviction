@@ -1,0 +1,174 @@
+================================================================================
+ROOT CAUSE DIAGNOSIS
+================================================================================
+
+FILE: power_simulation_cs_statepanel_staggered_parallel_merged.R
+
+ROOT CAUSE (Lines 454, 597):
+  The simulation pre-residualizes outcomes using unit+time FE (line 454),
+  then passes residualized data to did::att_gt() (line 597).
+
+  did::att_gt() with est_method="ipw" or "dr" will apply its OWN adjustment
+  for confounders, effectively DOUBLE-ADJUSTING for fixed effects.
+
+  This causes:
+  - Inflated variance in ATT estimates
+  - Bootstrap SEs that are ~2.4x too large
+  - Z-statistics that are ~2.4x too small
+  - P-values that are systematically too large
+  - Type I error rate collapsing to ~0%
+
+EVIDENCE:
+  - Minimal test with did package directly: SE/sd(ATT) = 1.02, size = 3% ✓
+  - Your simulation: SE/sd(ATT) = 2.4, size = 0% ✗
+  - Difference: You pre-residualize, minimal test doesn't
+
+================================================================================
+THE FIX: Remove Pre-Residualization (Smallest Change)
+================================================================================
+
+Option 1: Generate y_sim WITHOUT pre-residualization
+-----------------------------------------------------
+
+CHANGE: Line 597
+FROM:
+  y_sim <- panel$yhat + e_draw + ifelse(panel$post_treat, effect_log, 0.0)
+
+TO:
+  y_sim <- panel$y + e_draw + ifelse(panel$post_treat, effect_log, 0.0)
+
+RATIONALE:
+  - Use the ACTUAL outcome panel$y (which includes FE), not the fitted values
+  - Add error draw and treatment effect to the real data
+  - Let did::att_gt() handle FE/confounding adjustment internally
+
+ISSUE WITH THIS APPROACH:
+  - Changes the error structure (e_draw is added to real data, not residuals)
+  - May not preserve the residual variance calibration you intended
+
+
+Option 2: Generate y_sim from FIRST PRINCIPLES (Recommended)
+-------------------------------------------------------------
+
+CHANGE: Lines 418-427 and 597
+
+STEP 1: Generate baseline outcome WITHOUT FE residualization
+  - Keep panel$y as the real log-outcome
+  - Don't fit FE or compute yhat for simulation purposes
+
+STEP 2: Define a NEW baseline for the null
+  Since you want a "true null" DGP, you need:
+    y_ij = alpha_i + lambda_t + epsilon_ijt
+
+  Where under the null (effect=0):
+    y_ij^1 = alpha_i + lambda_t + epsilon_ijt  (treated potential outcome)
+    y_ij^0 = alpha_i + lambda_t + epsilon_ijt  (control potential outcome)
+    ATT = 0
+
+  And under H1 (effect > 0):
+    y_ij^1 = alpha_i + lambda_t + delta + epsilon_ijt
+    y_ij^0 = alpha_i + lambda_t + epsilon_ijt
+    ATT = delta
+
+CHANGE Line 597 to:
+  # Option A: Use observed y as baseline (includes real FE)
+  baseline_y <- panel$y - ifelse(panel$post_treat, some_prior_effect_estimate, 0)
+  y_sim <- baseline_y + e_draw + ifelse(panel$post_treat, effect_log, 0.0)
+
+  # Option B: Use FE-predicted y as baseline (cleaner null)
+  y_sim <- panel$yhat + e_draw + ifelse(panel$post_treat, effect_log, 0.0)
+
+  BUT: Make sure panel$yhat is computed on ALL data, not just untreated!
+
+
+Option 3: Use est_method="reg" with xformla including FE manually
+------------------------------------------------------------------
+
+CHANGE: Lines 619, 614
+
+FROM:
+  est_method = did_method,  # "ipw"
+  xformla = ~ 1,
+
+TO:
+  est_method = "reg",
+  xformla = ~ factor(id) + factor(t),
+
+RATIONALE:
+  - Explicitly tell did to use regression adjustment with unit+time FE
+  - This matches your pre-residualization approach
+  - May reduce SE inflation
+
+
+================================================================================
+RECOMMENDED FIX (Simplest + Most Robust)
+================================================================================
+
+**Stop pre-residualizing. Let did::att_gt() handle everything.**
+
+PATCH for power_simulation_cs_statepanel_staggered_parallel_merged.R:
+
+1) COMMENT OUT FE fitting (lines 429-470):
+   Add # before each line from "# ---- baseline FE" to pool setup
+
+2) CHANGE line 597 simulation to use RAW outcome:
+
+   FROM:
+     y_sim <- panel$yhat + e_draw + ifelse(panel$post_treat, effect_log, 0.0)
+
+   TO:
+     # Simulate from scratch: FE + error + treatment effect
+     # Use observed y as proxy for (alpha_i + lambda_t), or generate from scratch
+     baseline <- panel$y  # This includes real FE structure
+     y_sim <- baseline + e_draw + ifelse(panel$post_treat, effect_log, 0.0)
+
+3) Alternatively, if you INSIST on residual bootstrap:
+
+   CHANGE Line 454 to fit FE on ALL data (not just untreated):
+   FROM:
+     base_fe <- panel %>% filter(untreated_obs, is.finite(y), !is.na(id), !is.na(t))
+     fe_fit <- fixest::feols(y ~ 1 | id + t, data = base_fe, notes = FALSE, warn = FALSE)
+
+   TO:
+     fe_fit <- fixest::feols(y ~ 1 | id + t, data = panel, notes = FALSE, warn = FALSE)
+
+   This way yhat includes the treatment effect in the real data, and you can
+   residualize around the full data-generating process.
+
+================================================================================
+EXPECTED OUTCOME AFTER FIX
+================================================================================
+
+With proper simulation (no double-adjustment):
+  - SE/sd(ATT) ratio: ~1.0 to 1.2
+  - sd(Z): ~0.95 to 1.05
+  - Type I error rate: ~4% to 6% (cluster-robust with df=37 may be slightly conservative)
+
+================================================================================
+ALTERNATIVE: Use bstrap=FALSE + Analytic SEs
+================================================================================
+
+If the above doesn't work, or if bootstrap is still too slow:
+
+CHANGE Line 163:
+  FROM: did_bstrap <- parse_bool(getenv1("DID_BSTRAP", "TRUE"), TRUE)
+  TO:   did_bstrap <- parse_bool(getenv1("DID_BSTRAP", "FALSE"), FALSE)
+
+RATIONALE:
+  - The analytic SE formula in att_gt.R (line 308) IS cluster-robust
+  - It uses influence functions which account for clustering
+  - The warning (line 318) is misleading
+  - Analytic SEs are: sqrt(diag(V)/n) where V = t(inffunc) %*% inffunc / n
+  - This is the sandwich estimator, which IS cluster-robust when inffunc
+    is computed correctly (which it is in did package)
+
+EVIDENCE from att_gt.R:
+  Lines 307-309:
+    n <- ifelse(faster_mode, dp$id_count, dp$n)
+    V <- Matrix::t(inffunc) %*% inffunc / (n)
+    se <- sqrt(Matrix::diag(V) / n)
+
+  This is equivalent to: se = sqrt(Var(inffunc)/n)
+  With clustered influence functions, this IS cluster-robust.
+
+================================================================================

@@ -1,0 +1,11 @@
+--- a/analysis/power_simulation_cs_reg_statepanel_staggered_parallel_REVISED.R
++++ b/analysis/power_simulation_cs_reg_statepanel_staggered_parallel_REVISED.R
+@@ -182,7 +182,7 @@ did_bstrap <- parse_bool(getenv1("DID_BSTRAP", "TRUE"), TRUE)
+ did_biters <- parse_int(getenv1("DID_BITERS", "199"), 199L)
+ if (!is.finite(did_biters) || did_biters < 10L) did_biters <- 199L
+ did_cband  <- parse_bool(getenv1("DID_CBAND", "FALSE"), FALSE)
+-did_allow_unbalanced <- parse_bool(getenv1("DID_ALLOW_UNBALANCED_PANEL", "TRUE"), TRUE)
++did_allow_unbalanced <- parse_bool(getenv1("DID_ALLOW_UNBALANCED_PANEL", "FALSE"), FALSE)
+
+ AGG_TYPE <- getenv1("AGG_TYPE", "simple")
+ if (!AGG_TYPE %in% c("simple", "dynamic")) AGG_TYPE <- "simple"

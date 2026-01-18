@@ -1,0 +1,87 @@
+--- a/analysis/power_simulation_cs_reg_statepanel_staggered_parallel_REVISED.R
++++ b/analysis/power_simulation_cs_reg_statepanel_staggered_parallel_REVISED.R
+@@ -646,18 +646,15 @@ one_sim_cs <- function(seed, effect_log) {
+     agg <- did::aggte(est, type = AGG_TYPE, na.rm = TRUE)
+
+     att <- as.numeric(agg$overall.att)
+     se  <- as.numeric(agg$overall.se)
+
+-    # Rejection rule: use provided p-value if available, else compute with t-distribution
++    # ROBUST P-VALUE COMPUTATION
++    # DO NOT trust agg$overall.pval - compute p-value directly from t-statistic
++    # Use two-sided test: H0: att = 0 vs H1: att != 0
++    # With clustered bootstrap SE, use t-distribution with df = n_clusters - 1
+     p <- NA_real_
+-    if (did_bstrap && !is.null(agg$overall.pval) && is.finite(as.numeric(agg$overall.pval))) {
+-      p <- as.numeric(agg$overall.pval)
+-    } else {
+-      z <- att / se
+-      if (is.finite(z)) {
+-        p <- 2 * pt(-abs(z), df = n_states - 1)
+-      }
++    if (is.finite(att) && is.finite(se) && se > 0) {
++      t_stat <- att / se
++      # Two-sided p-value with t-distribution (df = # states - 1)
++      p <- 2 * pt(-abs(t_stat), df = n_states - 1)
+     }
+
+     list(ok = is.finite(att) && is.finite(se) && se > 0 && is.finite(p),
+@@ -739,6 +736,9 @@ for (eff_pct in EFFECT_PCTS) {
+   ok_cum <- 0L
+   fail_cum <- 0L
+   p_cum <- numeric()
++
++  # NULL DIAGNOSTIC: Save first 200 p-values for effect_pct = 0
++  null_pvals_diagnostic <- if (eff_pct == 0) numeric() else NULL
+
+   for (b in seq_len(n_batches)) {
+     batch_lo <- (b - 1) * BATCH_SIZE + 1L
+@@ -767,6 +767,17 @@ for (eff_pct in EFFECT_PCTS) {
+     ok_cum <- ok_cum + sum(batch_ok)
+     fail_cum <- fail_cum + sum(!batch_ok)
+     p_cum <- c(p_cum, batch_p[batch_ok])
++
++    # NULL DIAGNOSTIC: Collect first 200 p-values for effect_pct = 0
++    if (!is.null(null_pvals_diagnostic) && length(null_pvals_diagnostic) < 200) {
++      new_pvals <- batch_p[batch_ok]
++      new_pvals <- new_pvals[is.finite(new_pvals)]
++      n_needed <- 200 - length(null_pvals_diagnostic)
++      if (length(new_pvals) > 0) {
++        null_pvals_diagnostic <- c(null_pvals_diagnostic, head(new_pvals, n_needed))
++      }
++    }
+
+     fail_rate_cum <- fail_cum / (ok_cum + fail_cum)
+     power_so_far <- if (length(p_cum) > 0) mean(p_cum < ALPHA, na.rm = TRUE) else NA_real_
+@@ -843,6 +854,25 @@ for (eff_pct in EFFECT_PCTS) {
+   )
+
+   all_draws[[length(all_draws) + 1]] <- df_eff
++
++  # NULL DIAGNOSTIC: Report first 200 p-values for effect_pct = 0
++  if (!is.null(null_pvals_diagnostic) && length(null_pvals_diagnostic) > 0) {
++    null_diag_df <- tibble(
++      sim_index = seq_along(null_pvals_diagnostic),
++      p_value = null_pvals_diagnostic
++    )
++    safe_write_csv(null_diag_df, file.path(OUT_DIR, "null_pvalues_first200.csv"))
++
++    quants <- quantile(null_pvals_diagnostic, probs = c(0.05, 0.50, 0.95), na.rm = TRUE)
++    rej_rate <- mean(null_pvals_diagnostic < ALPHA, na.rm = TRUE)
++
++    log_line(RUN_LOG, "")
++    log_line(RUN_LOG, "=== NULL P-VALUE DIAGNOSTIC (first 200 sims) ===")
++    log_line(RUN_LOG, glue("  N p-values collected: {length(null_pvals_diagnostic)}"))
++    log_line(RUN_LOG, glue("  5th percentile: {round(quants[1], 4)}  (expect ~0.05)"))
++    log_line(RUN_LOG, glue("  50th percentile: {round(quants[2], 4)}  (expect ~0.50)"))
++    log_line(RUN_LOG, glue("  95th percentile: {round(quants[3], 4)}  (expect ~0.95)"))
++    log_line(RUN_LOG, glue("  Rejection rate at alpha={ALPHA}: {round(100*rej_rate, 2)}%  (expect ~{round(100*ALPHA, 1)}%)"))
++    log_line(RUN_LOG, "===============================================")
++
++    cat(glue("\nNULL DIAGNOSTIC (effect=0, first 200 sims):\n"))
++    cat(glue("  P-value quantiles: 5%={round(quants[1],4)}, 50%={round(quants[2],4)}, 95%={round(quants[3],4)}\n"))
++    cat(glue("  Rejection rate: {round(100*rej_rate,2)}% (expect ~{round(100*ALPHA,1)}%)\n\n"))
++  }
+
+   log_line(RUN_LOG, glue("  Final: ok={ok_cum}/{N_SIMS}; fail_rate={round(100*fail_rate_cum,1)}%; power={round(100*power_so_far,1)}%"))
+ }

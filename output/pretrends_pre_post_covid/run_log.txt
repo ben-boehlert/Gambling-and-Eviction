@@ -1,0 +1,74 @@
+================================================================================ 
+PRE-TRENDS ANALYSIS: PRE-COVID vs POST-COVID 
+================================================================================ 
+Output: output/pretrends_pre_post_covid 
+Outcome: log1p_filings_count 
+================================================================================ 
+
+--- Loading Data --- 
+Total states: 38 
+Treated states: 16 
+
+================================================================================ 
+RUNNING PERIOD-SPECIFIC ANALYSES 
+================================================================================ 
+
+============================================================ 
+ANALYSIS: Pre-COVID Analysis (2012-2019) 
+============================================================ 
+Building panel: Pre-COVID Analysis (2012-2019) 
+  Restricting to treatments between 2018-01-01 and 2019-12-31 
+  States: 32 
+  Treated: 5 
+  Never-treated: 27 
+  Observations: 1330 
+--- TWFE Event Study: Pre-COVID Analysis (2012-2019) --- 
+  F-test: F(23, 1167) = 84.825, p = 0 
+  MDE (50%): 0.0017, MDE (80%): 0.0033 
+
+============================================================ 
+ANALYSIS: Post-COVID Analysis (2021-2024) 
+============================================================ 
+Building panel: Post-COVID Analysis (2021-2024) 
+  Restricting to treatments between 2021-08-01 and 2024-12-31 
+  States: 36 
+  Treated: 8 
+  Never-treated: 28 
+  Observations: 1264 
+--- TWFE Event Study: Post-COVID Analysis (2021-2024) --- 
+  F-test: F(18, 1145) = 427.714, p = 0 
+  MDE (50%): 0.0093, MDE (80%): 0.0159 
+
+============================================================ 
+ANALYSIS: Pre-COVID Full Sample (2012-2019) 
+============================================================ 
+Building panel: Pre-COVID Full Sample (2012-2019) 
+  States: 28 
+  Treated: 10 
+  Never-treated: 18 
+  Observations: 1015 
+--- TWFE Event Study: Pre-COVID Full Sample (2012-2019) --- 
+  F-test: F(23, 856) = 350.444, p = 0 
+  MDE (50%): 0.0024, MDE (80%): 0.0048 
+
+============================================================ 
+ANALYSIS: Post-COVID Full Sample (2021-2024) 
+============================================================ 
+Building panel: Post-COVID Full Sample (2021-2024) 
+  States: 34 
+  Treated: 13 
+  Never-treated: 21 
+  Observations: 1054 
+--- TWFE Event Study: Post-COVID Full Sample (2021-2024) --- 
+  F-test: F(18, 937) = 241.325, p = 0 
+  MDE (50%): 0.0079, MDE (80%): 0.0134 
+
+================================================================================ 
+GENERATING COMPARISON 
+================================================================================ 
+
+================================================================================ 
+ANALYSIS COMPLETE 
+================================================================================ 
+Results: output/pretrends_pre_post_covid/ 
+================================================================================ 

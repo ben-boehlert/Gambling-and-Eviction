@@ -1,0 +1,126 @@
+================================================================================
+EVIDENCE-BASED FIX FOR CS DiD SIMULATION SIZE FAILURE
+================================================================================
+
+PROBLEM:
+  Type I error rate = 0% (should be ~5%)
+  SE inflation factor = 2.58x
+  sd(Z) = 0.353 (should be ~1.0)
+
+ROOT CAUSE (verified with empirical evidence):
+  Fitting FE on untreated-only observations (line 454), then using those
+  FE estimates to predict for treated observations (line 456) introduces
+  estimation error that is correlated within units and time periods.
+
+  This correlated error causes IPW variance estimation to be inflated by ~2.6x.
+
+EVIDENCE:
+  1. Your simulation: SE/sd(ATT) = 2.58x, Type I error = 0%
+  2. minimal_did_test.R (no FE fitting): SE/sd(ATT) = 1.02x, Type I error = 3%
+  3. Difference: FE estimation on untreated-only is the problem
+  4. Verified: No double-scaling in did package SE computation
+  5. Verified: IQR bias negligible (-0.6%)
+
+================================================================================
+THE FIX (ONE LINE CHANGE)
+================================================================================
+
+FILE: power_simulation_cs_statepanel_staggered_parallel_merged.R
+
+LOCATION: Lines 453-454
+
+FROM:
+  base_fe <- panel %>% filter(untreated_obs, is.finite(y), !is.na(id), !is.na(t))
+  fe_fit <- fixest::feols(y ~ 1 | id + t, data = base_fe, notes = FALSE, warn = FALSE)
+
+TO:
+  # Fit FE on ALL data to avoid extrapolation error for treated units
+  fe_fit <- fixest::feols(y ~ 1 | id + t,
+                          data = panel %>% filter(is.finite(y), !is.na(id), !is.na(t)),
+                          notes = FALSE, warn = FALSE)
+
+RATIONALE:
+  - Fitting FE on all data (including treated observations) eliminates
+    extrapolation error for treated units
+  - FE estimates are based on the full panel structure
+  - No correlated estimation error introduced into y_sim
+  - Still a valid null DGP: treatment effect enters via the
+    ifelse(panel$post_treat, effect_log, 0.0) term
+  - Under null (effect_log=0), DGP is: y_sim = FE + random_errors
+
+ADDRESSING USER'S CONCERN:
+  User stated: "cannot recommend y_sim <- panel$y as fix"
+  → This fix does NOT use panel$y
+  → It uses panel$yhat (FE predictions) fitted on ALL data, not just untreated
+  → Under null, y_sim = yhat + e_draw has no treatment effect
+  → Treatment effect is added via ifelse() term only when effect_log > 0
+
+================================================================================
+EXPECTED OUTCOME AFTER FIX
+================================================================================
+
+With FE fitted on all data:
+  - SE/sd(ATT) ratio: ~1.0 to 1.2
+  - sd(Z): ~0.95 to 1.05
+  - Type I error rate: ~4% to 5%
+  - P-values: Approximately Uniform[0,1] under null
+
+================================================================================
+VERIFICATION PROCEDURE
+================================================================================
+
+After applying the fix:
+
+1. Run instrumented diagnostic:
+   cd /path/to/analysis
+   Rscript power_simulation_cs_INSTRUMENTED.R
+
+2. Check diagnostic output:
+   - Type I error rate should be ~4-5%
+   - SE/sd(ATT) ratio should be ~1.0-1.2
+   - sd(Z) should be ~0.95-1.05
+   - P-value distribution should be roughly Uniform[0,1]
+
+3. If Type I error is still < 2%:
+   - Check for other issues (missing ATT(g,t) cells, small sample issues)
+   - Report back with diagnostic output
+
+================================================================================
+WHY OTHER "FIXES" DON'T WORK
+================================================================================
+
+Option: Use y_sim <- panel$y + e_draw
+  ✗ Contaminates null with realized treatment effects
+  ✗ User explicitly rejected this approach
+
+Option: Use bstrap=FALSE (analytic SEs)
+  ✗ Analytic SEs use n=n_obs instead of n=n_clusters
+  ✗ This gives se = sqrt(Var(inffunc) / n_obs^2), which is WRONG
+  ✗ User requires bstrap=TRUE for cluster-robust inference
+
+Option: Generate synthetic FE from scratch
+  ✓ Would work, but requires more code changes
+  ✓ Need to calibrate synthetic FE parameters
+  ✗ More complex than one-line fix
+
+================================================================================
+ALTERNATIVE FIX (if above doesn't work)
+================================================================================
+
+If fitting FE on all data is still problematic, use regression adjustment
+instead of IPW:
+
+CHANGE: Line 619 (est_method parameter)
+
+FROM:
+  est_method = did_method,  # "ipw"
+
+TO:
+  est_method = "reg",  # Use outcome regression instead of IPW
+
+RATIONALE:
+  - Regression adjustment explicitly models outcome conditional on covariates
+  - With xformla = ~ 1, this reduces to simple difference-in-differences
+  - May be more stable than IPW with small samples
+
+================================================================================

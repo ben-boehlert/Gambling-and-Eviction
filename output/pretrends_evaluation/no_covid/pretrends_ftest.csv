@@ -1,0 +1,2 @@
+method,n_leads,f_stat,df1,df2,p_value
+F-test on pre-treatment coefficients,11,3.896462540609028,11,1820,1.3434189112869855e-5
