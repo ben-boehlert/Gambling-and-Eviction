@@ -1,0 +1,20 @@
+🎉 SUCCESS! Your plots have been generated and saved.
+
+📁 Location: output/csdid_plots/
+
+📊 4 Publication-Ready Plots:
+   ✅ support_heatmap.pdf
+   ✅ identifiability_by_event_time.pdf
+   ✅ identifiability_by_group.pdf
+   ✅ cell_counts_distribution.pdf
+
+📄 2 Summary Tables:
+   ✅ summary_statistics.csv
+   ✅ non_identifiable_reasons.csv
+
+🖥️  To view in Finder:
+   open output/csdid_plots/
+
+📖 Full details in:
+   WHERE_ARE_MY_PLOTS.txt (this directory)
+   OUTPUT_SUMMARY.md (complete guide)

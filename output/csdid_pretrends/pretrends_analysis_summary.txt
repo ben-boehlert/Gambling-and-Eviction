@@ -1,0 +1,65 @@
+Callaway-Sant'Anna DiD Preflight Check Summary
+Generated: 2026-01-19 18:10:58.113918
+
+Panel Balance:
+$n_units
+[1] 32
+
+$n_periods
+[1] 117
+
+$n_obs
+[1] 3317
+
+$expected_obs_balanced
+[1] 3744
+
+$balance_pct
+[1] 88.59509
+
+$is_balanced
+[1] FALSE
+
+$n_treated
+[1] 19
+
+$n_control
+[1] 13
+
+$n_treatment_groups
+[1] 17
+
+$treatment_groups
+ [1] 201806 201808 201811 201907 201909 201912 202003 202005 202011 202101
+[11] 202103 202106 202109 202110 202111 202209 202301
+
+$obs_per_unit_range
+     min      max     mean 
+ 33.0000 117.0000 103.6562 
+
+$obs_per_time_range
+min max 
+ 21  32 
+
+
+Support Summary:
+$n_total_comparisons
+[1] 1044
+
+$n_identifiable
+[1] 852
+
+$n_non_identifiable
+[1] 192
+
+$pct_identifiable
+[1] 81.6092
+
+$pct_non_identifiable
+[1] 18.3908
+
+
+Non-Identifiable Cells:
+
+                n_treat_post=0 n_treat_pre=0, n_control_pre=0 
+                           102                             90 

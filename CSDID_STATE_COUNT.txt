@@ -1,0 +1,28 @@
+═══════════════════════════════════════════════════════════════════
+CS-DiD ANALYSIS: STATE COUNTS
+═══════════════════════════════════════════════════════════════════
+
+TOTAL STATES IN ANALYSIS: 32
+
+Breakdown:
+  • 16 treated states (across 15 treatment groups)
+  • 16 never-treated control states
+
+Treatment Group Structure:
+  • 15 treatment groups (staggered adoption)
+  • 14 groups have 1 state each
+  • 1 group has 2 states (that adopted at the same time)
+
+Note: This excludes Maine (as documented in your code).
+      With Maine, you would have 33 states total.
+
+═══════════════════════════════════════════════════════════════════
+
+Data Source:
+  output/csdid_debug/support_diagnostics_full.csv
+
+For details on which specific states are in which groups, see your
+gambling legalization dates file:
+  data/raw/sports_gambling_legalization_dates.csv
+
+═══════════════════════════════════════════════════════════════════

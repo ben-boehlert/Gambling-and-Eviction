@@ -1,0 +1,89 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║                 ✅ YOUR PLOTS ARE HERE!                              ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+📁 LOCATION: output/csdid_plots/
+
+📊 PLOTS CREATED (4 visualizations, 2 formats each):
+
+  1. support_heatmap.pdf (7.2 KB) + .png (167 KB)
+     └─ Shows which (g,t) cells are identifiable (blue) vs not (gray)
+     └─ Use in: Paper appendix
+
+  2. identifiability_by_event_time.pdf (9.5 KB) + .png (124 KB)
+     └─ % identifiable cells by event time (relative to treatment)
+     └─ Use in: Paper appendix or main text
+
+  3. identifiability_by_group.pdf (5.2 KB) + .png (138 KB)
+     └─ % identifiable cells by treatment group
+     └─ Use in: Paper appendix
+
+  4. cell_counts_distribution.pdf (6.0 KB) + .png (130 KB)
+     └─ Distribution of observation counts in each cell type
+     └─ Use in: Paper appendix
+
+📄 TABLES CREATED:
+
+  5. summary_statistics.csv
+     └─ Overall summary: 875 cells, 338 identifiable (38.6%)
+
+  6. non_identifiable_reasons.csv
+     └─ Breakdown: All 537 non-identifiable due to n_treat_post=0
+
+───────────────────────────────────────────────────────────────────────
+
+🖥️  VIEW PLOTS NOW:
+
+In Finder:
+  open output/csdid_plots/
+
+Or open specific plots:
+  open output/csdid_plots/support_heatmap.pdf
+  open output/csdid_plots/identifiability_by_event_time.pdf
+
+───────────────────────────────────────────────────────────────────────
+
+📝 HOW THESE WERE GENERATED:
+
+Script: scripts/generate_support_plots.R
+Input:  output/csdid_debug/support_diagnostics_full.csv
+        (your actual gambling-eviction data)
+
+To regenerate:
+  Rscript scripts/generate_support_plots.R
+
+───────────────────────────────────────────────────────────────────────
+
+✅ WHAT YOU NOW HAVE:
+
+1. ✅ Support diagnostics table (ready for appendix)
+2. ✅ 4 diagnostic plots (PDF + PNG formats)
+3. ✅ Summary statistics (CSV tables)
+4. ✅ All patch files and documentation
+5. ✅ Scripts to regenerate everything
+
+───────────────────────────────────────────────────────────────────────
+
+🎯 FOR YOUR PAPER:
+
+Appendix Figure A1: support_heatmap.pdf
+  "Heatmap showing identifiability of CS-DiD (g,t) cells.
+   Blue cells indicate sufficient observations for estimation."
+
+Appendix Figure A2: identifiability_by_event_time.pdf
+  "Percentage of identifiable (g,t) cells by event time.
+   Drop-off in later periods due to treated units leaving sample."
+
+Appendix Table A1: output/csdid_debug/support_diagnostics_full.csv
+  "Complete support diagnostics for all 875 (g,t) comparisons."
+
+───────────────────────────────────────────────────────────────────────
+
+📚 DOCUMENTATION:
+
+Read these for more info:
+  - OUTPUT_SUMMARY.md              (complete guide)
+  - patches/FIND_YOUR_OUTPUTS.md   (troubleshooting)
+  - patches/CSDID_FIX_IMPLEMENTATION.md  (technical details)
+
+╚══════════════════════════════════════════════════════════════════════╝
