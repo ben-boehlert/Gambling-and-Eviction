@@ -79,16 +79,15 @@ cat(sprintf("Successfully loaded: %d / %d packages\n", success_count, length(all
 if (success_count == length(all_packages)) {
   cat("\n✓ ALL PACKAGES INSTALLED AND WORKING!\n")
   cat("\nYou can now run the full analysis:\n")
-  cat("  source('RUN_ALL_ANALYSES.R')\n\n")
+  cat("  source('power_simulation_cs.R')\n\n")
 } else if (success_count >= length(cran_packages)) {
   cat("\n⚠ Core packages installed. Wild bootstrap optional.\n")
   cat("\nYou can run the analysis (without wild bootstrap):\n")
-  cat("  source('eviction_gambling_power_analysis.R')\n")
-  cat("  source('power_simulation_main.R')  # Set use_wild_bootstrap = FALSE\n\n")
+  cat("  source('power_simulation_cs.R')  # Set did_bstrap = FALSE if needed\n\n")
 } else {
   cat("\n✗ Some required packages failed to install.\n")
-  cat("\nTry running the minimal version instead:\n")
-  cat("  source('RUN_MINIMAL.R')\n\n")
+  cat("\nTry installing the failed packages manually, then run:\n")
+  cat("  source('power_simulation_cs.R')\n\n")
   cat("Or install packages manually:\n")
   failed <- all_packages[!sapply(all_packages, function(p) {
     p %in% installed.packages()[,"Package"]

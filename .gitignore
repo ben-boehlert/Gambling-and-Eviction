@@ -13,15 +13,11 @@ data/output/
 # Backup directories (local only)
 backup_*/
 
-# Archive directory (old development code - 800MB)
+# Archive directory (old development code - 800MB+)
 archive/
 
 # Deprecated directory (old analyses and outputs)
 deprecated/
-
-# Large data files (uncomment if not sharing data publicly)
-# data/raw/*.csv
-# *.csv
 
 # System files
 .DS_Store
@@ -39,10 +35,10 @@ Thumbs.db
 *.tmp
 *.bak
 
-# Log files (keep simulation logs in data/output/ which is already excluded)
+# Log files
 *.log
 
-# LaTeX (if generating documents)
+# LaTeX
 *.aux
 *.out
 *.toc
@@ -50,7 +46,7 @@ Thumbs.db
 *.fls
 *.synctex.gz
 
-# Python (if any)
+# Python
 __pycache__/
 *.py[cod]
 *$py.class

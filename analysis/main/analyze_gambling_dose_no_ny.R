@@ -3,13 +3,7 @@
 # analyze_gambling_dose_no_ny.R
 # Dose-response analysis EXCLUDING New York (outlier)
 #
-# NOTE: This script has a broken source() reference (line 47)
-# Original: source("power_simulation_cs.R")
-# This file doesn't exist in the analysis/ directory
-#
-# To run this script, update line 47 to one of:
-# Option 1: source("power_simulation_twfe_statepanel_staggered_parallel_fixed.R")
-# Option 2: source("../archive/old_development_code/eviction_gambling/power_simulation_cs.R")
+# Run from project root directory.
 ################################################################################
 
 suppressPackageStartupMessages({
@@ -24,7 +18,7 @@ set.seed(123)
 cat("=== Gambling Dose-Response Analysis (Excluding NY) ===\n\n")
 
 # Load gambling data
-gambling <- read_csv("lsr_sports_betting_handle_revenue_by_state_month.csv",
+gambling <- read_csv("data/raw/lsr_sports_betting_handle_revenue_by_state_month.csv",
                     show_col_types = FALSE) %>%
   mutate(
     state = str_trim(State),

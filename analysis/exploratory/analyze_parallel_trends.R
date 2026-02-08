@@ -5,13 +5,7 @@
 # Comprehensive analysis of parallel trends assumption across multiple data
 # sources and time periods for sports gambling -> eviction analysis
 #
-# NOTE: This script has a broken source() reference (line 123)
-# Original: source("power_simulation_cs.R")
-# This file doesn't exist in the analysis/ directory
-#
-# To run this script, update line 123 to one of:
-# Option 1: source("power_simulation_twfe_statepanel_staggered_parallel_fixed.R")
-# Option 2: source("../archive/old_development_code/eviction_gambling/power_simulation_cs.R")
+# Run from project root directory.
 #
 # Outputs:
 #   - parallel_trends_annual_clean.png
@@ -33,7 +27,7 @@ library(patchwork)
 cat("\n=== ANALYZING ANNUAL DATA ===\n\n")
 
 # Load annual county data
-annual <- read_csv("county_court-issued_2000_2023_ben_update_5_12.csv", show_col_types = FALSE)
+annual <- read_csv("data/raw/county_court-issued_2000_2023_ben_update_5_12.csv", show_col_types = FALSE)
 
 # Aggregate to state-year level
 state_annual <- annual %>%
@@ -54,7 +48,7 @@ cat("  Years:", min(state_annual$year), "to", max(state_annual$year), "\n")
 cat("  State-years:", nrow(state_annual), "\n")
 
 # Load sports gambling schedule
-sched <- read_csv("sports_gambling_legalization_dates.csv", show_col_types = FALSE) %>%
+sched <- read_csv("data/raw/sports_gambling_legalization_dates.csv", show_col_types = FALSE) %>%
   mutate(
     state_clean = str_to_title(str_trim(state)),
     online_year = if_else(!is.na(online_start_date), year(ymd(online_start_date)), NA_integer_)

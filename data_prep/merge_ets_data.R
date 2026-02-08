@@ -33,7 +33,7 @@ cat("=== Merging ETS Data ===\n\n")
 
 cat("1. Reading historical_ets_data_monthly.csv...\n")
 
-hist <- read_csv("historical_ets_data_monthly.csv", show_col_types = FALSE) %>%
+hist <- read_csv("data/raw/ets_merged/historical_ets_data_monthly.csv", show_col_types = FALSE) %>%
   rename(
     location = xsite,
     year = xfileyear,

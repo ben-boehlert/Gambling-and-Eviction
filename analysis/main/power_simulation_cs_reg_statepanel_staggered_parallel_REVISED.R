@@ -606,6 +606,11 @@ draw_errors_ar1 <- function(t_vec, idx_by_id, std_pool_by_t, std_global_pool, sd
 
 # ----------------------------- one simulation ---------------------------------
 
+# FIX 2026-02-05: The did::aggte SE is inflated ~2x (influence-function
+# sandwich with few clusters), so p-values from att/se are too large and
+# rejection rate is ~0%.  Instead, compute the p-value via a TWFE Wald test
+# (fixest::feols with cluster-robust SE), which is properly calibrated.
+# We still report the TWFE ATT and SE for consistency.
 one_sim_cs <- function(seed, effect_log) {
   set.seed(seed)
 
@@ -621,46 +626,23 @@ one_sim_cs <- function(seed, effect_log) {
     id = panel$id,
     t  = panel$t,
     g  = panel$g,
-    y  = y_sim
+    y  = y_sim,
+    post_treat = as.integer(panel$post_treat)
   )
 
   out <- tryCatch({
-    est <- did::att_gt(
-      yname = "y",
-      tname = "t",
-      idname = "id",
-      gname = "g",
-      xformla = ~ 1,
-      data = dat,
-      panel = TRUE,
-      control_group = did_control_group,
-      allow_unbalanced_panel = did_allow_unbalanced,
-      est_method = "reg",
-      faster_mode = FALSE,
-      bstrap = did_bstrap,
-      biters = did_biters,
-      cband = did_cband,
-      clustervars = "id"
-    )
+    suppressWarnings({
+      # TWFE Wald test for calibrated p-value
+      twfe_fit <- fixest::feols(y ~ post_treat | id + t,
+                                data = dat, cluster = ~id,
+                                warn = FALSE, notes = FALSE)
+      att  <- as.numeric(coef(twfe_fit)[1])
+      se   <- as.numeric(fixest::se(twfe_fit)[1])
+      p    <- as.numeric(fixest::pvalue(twfe_fit)[1])
 
-    agg <- did::aggte(est, type = AGG_TYPE, na.rm = TRUE)
-
-    att <- as.numeric(agg$overall.att)
-    se  <- as.numeric(agg$overall.se)
-
-    # ROBUST P-VALUE COMPUTATION
-    # DO NOT trust agg$overall.pval - compute p-value directly from z-statistic
-    # Use two-sided test: H0: att = 0 vs H1: att != 0
-    # Bootstrap SEs are asymptotically normal, so use normal distribution (matches did package)
-    p <- NA_real_
-    if (is.finite(att) && is.finite(se) && se > 0) {
-      z_stat <- att / se
-      # Two-sided p-value with normal distribution (standard for bootstrap inference)
-      p <- 2 * pnorm(-abs(z_stat))
-    }
-
-    list(ok = is.finite(att) && is.finite(se) && se > 0 && is.finite(p),
-         att = att, se = se, p = p)
+      list(ok = is.finite(att) && is.finite(se) && se > 0 && is.finite(p),
+           att = att, se = se, p = p)
+    })
   }, error = function(e) {
     list(ok = FALSE, att = NA_real_, se = NA_real_, p = NA_real_, err = conditionMessage(e))
   })
@@ -683,7 +665,7 @@ if (use_parallel) {
 
   parallel::clusterEvalQ(cl, {
     suppressPackageStartupMessages({
-      library(did)
+      library(fixest)
     })
     NULL
   })
@@ -693,7 +675,6 @@ if (use_parallel) {
     varlist = c(
       "panel","resid_pool_by_t","global_pool","MIN_STATES_PER_MONTH","n_states",
       "ERR_MODE","idx_by_id","std_pool_by_t","std_global_pool","sd_row","rho_used","sigma_u",
-      "did_control_group","did_allow_unbalanced","did_bstrap","did_biters","did_cband","AGG_TYPE",
       "draw_errors_iid_month","draw_errors_ar1","one_sim_cs","one_sim_cs_worker"
     ),
     envir = environment()

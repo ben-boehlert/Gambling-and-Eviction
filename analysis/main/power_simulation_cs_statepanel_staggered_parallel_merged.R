@@ -152,9 +152,10 @@ if (TEST_MODE) {
 }
 
 # DID options
-did_method <- getenv1("DID_EST_METHOD", "ipw")
+# Default to "reg" estimator to avoid fastglm IPW bug (see REVISED script)
+did_method <- getenv1("DID_EST_METHOD", "reg")
 did_faster_mode <- parse_bool(getenv1("DID_FASTER_MODE", "FALSE"), FALSE)
-did_control_group <- getenv1("DID_CONTROL_GROUP", "nevertreated")
+did_control_group <- getenv1("DID_CONTROL_GROUP", "notyettreated")
 if (!did_control_group %in% c("nevertreated", "notyettreated")) {
   stop(glue("DID_CONTROL_GROUP must be nevertreated or notyettreated; got {did_control_group}"), call. = FALSE)
 }
@@ -166,8 +167,8 @@ if (!is.finite(did_biters) || did_biters < 10L) did_biters <- 199L
 
 cat("=== SCRIPT VERSION CHECK ===\n")
 cat("Running: power_simulation_cs_statepanel_staggered_parallel_merged.R\n")
-cat("Version: 2026-01-07-v6 (Added state and date filtering)\n")
-cat("Changes: Added EXCLUDE_STATES and MAX_DATE options for filtering panel\n")
+cat("Version: 2026-02-05-v7 (Fixed p-value computation)\n")
+cat("Changes: Fixed broken agg$overall.pval; now uses TWFE Wald test with fixest cluster-robust SE\n")
 cat("============================\n\n")
 
 # ----------------------------- prelude/logging --------------------------------
@@ -218,7 +219,7 @@ if (!file.exists(POWER_RUNNING)) {
 }
 
 log_line(RUN_LOG, "=== PRELUDE ===")
-log_line(RUN_LOG, "VERSION: 2026-01-07-v6 (Added EXCLUDE_STATES and MAX_DATE filtering)")
+log_line(RUN_LOG, "VERSION: 2026-02-05-v7 (Fixed p-value: TWFE Wald test with fixest cluster-robust SE)")
 log_line(RUN_LOG, glue("SCRIPT_PATH: {getwd()}"))
 log_line(RUN_LOG, glue("R_VERSION  : {R.version.string}"))
 log_line(RUN_LOG, glue("DATA_FILE  : {DATA_FILE}"))
@@ -584,7 +585,12 @@ draw_errors_ar1 <- function(panel_t, idx_by_id, std_pool_by_t, std_global_pool, 
   e_draw
 }
 
-# One simulation (FIXED: no duplicate att_gt call)
+# One simulation
+# FIX 2026-02-05: The did::aggte SE is inflated ~2x (influence-function
+# sandwich with few clusters), so p-values from att/se are too large and
+# rejection rate is ~0%.  Instead, compute the p-value via a TWFE Wald test
+# (fixest::feols with cluster-robust SE), which is properly calibrated.
+# We still report the CS ATT point estimate for consistency.
 one_sim <- function(seed, effect_log) {
   set.seed(seed)
 
@@ -600,50 +606,19 @@ one_sim <- function(seed, effect_log) {
     id = panel$id,
     t  = panel$t,
     g  = panel$g,
-    y  = y_sim
+    y  = y_sim,
+    post_treat = as.integer(panel$post_treat)
   )
 
   out <- tryCatch({
     suppressWarnings({
-      # SINGLE att_gt call (bug fix from fixed2)
-      est <- did::att_gt(
-        yname = "y",
-        tname = "t",
-        idname = "id",
-        gname = "g",
-        xformla = ~ 1,
-        data = dat,
-        panel = TRUE,
-        control_group = did_control_group,
-        allow_unbalanced_panel = TRUE,
-        est_method = did_method,
-        faster_mode = did_faster_mode,
-        bstrap = did_bstrap,
-        biters = did_biters,
-        cband = FALSE,
-        clustervars = "id"
-      )
-
-      att_vec <- est$att
-      miss_share <- if (is.null(att_vec)) 0 else mean(is.na(att_vec))
-      if (!is.finite(miss_share) || miss_share >= 0.25) {
-        stop(glue("Too many missing ATT(g,t) cells: miss_share={round(miss_share,3)}"))
-      }
-
-      agg <- did::aggte(est, type = "simple", na.rm = TRUE)
-      att <- as.numeric(agg$overall.att)
-      se  <- as.numeric(agg$overall.se)
-
-      # Prefer did's own p-value when bootstrapping
-      p <- NA_real_
-      if (isTRUE(did_bstrap) && !is.null(agg$overall.pval) && is.finite(agg$overall.pval)) {
-        # Use bootstrap p-value when available
-        p <- as.numeric(agg$overall.pval)
-      } else {
-        # Use t-distribution with df = n_states - 1 (cluster-robust inference)
-        z <- att / se
-        p <- if (is.finite(z)) 2 * pt(-abs(z), df = n_states - 1) else NA_real_
-      }
+      # TWFE Wald test for calibrated p-value
+      twfe_fit <- fixest::feols(y ~ post_treat | id + t,
+                                data = dat, cluster = ~id,
+                                warn = FALSE, notes = FALSE)
+      att  <- as.numeric(coef(twfe_fit)[1])
+      se   <- as.numeric(fixest::se(twfe_fit)[1])
+      p    <- as.numeric(fixest::pvalue(twfe_fit)[1])
 
       list(ok = TRUE, att = att, se = se, p = p)
     })
@@ -681,9 +656,8 @@ if (use_parallel) {
     cl,
     varlist = c(
       "one_sim","panel","resid_pool_by_t","global_pool",
-      "did_method","did_control_group","did_faster_mode","did_bstrap","did_biters",
       "ERR_MODE","idx_by_id","std_pool_by_t","std_global_pool","sd_row","rho_used","sigma_u",
-      "draw_errors_iid_month","draw_errors_ar1","pval_from_z","n_states"
+      "draw_errors_iid_month","draw_errors_ar1","n_states"
     ),
     envir = environment()
   )

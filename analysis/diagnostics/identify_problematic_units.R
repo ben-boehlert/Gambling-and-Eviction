@@ -23,7 +23,7 @@ cat(strrep("=", 80), "\n\n")
 # -----------------------------------------------------------------------------
 
 # Source the panel building functions from pretrends_modern.R
-source("analysis/pretrends_modern.R", local = TRUE)
+source("analysis/pretrends/pretrends_modern.R", local = TRUE)
 
 cat("Data loaded successfully\n")
 cat("Panel: ", nrow(panel_raw), "observations\n")
