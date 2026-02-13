@@ -1,0 +1,50 @@
+[2026-02-13 01:57:25] === Pre-trends diagnostics (state panel) === 
+[2026-02-13 01:57:25] PANEL_FILE: data/raw/state_month_panel_with_treatment.csv 
+[2026-02-13 01:57:25] EXCLUDE_STATES: ME 
+[2026-02-13 01:57:25] MIN_DATE: 2016-01-01  MAX_DATE: 2024-12-31 
+[2026-02-13 01:57:25] DROP_START: 2020-03-01  DROP_END: 2021-07-31 
+[2026-02-13 01:57:25] COVERAGE_THRESHOLD (requested): auto 
+[2026-02-13 01:57:25] BALANCE_COMMON_MONTHS: TRUE 
+[2026-02-13 01:57:25] OUTCOME: log1p_filings_count  RATE_EPS: 0.01 
+[2026-02-13 01:57:25] CONTROL_GROUP: notyettreated  EST_METHOD: reg 
+[2026-02-13 01:57:25] ALLOW_UNBALANCED_PANEL: TRUE 
+[2026-02-13 01:57:25] PRE_WINDOW: -12 to -1 
+[2026-02-13 01:57:25] CS_ANALYTIC: TRUE  CS_BOOTSTRAP: TRUE  CS_BITERS: 199 
+[2026-02-13 01:57:25] CS_FASTER_MODE: TRUE 
+[2026-02-13 01:57:25] GAMBLING_FILE: data/raw/lsr_sports_betting_handle_revenue_by_state_month.csv 
+[2026-02-13 01:57:25] GAMBLING_AMOUNT_COL: Handle 
+[2026-02-13 01:57:25] ALPHA: 0.05  SEED: 123 
+[2026-02-13 01:57:25] SELF_TEST: FALSE  SELF_TEST_N: 200  SELF_TEST_ERR_MODE: resid_pool_ar1_state 
+[2026-02-13 01:57:25] N_CORES: 1 
+[2026-02-13 01:57:25] OUT_DIR: output/pretrends_statepanel_template 
+[2026-02-13 01:57:25] Loading panel... 
+[2026-02-13 01:57:25] Dropped months in [2020-03-01, 2021-07-31]: removed 612 rows 
+[2026-02-13 01:57:25] COVERAGE_THRESHOLD (used): 91  (max_coverage=91) 
+[2026-02-13 01:57:25] Panel: 24 states (14 treated, 10 never-treated), 13 cohorts, 91 months, 2184 obs 
+[2026-02-13 01:57:25] Headline CS inference method: analytic 
+[2026-02-13 01:57:25] Running CS-DiD pretrends (analytic)... 
+[2026-02-13 01:57:27]   analytic: 12 pre-periods, joint_reject=FALSE, min_holm_p=1, overall_att=-0.225 
+[2026-02-13 01:57:27] Running CS-DiD pretrends (bootstrap)... 
+[2026-02-13 01:57:29]   bootstrap: 12 pre-periods, joint_reject=FALSE, min_holm_p=1, overall_att=-0.225 
+[2026-02-13 01:57:29] Running TWFE/Sun-Abraham pretrends... 
+[2026-02-13 01:57:31]   SunAb: 11 pre-periods, Wald F=6639730695.609 (df1=78, df2=1260), p=0, reject=TRUE 
+[2026-02-13 01:57:31] Running gambling intensity diagnostics (file: data/raw/lsr_sports_betting_handle_revenue_by_state_month.csv)... 
+[2026-02-13 01:57:31]   Gambling data: 1920 rows, 33 states, 14 matched to panel 
+[2026-02-13 01:57:31]   Panel rows with gambling data: 546 / 2184 
+[2026-02-13 01:57:31]   WARNING: Only 0 states have pre-period gambling data. Skipping intensity analysis (need >= 6). 
+[2026-02-13 01:57:31] Generating plots... 
+[2026-02-13 01:57:32] Assembling outputs... 
+[2026-02-13 01:57:32] === Done === 
+[2026-02-13 01:57:32] Output directory: output/pretrends_statepanel_template 
+[2026-02-13 01:57:32]   - cs_analytic_vs_bootstrap.png 
+[2026-02-13 01:57:32]   - cs_event_study_analytic.png 
+[2026-02-13 01:57:32]   - cs_event_study_bootstrap.png 
+[2026-02-13 01:57:32]   - cs_vs_twfe_comparison.png 
+[2026-02-13 01:57:32]   - event_study_cs_analytic.csv 
+[2026-02-13 01:57:32]   - event_study_cs_bootstrap.csv 
+[2026-02-13 01:57:32]   - event_study_twfe_sunab.csv 
+[2026-02-13 01:57:32]   - panel_summary.csv 
+[2026-02-13 01:57:32]   - pretrends_summary.csv 
+[2026-02-13 01:57:32]   - README.md 
+[2026-02-13 01:57:32]   - run_log.txt 
+[2026-02-13 01:57:32]   - twfe_sunab_event_study.png 

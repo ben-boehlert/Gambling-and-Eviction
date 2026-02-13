@@ -1,0 +1,48 @@
+[2026-02-13 01:43:40] === Pre-trends diagnostics: Mortgage Delinquency === 
+[2026-02-13 01:43:40] MORTGAGE_FILE: data/raw/StateMortgagesPercent-90-plusDaysLate-thru-2025-03.csv 
+[2026-02-13 01:43:40] TREAT_FILE: data/raw/sports_gambling_legalization_dates.csv 
+[2026-02-13 01:43:40] TREAT_DATE_COL: online_start_date 
+[2026-02-13 01:43:40] EXCLUDE_STATES:  
+[2026-02-13 01:43:40] MIN_DATE: 2016-01-01  MAX_DATE: 2024-12-31 
+[2026-02-13 01:43:40] DROP_START: 2020-03-01  DROP_END: 2021-07-31 
+[2026-02-13 01:43:40] COVERAGE_THRESHOLD (requested): auto 
+[2026-02-13 01:43:40] BALANCE_COMMON_MONTHS: TRUE 
+[2026-02-13 01:43:40] OUTCOME: delinq_pct 
+[2026-02-13 01:43:40] CONTROL_GROUP: notyettreated  EST_METHOD: reg 
+[2026-02-13 01:43:40] ALLOW_UNBALANCED_PANEL: TRUE 
+[2026-02-13 01:43:40] PRE_WINDOW: -12 to -1 
+[2026-02-13 01:43:40] CS_ANALYTIC: TRUE  CS_BOOTSTRAP: TRUE  CS_BITERS: 199 
+[2026-02-13 01:43:40] CS_FASTER_MODE: TRUE 
+[2026-02-13 01:43:40] ALPHA: 0.05  SEED: 123 
+[2026-02-13 01:43:40] OUT_DIR: output/pretrends_mortgage_delinquency 
+[2026-02-13 01:43:40] Loading mortgage delinquency data... 
+[2026-02-13 01:43:40]   State rows: 51 
+[2026-02-13 01:43:40]   Month columns: 207 (2008-01 to 2025-03) 
+[2026-02-13 01:43:40]   Long panel: 10557 rows, 51 states 
+[2026-02-13 01:43:40] Loading treatment schedule... 
+[2026-02-13 01:43:40]   Treatment states: 24 with online_start_date 
+[2026-02-13 01:43:40] Dropped months in [2020-03-01, 2021-07-31]: removed 867 rows 
+[2026-02-13 01:43:40] COVERAGE_THRESHOLD (used): 91  (max_coverage=91) 
+[2026-02-13 01:43:40] Panel: 51 states (24 treated, 27 never-treated), 18 cohorts, 91 months, 4641 obs 
+[2026-02-13 01:43:40] Running CS-DiD pretrends (analytic)... 
+[2026-02-13 01:43:43]   analytic: 12 pre-periods, joint_reject=FALSE, min_holm_p=1, overall_att=0.0298 
+[2026-02-13 01:43:43] Running CS-DiD pretrends (bootstrap)... 
+[2026-02-13 01:43:46]   bootstrap: 12 pre-periods, joint_reject=FALSE, min_holm_p=1, overall_att=0.0298 
+[2026-02-13 01:43:46] Running TWFE/Sun-Abraham pretrends... 
+[2026-02-13 01:43:53]   SunAb: 11 pre-periods, Wald F=34451923784.811, p=0, reject=TRUE 
+[2026-02-13 01:43:53] Generating plots... 
+[2026-02-13 01:43:54] Assembling outputs... 
+[2026-02-13 01:43:54] === Done === 
+[2026-02-13 01:43:54] Output directory: output/pretrends_mortgage_delinquency 
+[2026-02-13 01:43:54]   - cs_analytic_vs_bootstrap.png 
+[2026-02-13 01:43:54]   - cs_event_study_analytic.png 
+[2026-02-13 01:43:54]   - cs_event_study_bootstrap.png 
+[2026-02-13 01:43:54]   - cs_vs_twfe_comparison.png 
+[2026-02-13 01:43:54]   - event_study_cs_analytic.csv 
+[2026-02-13 01:43:54]   - event_study_cs_bootstrap.csv 
+[2026-02-13 01:43:54]   - event_study_twfe_sunab.csv 
+[2026-02-13 01:43:54]   - panel_summary.csv 
+[2026-02-13 01:43:54]   - pretrends_summary.csv 
+[2026-02-13 01:43:54]   - README.md 
+[2026-02-13 01:43:54]   - run_log.txt 
+[2026-02-13 01:43:54]   - twfe_sunab_event_study.png 

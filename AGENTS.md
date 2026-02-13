@@ -40,12 +40,9 @@ fastglm-master/     Fast GLM package dependency
 
 - `power_simulation_cs.R` — core simulation engine; defines `cfg`, `load_panel()`, `make_treat_schedule()`, `build_untreated_sample()`, and other key functions. Sourced by many analysis and plot scripts.
 - `analysis/main/power_simulation_twfe_statepanel_staggered_parallel_fixed.R` — recommended TWFE-based power simulation (correct Type I error)
-- `analysis/pretrends/pretrends_statepanel_template.R` — pre-trends diagnostics pipeline: CS-DiD (analytic + bootstrap) + Sun-Abraham event studies, optional gambling intensity heterogeneity, optional self-test calibration to detect inflated CS SEs. Configured via env vars; run via `scripts/run_pretrends_statepanel.sh`.
-- `analysis/diagnostics/validate_csdid_dynamic_sim.R` — CS-DiD validation harness: simulates outcomes on the real design skeleton with known DGP, checks Type I error and SE calibration. Template for self-test pattern.
 - `patches/att_gt_safe.R` — safe wrapper around CS-DiD that avoids segfaults on unbalanced panels
 - `data/raw/monthly_county_data_download.csv` — primary county-level eviction data (2016-2025)
 - `data/raw/sports_gambling_legalization_dates.csv` — treatment schedule (state legalization dates)
-- `data/raw/lsr_sports_betting_handle_revenue_by_state_month.csv` — monthly sports betting handle/revenue by state (Sept 2021–Sept 2025). Columns: `State` (full name), `month_date`, `Handle` (dollars wagered), `Revenue`, `Hold`, `Taxes`. NOT per-capita.
 
 ## Working Directory
 
@@ -54,11 +51,9 @@ All scripts assume the working directory is the **project root**. Paths like `so
 ## Data
 
 - Panel data: county-month eviction filings (2016-2025) from the Eviction Tracking System
-- State-month panel: `data/raw/state_month_panel_with_treatment.csv` — columns: `state_abb`, `month_date`, `filings_count`, `renter_occupied_housing_units`, `filings_per_1k_renters`, `treat_start`, `treated`
-- Treatment: staggered sports gambling online legalization dates by state (`data/raw/sports_gambling_legalization_dates.csv`)
-- Gambling amounts: `data/raw/lsr_sports_betting_handle_revenue_by_state_month.csv` — monthly Handle/Revenue by state (Sept 2021+). Uses full state names (needs crosswalk to `state_abb` via `state_name_to_abb()`)
+- Treatment: staggered sports gambling online legalization dates by state
 - `cfg$data_dir = "data/raw"` in `power_simulation_cs.R` controls where data files are loaded from
-- `cfg$panel_choice = "counties"` is the default and recommended panel for power simulations
+- `cfg$panel_choice = "counties"` is the default and recommended panel
 
 ## Running the Analysis
 
@@ -75,23 +70,8 @@ source("power_simulation_cs.R")
 # Generate CS-DiD support diagnostics and plots
 Rscript scripts/generate_support_plots.R
 
-# Run pre-trends evaluation (legacy, CS section disabled)
+# Run pre-trends evaluation
 source("analysis/pretrends/pretrends_modern.R")
-```
-
-```bash
-# Run pre-trends diagnostics pipeline (CS-DiD + SunAb, recommended)
-bash scripts/run_pretrends_statepanel.sh
-
-# With gambling intensity heterogeneity
-GAMBLING_FILE=data/raw/lsr_sports_betting_handle_revenue_by_state_month.csv \
-  bash scripts/run_pretrends_statepanel.sh
-
-# With self-test calibration (detects inflated CS SEs; slow, ~30 min with 4 cores)
-SELF_TEST=TRUE N_CORES=4 bash scripts/run_pretrends_statepanel.sh
-
-# Validate CS-DiD SE calibration directly
-Rscript analysis/diagnostics/validate_csdid_dynamic_sim.R
 ```
 
 ## Key Methodological Notes
@@ -185,8 +165,7 @@ This repo includes local patched copies of three R packages to fix critical bugs
 - **Roth (2022)**: Power analysis for pre-trend tests — reports minimal detectable violations (MDVs) alongside p-values. Key insight: don't condition analysis on pre-test results.
 - **Rambachan & Roth (2023)**: `HonestDiD` sensitivity analysis — bounded violations framework with M ∈ {0, 0.5, 1, 1.5, 2}. Tests robustness under plausible parallel trends violations.
 - **Equivalence testing** (Hartman & Hidalgo 2018): provides positive evidence FOR parallel trends (not just failing to reject). Reports smallest δ* that can be ruled out.
-- Legacy script: `analysis/pretrends/pretrends_modern.R` (1200+ lines, 10+ specifications, CS section disabled)
-- **Recommended pipeline**: `analysis/pretrends/pretrends_statepanel_template.R` — runs CS-DiD (analytic + bootstrap) and Sun-Abraham event studies on the same sample, with Holm-adjusted joint pre-trend test (CS) and Wald F-test (SunAb). Optional self-test calibration guards against inflated CS SEs by running null simulations on the real design skeleton. Optional gambling intensity heterogeneity analysis via Handle terciles.
+- Script: `analysis/pretrends/pretrends_modern.R` (1200+ lines, 10+ specifications)
 
 ### Support Structure
 

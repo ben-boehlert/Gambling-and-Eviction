@@ -1,0 +1,2 @@
+baseline_att,baseline_se,n_states,n_treated,max_influence_state,max_influence_value,max_pct_change,sd_influence,influence_hhi,range_loo_att,outcome
+-0.10480819893669188,0.05734009956510365,26,16,ID,0.04357737676291924,41.57821354152038,0.011762575846870295,0.08507871185129609,0.06481629964708917,log1p_filings_count

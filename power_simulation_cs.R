@@ -413,30 +413,128 @@ load_panel <- function(cfg) {
 # 4) Treatment schedule from sports_gambling_legalization_dates.csv
 ################################################################################
 
+read_lsr_handle_revenue <- function(cfg) {
+  path <- file.path(cfg$data_dir, "lsr_sports_betting_handle_revenue_by_state_month.csv")
+  if (!file.exists(path)) {
+    stop(glue(
+      "LSR handle/revenue file not found: {path}\n",
+      "Expected: data/raw/lsr_sports_betting_handle_revenue_by_state_month.csv"
+    ))
+  }
+
+  xwalk <- state_fips_xwalk %>%
+    mutate(state_name_lc = str_to_lower(str_trim(state_name))) %>%
+    select(state_abb, state_name_lc)
+
+  raw <- read_csv(path, show_col_types = FALSE)
+
+  df <- raw %>%
+    transmute(
+      state_name_lc = str_to_lower(str_trim(.data$State)),
+      month_date = as.Date(.data$month_date),
+      handle = suppressWarnings(as.numeric(.data$Handle)),
+      revenue = suppressWarnings(as.numeric(.data$Revenue)),
+      taxes = suppressWarnings(as.numeric(.data$Taxes))
+    ) %>%
+    left_join(xwalk, by = "state_name_lc") %>%
+    filter(!is.na(state_abb), !is.na(month_date)) %>%
+    group_by(state_abb, month_date) %>%
+    summarise(
+      lsr_handle = sum(handle, na.rm = TRUE),
+      lsr_revenue = sum(revenue, na.rm = TRUE),
+      lsr_taxes = sum(taxes, na.rm = TRUE),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      lsr_hold = if_else(lsr_handle > 0, lsr_revenue / lsr_handle, NA_real_),
+      lsr_has_data = TRUE
+    ) %>%
+    arrange(state_abb, month_date)
+
+  df
+}
+
+derive_lsr_first_date <- function(lsr_df) {
+  lsr_df %>%
+    group_by(state_abb) %>%
+    summarise(
+      lsr_first_date = min(
+        month_date[coalesce(lsr_handle, 0) > 0 | coalesce(lsr_revenue, 0) > 0],
+        na.rm = TRUE
+      ),
+      .groups = "drop"
+    ) %>%
+    mutate(lsr_first_date = if_else(is.infinite(lsr_first_date), as.Date(NA), lsr_first_date))
+}
+
+add_lsr_handle_revenue <- function(panel_df, cfg, impute_zero_pre_first = TRUE) {
+  if (!("state_abb" %in% names(panel_df))) stop("panel_df must include state_abb to merge LSR handle/revenue.")
+  if (!("month_date" %in% names(panel_df))) stop("panel_df must include month_date (Date) to merge LSR handle/revenue.")
+
+  lsr <- read_lsr_handle_revenue(cfg)
+  first_by_state <- lsr %>%
+    group_by(state_abb) %>%
+    summarise(first_lsr_month = min(month_date, na.rm = TRUE), .groups = "drop")
+
+  out <- panel_df %>%
+    left_join(lsr, by = c("state_abb", "month_date")) %>%
+    left_join(first_by_state, by = "state_abb") %>%
+    mutate(
+      lsr_has_data = replace_na(lsr_has_data, FALSE),
+      lsr_log_handle = if_else(!is.na(lsr_handle), log1p(lsr_handle), NA_real_)
+    )
+
+  if (isTRUE(impute_zero_pre_first)) {
+    out <- out %>%
+      mutate(
+        .lsr_impute_zero = is.na(first_lsr_month) | month_date < first_lsr_month,
+        lsr_handle = if_else(is.na(lsr_handle) & .lsr_impute_zero, 0, lsr_handle),
+        lsr_revenue = if_else(is.na(lsr_revenue) & .lsr_impute_zero, 0, lsr_revenue),
+        lsr_taxes = if_else(is.na(lsr_taxes) & .lsr_impute_zero, 0, lsr_taxes),
+        lsr_hold = if_else(is.na(lsr_hold) & .lsr_impute_zero, NA_real_, lsr_hold),
+        lsr_log_handle = if_else(is.na(lsr_log_handle) & .lsr_impute_zero, 0, lsr_log_handle)
+      ) %>%
+      select(-.lsr_impute_zero)
+  }
+
+  out
+}
+
 read_sports_schedule <- function(cfg) {
   path <- file.path(cfg$data_dir, "sports_gambling_legalization_dates.csv")
-  sch <- read_csv(path, show_col_types = FALSE)
-  
+  sch_raw <- read_csv(path, show_col_types = FALSE)
+
+  sch <- sch_raw %>%
+    mutate(state_name_lc = str_to_lower(str_trim(state))) %>%
+    left_join(
+      state_fips_xwalk %>%
+        mutate(state_name_lc = str_to_lower(str_trim(state_name))) %>%
+        select(state_abb, state_name_lc),
+      by = "state_name_lc"
+    )
+
+  # Optional enrichment: "operational" first month with positive handle/revenue from LSR series.
+  # NOTE: this reflects ANY legal sports betting (retail+online) in the LSR totals.
+  lsr_path <- file.path(cfg$data_dir, "lsr_sports_betting_handle_revenue_by_state_month.csv")
+  if (file.exists(lsr_path)) {
+    lsr <- read_lsr_handle_revenue(cfg)
+    lsr_first <- derive_lsr_first_date(lsr)
+    sch <- sch %>% left_join(lsr_first, by = "state_abb")
+  }
+
   if (!(cfg$treat_date_col %in% names(sch))) {
     stop(glue(
       "cfg$treat_date_col='{cfg$treat_date_col}' not found.\n",
       "Available columns: {paste(names(sch), collapse=', ')}\n",
-      "Use e.g. online_start_date / retail_start_date / first_start_date (recommended)."
+      "Use e.g. online_start_date / retail_start_date / first_start_date (recommended), or lsr_first_date (LSR handle-based)."
     ))
   }
-  
+
   sch %>%
     mutate(
-      state_name_lc = str_to_lower(str_trim(state)),
       state_key = state_key(state),
       g = parse_month_to_date(.data[[cfg$treat_date_col]]),
       ever_treated = !is.na(g)
-    ) %>%
-    left_join(
-      state_fips_xwalk %>%
-        mutate(state_name_lc = str_to_lower(state_name)) %>%
-        select(state_abb, state_name_lc),
-      by = "state_name_lc"
     ) %>%
     select(state, state_key, state_abb, g, ever_treated, everything())
 }
@@ -1154,6 +1252,9 @@ simulate_power <- function(panel_df, treat_schedule_std, option = c("A1", "A2"),
 ################################################################################
 # 10) RUN
 ################################################################################
+# When sourced by other scripts that only need function definitions,
+# set POWER_SIM_LIBRARY_MODE <- TRUE before source() to skip execution.
+if (!isTRUE(get0("POWER_SIM_LIBRARY_MODE", envir = globalenv()))) {
 
 # Parallel plan (works locally and on Della; respects SLURM_CPUS_PER_TASK if set)
 if (cfg$use_parallel) {
@@ -1249,6 +1350,8 @@ message("\nSaved outputs:")
 message(glue("  - {file.path(cfg$data_dir, 'power_results.csv')}"))
 message(glue("  - {file.path(cfg$data_dir, 'power_curve.png')}"))
 message(glue("  - {file.path(cfg$data_dir, 'grant_ready_paragraph.txt')}"))
+
+} # end if (!isTRUE(POWER_SIM_LIBRARY_MODE))
 
 ################################################################################
 # END

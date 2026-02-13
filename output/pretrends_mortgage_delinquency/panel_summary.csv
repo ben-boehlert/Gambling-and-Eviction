@@ -1,0 +1,2 @@
+n_states,n_treated,n_never_treated,n_cohorts,n_months,n_obs,min_date,max_date,coverage_threshold,outcome,treatment
+51,24,27,18,91,4641,2016-01-01,2024-12-01,91,delinq_pct,online_start_date

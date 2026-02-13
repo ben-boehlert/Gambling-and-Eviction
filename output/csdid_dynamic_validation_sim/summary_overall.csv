@@ -1,0 +1,2 @@
+panel_file,n_sims,n_ok,n_fail,n_states,n_rows,coverage_threshold,alpha,target_h,effect_log,effect_shape,ramp_months,delay_months,err_mode,rho,sigma_e,type1_target_h,mean_se_target_h,sd_est_target_h,se_over_sd_est_target_h
+data/raw/state_month_panel_with_treatment.csv,1000,1000,0,24,2592,108,0.05,0,0,step,6,0,resid_pool_ar1_state,0.6,1,0.049,0.06216927591420221,0.06364593716383131,0.9767988136331779
