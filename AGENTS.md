@@ -40,9 +40,13 @@ fastglm-master/     Fast GLM package dependency
 
 - `power_simulation_cs.R` — core simulation engine; defines `cfg`, `load_panel()`, `make_treat_schedule()`, `build_untreated_sample()`, and other key functions. Sourced by many analysis and plot scripts.
 - `analysis/main/power_simulation_twfe_statepanel_staggered_parallel_fixed.R` — recommended TWFE-based power simulation (correct Type I error)
+- `analysis/pretrends/pretrends_statepanel_template.R` — pre-trends diagnostics pipeline: CS-DiD (analytic + bootstrap) + Sun-Abraham event studies, optional self-test calibration. Run via `scripts/run_pretrends_statepanel.sh`.
+- `analysis/pretrends/pretrends_mortgage_delinquency.R` — pretrends for mortgage delinquency outcome. Run via `scripts/run_pretrends_mortgage.sh`.
 - `patches/att_gt_safe.R` — safe wrapper around CS-DiD that avoids segfaults on unbalanced panels
 - `data/raw/monthly_county_data_download.csv` — primary county-level eviction data (2016-2025)
 - `data/raw/sports_gambling_legalization_dates.csv` — treatment schedule (state legalization dates)
+- `data/raw/lsr_sports_betting_handle_revenue_by_state_month.csv` — monthly sports betting handle/revenue by state (June 2018+). 34 states. NOT per-capita.
+- `data/raw/StateMortgagesPercent-90-plusDaysLate-thru-2025-03.csv` — state-month mortgage delinquency rates (% 90+ days late), wide format
 
 ## Working Directory
 
@@ -51,7 +55,10 @@ All scripts assume the working directory is the **project root**. Paths like `so
 ## Data
 
 - Panel data: county-month eviction filings (2016-2025) from the Eviction Tracking System
-- Treatment: staggered sports gambling online legalization dates by state
+- State-month panel: `data/raw/state_month_panel_with_treatment.csv` — columns: `state_abb`, `month_date`, `filings_count`, `renter_occupied_housing_units`, `filings_per_1k_renters`, `treat_start`, `treated`
+- Treatment: staggered sports gambling online legalization dates by state (`data/raw/sports_gambling_legalization_dates.csv`)
+- Gambling amounts: `data/raw/lsr_sports_betting_handle_revenue_by_state_month.csv` — monthly Handle/Revenue by state (June 2018+, starts per-state at legalization). Uses full state names (needs crosswalk to `state_abb` via `state_name_to_abb()`)
+- Mortgage delinquency: `data/raw/StateMortgagesPercent-90-plusDaysLate-thru-2025-03.csv` — wide format (states × months), % of mortgages 90+ days late
 - `cfg$data_dir = "data/raw"` in `power_simulation_cs.R` controls where data files are loaded from
 - `cfg$panel_choice = "counties"` is the default and recommended panel
 
@@ -70,8 +77,19 @@ source("power_simulation_cs.R")
 # Generate CS-DiD support diagnostics and plots
 Rscript scripts/generate_support_plots.R
 
-# Run pre-trends evaluation
+# Run pre-trends evaluation (legacy, CS section disabled)
 source("analysis/pretrends/pretrends_modern.R")
+```
+
+```bash
+# Run pre-trends diagnostics pipeline (CS-DiD + SunAb, recommended)
+bash scripts/run_pretrends_statepanel.sh
+
+# Run mortgage delinquency pretrends (alternative outcome)
+bash scripts/run_pretrends_mortgage.sh
+
+# Validate CS-DiD SE calibration directly
+Rscript analysis/diagnostics/validate_csdid_dynamic_sim.R
 ```
 
 ## Key Methodological Notes
@@ -91,7 +109,47 @@ source("analysis/pretrends/pretrends_modern.R")
 - P-values are then recomputed from the shifted t-statistic using `2 * pt(-abs(att/se), df = n_states - 1)`.
 - Implication: within a threshold, `sd_att`, `mean_se`, and `se_over_sdatt` are expected to be nearly identical across effect sizes; only `mean_att` and rejection rates (power) should change.
 
-# TO DO
+## Empirical Results Summary
+
+### Eviction Filings (Primary Outcome)
+
+- **Panel**: 24 states (14 treated, 10 never-treated), 13 cohorts, 91 months (2016–2024, excl. COVID), 2,184 obs
+- **CS-DiD pretrends**: Parallel trends NOT rejected (Holm min p = 1.0, both analytic and bootstrap)
+- **Sun-Abraham pretrends**: Rejects parallel trends (Wald F very large) — driven by long-horizon pre-period trends, not near-treatment violation
+- **Overall ATT (CS-DiD)**: −0.225 log points (SE = 0.147 analytic, 0.138 bootstrap) — **not statistically significant**
+- **Interpretation**: No detectable effect of online gambling legalization on eviction filings
+- **TWFE power**: 80% power to detect 5% effect (MDE = 5 log points), so this is a reasonably well-powered null
+
+### Mortgage Delinquency (Alternative Outcome)
+
+- **Panel**: 51 states (24 treated, 27 never-treated), 18 cohorts, 91 months (2016–2024, excl. COVID), 4,641 obs
+- **CS-DiD pretrends**: Parallel trends NOT rejected (Holm min p = 1.0)
+- **Sun-Abraham pretrends**: Rejects (same long-horizon trend issue — secular post-financial-crisis decline)
+- **Overall ATT (CS-DiD)**: +0.030 percentage points (SE = 0.043) — **not statistically significant**
+- **Interpretation**: No detectable effect on mortgage delinquency rates
+- **Script**: `analysis/pretrends/pretrends_mortgage_delinquency.R`, run via `scripts/run_pretrends_mortgage.sh`
+
+### Related Literature: Hollenbeck, Larsen & Proserpio (2025)
+
+- Uses individual-level UC Consumer Credit Panel (~7M people), Callaway & Sant'Anna estimator
+- Finds significant effects of **online** gambling access on: credit scores (−2.75 points), bankruptcy (+10%), collections (+7.5%), auto loan delinquency (+20%)
+- **No effect** on credit card delinquency
+- Effects appear ~2 years post-legalization, concentrated among subprime borrowers
+- Key difference from our project: they use individual-level credit data; we use aggregate state-level housing outcomes
+
+## Known Issues and Limitations
+
+### Gambling Intensity Heterogeneity Analysis Does Not Work
+
+The `pretrends_statepanel_template.R` gambling intensity feature bins states by **pre-treatment average handle**. This always produces 0 states because gambling handle only exists AFTER legalization — there is no handle before a state legalizes (it's 0 by definition). The code at `filter(g > 0L, t < g, !is.na(gambling_amount))` correctly returns empty results.
+
+**To fix**: Refactor intensity binning to use post-treatment handle (e.g., first-year average, or cumulative handle per capita) instead of pre-treatment handle. Alternatively, use regulatory features (number of operators, tax rate, advertising rules) as the intensity measure, which avoids the endogeneity concern that post-treatment handle is itself an outcome.
+
+### State-Level Power Constraint
+
+Treatment varies at the state level, so the effective sample size for inference is ~51 clusters (or ~24 treated). Using county-level data does NOT meaningfully improve power because cluster-robust SEs are driven by the number of clusters, not observations within clusters. The null results on evictions and mortgage delinquency may reflect genuine null effects or insufficient power at the state level to detect small effects.
+
+## TO DO
 
 Create a working Callaway-Santa'Anna simulation with a 5% rejection rate when alpha=0.05 and the effect size is zero.
 
@@ -165,7 +223,8 @@ This repo includes local patched copies of three R packages to fix critical bugs
 - **Roth (2022)**: Power analysis for pre-trend tests — reports minimal detectable violations (MDVs) alongside p-values. Key insight: don't condition analysis on pre-test results.
 - **Rambachan & Roth (2023)**: `HonestDiD` sensitivity analysis — bounded violations framework with M ∈ {0, 0.5, 1, 1.5, 2}. Tests robustness under plausible parallel trends violations.
 - **Equivalence testing** (Hartman & Hidalgo 2018): provides positive evidence FOR parallel trends (not just failing to reject). Reports smallest δ* that can be ruled out.
-- Script: `analysis/pretrends/pretrends_modern.R` (1200+ lines, 10+ specifications)
+- Legacy script: `analysis/pretrends/pretrends_modern.R` (1200+ lines, 10+ specifications, CS section disabled)
+- **Recommended pipeline**: `analysis/pretrends/pretrends_statepanel_template.R` — runs CS-DiD (analytic + bootstrap) and Sun-Abraham event studies on the same sample, with Holm-adjusted joint pre-trend test (CS) and Wald F-test (SunAb). Optional self-test calibration guards against inflated CS SEs. Optional gambling intensity heterogeneity (currently broken, see Known Issues).
 
 ### Support Structure
 
