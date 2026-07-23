@@ -20,7 +20,12 @@ cd "$SCRIPT_DIR/.."
 
 # ---- Core panel ----
 export PANEL_FILE="${PANEL_FILE:-data/raw/state_month_panel_with_treatment.csv}"
-export EXCLUDE_STATES="${EXCLUDE_STATES:-ME}"
+export TREAT_SOURCE="${TREAT_SOURCE:-file}"
+export TREAT_FILE="${TREAT_FILE:-data/raw/sports_gambling_legalization_dates.csv}"
+export TREAT_DATE_COL="${TREAT_DATE_COL:-online_start_date}"
+# Maine repaired from the Maine Judicial Branch court source (2026-07-23); no
+# longer excluded. Override with EXCLUDE_STATES=ME to reproduce the old spec.
+export EXCLUDE_STATES="${EXCLUDE_STATES:-}"
 export MIN_DATE="${MIN_DATE:-2016-01-01}"
 export MAX_DATE="${MAX_DATE:-2024-12-31}"
 # Optional: drop a window from the analysis panel (e.g., COVID months)
@@ -81,6 +86,9 @@ echo "Start time: $(date)"
 echo ""
 echo "Configuration:"
 echo "  PANEL_FILE:       $PANEL_FILE"
+echo "  TREAT_SOURCE:     $TREAT_SOURCE"
+echo "  TREAT_FILE:       $TREAT_FILE"
+echo "  TREAT_DATE_COL:   $TREAT_DATE_COL"
 echo "  EXCLUDE_STATES:   $EXCLUDE_STATES"
 echo "  MIN_DATE:         $MIN_DATE"
 echo "  MAX_DATE:         $MAX_DATE"

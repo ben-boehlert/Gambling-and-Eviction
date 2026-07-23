@@ -4,6 +4,10 @@
 
 Research replication package analyzing the causal effect of sports gambling legalization on eviction rates using staggered difference-in-differences (DiD) methods. This is an economics/econometrics project written primarily in R.
 
+## Terminology Note (Data Search)
+
+When searching for or evaluating eviction data sources (state AOC/court dashboards, LSC filings, county court systems), **"landlord/tenant filings" and other near-synonyms (e.g., "landlord-tenant cases," "L&T," "forcible entry and detainer," "unlawful detainer," "summary process") are acceptable stand-ins for "eviction."** Many state court systems file evictions under these case-type labels rather than the word "eviction" itself. Do not discard a source or dashboard as irrelevant just because it doesn't use the literal word "eviction" — check whether the case type is a landlord/tenant or possession action first.
+
 ## Key Entry Points
 
 - `README.md` — repo overview and structure
@@ -42,6 +46,9 @@ fastglm-master/     Fast GLM package dependency
 - `analysis/main/power_simulation_twfe_statepanel_staggered_parallel_fixed.R` — recommended TWFE-based power simulation (correct Type I error)
 - `analysis/pretrends/pretrends_statepanel_template.R` — pre-trends diagnostics pipeline: CS-DiD (analytic + bootstrap) + Sun-Abraham event studies, optional gambling intensity heterogeneity, optional self-test calibration to detect inflated CS SEs. Configured via env vars; run via `scripts/run_pretrends_statepanel.sh`.
 - `analysis/diagnostics/validate_csdid_dynamic_sim.R` — CS-DiD validation harness: simulates outcomes on the real design skeleton with known DGP, checks Type I error and SE calibration. Template for self-test pattern.
+- `analysis/diagnostics/cs_calibration_multi_estimator.R` — **Multi-estimator calibration test** (2026-04-09). Tests TWFE, Sun-Abraham, CS, didimputation, and did2s on the balanced 24-state panel under the null. This is the definitive test showing all het.-robust estimators are 4-5x noisier than TWFE. Output: `data/output/cs_calibration_multi/`.
+- `analysis/diagnostics/cs_calibration_test.R` — Earlier single-estimator calibration test (v3). Output: `data/output/cs_calibration_test/`. Superseded by multi-estimator version.
+- `utils/eviction_treatment_schedule.R` — Shared utility for loading treatment schedule from `sports_gambling_legalization_dates.csv`. Handles state name → abbreviation mapping. Used by pretrends pipeline and calibration tests.
 - `patches/att_gt_safe.R` — safe wrapper around CS-DiD that avoids segfaults on unbalanced panels
 - `data/raw/monthly_county_data_download.csv` — primary county-level eviction data (2016-2025)
 - `data/raw/sports_gambling_legalization_dates.csv` — treatment schedule (state legalization dates)
@@ -101,14 +108,60 @@ Rscript analysis/diagnostics/validate_csdid_dynamic_sim.R
 
 ## Key Methodological Notes
 
-- The `did` package (CS-DiD) has known bugs with unbalanced panels — the `patches/` directory contains fixes
 - Pre-COVID period (2016-2020) has better parallel trends than the full sample
 - Idaho is excluded from annual analyses due to data quality issues
-- Main finding: 80% power to detect a 5% effect (MDE = 5 log points) using TWFE without COVID in residual pool
-- I need to add a working CS simulation because traditional TWFE does not properly capture dynamic treatment effects.
-- The problem is that the CS simulation has SEs that are far too big. I almost never reject the null, even when alpha is 0.05, when the effect is 0. In this case, I should reject 5% of the time.
+- Maine: was excluded for a late-2023 zero-fill data artifact; **repaired 2026-07-23** from the Maine Judicial Branch court source (`data_prep/monthly_panel_expansion/07_repair_me_from_court_source.R`, `08_repair_me_in_county_files.R`) and now included as a never-treated control
+- **UPDATED 2026-05-21**: Main finding has been substantially revised after a session-long methodological diagnostic. See `output/border_diagnostic/HANDOFF.md` for the full reframing. Headline points:
+  - The state-panel "MDE = 5%" claim is wrong as a precision constraint. Going from state aggregates to county-level data with state clustering shrinks the simulated cluster-robust SE by ~5× (Sim D in the 4-way decomposition).
+  - Under a homogeneous-effect DGP, the all-county TWFE MDE is ~2%. Under realistic cohort heterogeneity, the actual real-data SE is ~10× larger; the realistic MDE is ~8–10%.
+  - The pooled null was masking substantial cohort heterogeneity. Per-state did2s ATTs range from −57% (NH, a data artifact) to +34% (AR). 8 of 13 states show statistically significant positive ATTs in the +6% to +12% range.
+  - **New recommended headline: did2s on pre-COVID-treated cohorts excluding NH = +9.1%, CI [−0.10%, +17.5%]** (borderline significant, consistent with Hollenbeck et al. 2025).
+  - The previous "5% MDE TWFE state-panel" spec stays as a robustness check, not the headline.
+- See `output/border_diagnostic/HANDOFF.md` for the complete narrative of the diagnostic and recommended next steps.
 
-### Current CS threshold-sweep behavior (important)
+### Heterogeneity-Robust Estimator Calibration (2026-04-09, SUPERSEDED 2026-05-21)
+
+**Original state-panel calibration** (kept for chronology). Tested via `analysis/diagnostics/cs_calibration_multi_estimator.R` on the balanced 24-state panel (100 null simulations, effect=0, alpha=0.05):
+
+| Estimator | Type | Rejection (target 5%) | SE/SD (target 1.0) | Noise vs TWFE |
+|-----------|------|----------------------|---------------------|---------------|
+| **TWFE** (fixest) | Pooled | 1% | 1.14 | 1x |
+| **Sun-Abraham** (fixest) | Het.-robust | **21%** | **0.58** | **4x** |
+| **CS Analytic** (did) | Het.-robust | **14%** | **0.67** | **5.1x** |
+| didimputation (BJS) | Het.-robust | failed | — | — |
+| did2s (Gardner) | Het.-robust | failed | — | — |
+
+### Heterogeneity-Robust Estimator Calibration at COUNTY LEVEL (2026-05-21, NEW HEADLINE)
+
+Ported the same calibration test to the all-county panel via `analysis/diagnostics/cs_calibration_multi_estimator_county.R`. 50 null simulations.
+
+| Estimator | State-panel rej / SE-SD / noise | County-panel rej / SE-SD / noise | Status |
+|-----------|---------------------------------|----------------------------------|--------|
+| TWFE | 1% / 1.14 / 1× | **8% / 0.95 / 1×** | OK; wild bootstrap recommended for inference |
+| Sun-Abraham | 21% / 0.58 / 4× | 30% / 0.51 / 4.5× | Still broken — skip |
+| CS Analytic | 14% / 0.67 / 5.1× | 0% / 2.46 / 3.4× | Over-corrects — skip |
+| didimputation (BJS) | failed | **14% / 0.73 / 1.1×** | Rescued; usable as robustness |
+| **did2s (Gardner)** | **failed** | **4% / 0.97 / 1.1×** | **Rescued — NEW HEADLINE ESTIMATOR** |
+
+**Key conclusions (updated):**
+1. **County-level data rescues the modern imputation estimators.** did2s and didimputation, which failed entirely on the state panel, now run cleanly. did2s is well-calibrated and as efficient as TWFE.
+2. **CS-DiD and Sun-Abraham remain broken even on county data.** The cohort heterogeneity problem isn't fixed by within-cohort disaggregation.
+3. **TWFE at county level has Type I ≈ 7-8%** — mildly anti-conservative, within MC noise of nominal 5% but consistent enough to require wild cluster bootstrap for valid inference.
+4. **Real-data SE is ~10× larger than null-DGP simulated SE.** The 2% MDE from the bootstrap simulation assumes homogeneous treatment effects. Real-data cohort heterogeneity widens the pooled SE substantially, putting the realistic MDE in the 8–10% range.
+
+**Panel used for calibration** (matches pretrends pipeline exactly):
+- Source: `state_month_panel_with_treatment.csv` + `sports_gambling_legalization_dates.csv`
+- COVID drop: 2020-03-01 to 2022-03-31
+- Exclude: ME
+- Coverage threshold: auto (83 months) + BALANCE_COMMON_MONTHS=TRUE
+- Result: 24 states (11 treated, 13 never-treated), 83 months, 1992 obs, perfectly balanced
+
+**Cohort structure** (why het.-robust estimators struggle):
+- 11 treated states, each with a unique online legalization date → 11 singleton cohorts
+- No cohort has more than 1 state
+- Compare to Hollenbeck et al. (2025): same treatment timing but 51 state clusters (24 treated), ~2x our design
+
+### Previous CS threshold-sweep behavior (legacy, superseded by calibration test)
 
 - Script: `analysis/diagnostics/cs_power_threshold_sweep_nocovid_small.R` (invoked by `scripts/run_cs_power_threshold_sweep_no_maine_2024_min5.sh`)
 - For each threshold, the code estimates CS once per simulation at `effect=0` (`one_cs0`), storing `att0` and `se0`.
@@ -120,12 +173,15 @@ Rscript analysis/diagnostics/validate_csdid_dynamic_sim.R
 
 ### Eviction Filings (Primary Outcome)
 
-- **Panel**: 24 states (14 treated, 10 never-treated), 13 cohorts, 91 months (2016–2024, excl. COVID), 2,184 obs
+**UPDATED 2026-07-23 (post NH + ME court-source repairs).** NH (commit 84678a6) and ME (this session) were repaired from their state judicial-branch sources after both were found to carry a late-2023 zero-fill artifact; ME is now included as a never-treated control. Numbers below are the current repaired-panel pretrends run (`output/pretrends_statepanel_me_included`).
+
+- **Panel**: 26 states (12 treated, 14 never-treated), 12 cohorts, 91 months (2016–2024, excl. COVID), 2,366 obs
 - **CS-DiD pretrends**: Parallel trends NOT rejected (Holm min p = 1.0, both analytic and bootstrap)
-- **Sun-Abraham pretrends**: Rejects parallel trends (Wald F very large) — driven by long-horizon pre-period trends, not a near-treatment violation
-- **Overall ATT (CS-DiD)**: −0.225 log points (SE = 0.147 analytic, 0.138 bootstrap) — **not statistically significant**
+- **Sun-Abraham pretrends**: NO LONGER rejects after the repairs (joint Holm min p = 0.357) — the prior rejection was partly driven by the NH/ME data artifacts
+- **Overall ATT (CS-DiD)**: +0.011 log points (SE = 0.163 analytic, 0.162 bootstrap) — **not statistically significant** (was −0.225 pre-repair; the shift is mostly the NH −57% artifact removal)
 - **Interpretation**: No detectable effect of online gambling legalization on eviction filings
-- **TWFE power**: 80% power to detect 5% effect (MDE = 5 log points), so this is a reasonably well-powered null
+- **TWFE power**: 80% power to detect 5% effect (MDE = 5 log points) — **unchanged by ME inclusion** (power 0.828 with ME vs 0.835 without at 5%; 38-state raw panel). Adding one never-treated control does not move the MDE.
+- **Prior spec (pre-repair, for reference)**: 24 states (14 treated, 10 never-treated), overall ATT −0.225, SunAb rejected pre-trends
 
 ### Mortgage Delinquency (Alternative Outcome)
 
@@ -139,10 +195,34 @@ Rscript analysis/diagnostics/validate_csdid_dynamic_sim.R
 ### Related Literature: Hollenbeck, Larsen & Proserpio (2025)
 
 - Uses individual-level UC Consumer Credit Panel (~7M people), Callaway & Sant'Anna estimator
+- Same treatment variation as our project (state-level online gambling legalization dates)
 - Finds significant effects of **online** gambling access on: credit scores (−2.75 points), bankruptcy (+10%), collections (+7.5%), auto loan delinquency (+20%)
 - **No effect** on credit card delinquency
 - Effects appear ~2 years post-legalization, concentrated among subprime borrowers
-- Key difference from our project: they use individual-level credit data; we use aggregate state-level housing outcomes
+- Key differences from our project:
+  - **Data**: individual-level credit records for all 50 states + DC vs. aggregate state-level eviction data for 24 states
+  - **Clusters**: 51 state clusters (24 treated) vs. our 24 (11 treated) — roughly 2x our design
+  - **CS works for them** because they have more clusters, not because of individual vs. aggregate data (treatment is at state level for both; clustering is at state level for both)
+  - **Implication**: their 7.5-10% individual credit effects may not aggregate into detectable state-level eviction effects — eviction is a more extreme margin with additional attenuation steps
+
+### Gambling Market Maturation (Handle Quintile Timing)
+
+Analysis of how quickly state gambling markets reach their peak monthly Handle (33 states, June 2018–Oct 2025). Measures months from a state's first Handle data to first reaching each quintile of that state's peak month.
+
+| Quintile | Mean (mo) | Median (mo) | SD   | Min | Max |
+| -------- | --------- | ----------- | ---- | --- | --- |
+| 20%      | 4.8       | 1.9         | 8.5  | 0   | 38  |
+| 40%      | 10.3      | 8.0         | 12.1 | 0   | 48  |
+| 60%      | 16.9      | 14.0        | 14.9 | 0   | 52  |
+| 80%      | 29.3      | 30.0        | 17.5 | 0   | 65  |
+| 100%     | 46.3      | 46.0        | 19.6 | 0   | 78  |
+
+- Most states reach 20% of peak within 2 months (median), though retail-first states like Arkansas take ~38 months
+- 80% of peak takes ~2.5 years on average (median 30 months)
+- Peak reached at ~3.8 years on average, ranging 0–78 months
+- States launching with online immediately (Ohio, North Carolina, Kansas) hit high quintiles in month 1; retail-first states (Arkansas, Oregon) take years
+- Relevant for gambling intensity heterogeneity: post-treatment handle maturation varies widely, so first-year handle may not capture steady-state intensity
+- Script: `analysis/exploratory/quintile_timing_analysis.R`
 
 ## Known Issues and Limitations
 
@@ -154,11 +234,45 @@ The `pretrends_statepanel_template.R` gambling intensity feature bins states by 
 
 ### State-Level Power Constraint
 
-Treatment varies at the state level, so the effective sample size for inference is ~51 clusters (or ~24 treated). Using county-level data does NOT meaningfully improve power because cluster-robust SEs are driven by the number of clusters, not observations within clusters. The null results on evictions and mortgage delinquency may reflect genuine null effects or insufficient power at the state level to detect small effects.
+Treatment varies at the state level, so the effective sample size for inference is ~51 clusters (or ~24 treated in our balanced panel). Using county-level data does NOT meaningfully improve power because cluster-robust SEs are driven by the number of clusters, not observations within clusters. The null results on evictions and mortgage delinquency may reflect genuine null effects or insufficient power at the state level to detect small effects.
+
+### Data Coverage Constraint
+
+The ETS (Eviction Tracking System) monthly panel covers only 38 states, and after balancing to common months (excluding COVID), ~26 states survive (25 without ME; ME repaired and re-included 2026-07-23). This is the binding constraint on power — not the estimator choice.
+
+**7 online gambling states have annual court data but are NOT in the ETS panel:**
+
+| State | Online Start | Court Data Source | Coverage |
+|-------|-------------|-------------------|----------|
+| NJ | 2018-08 | `Court Data/` compiled CSV | 2013-2025, 21 counties |
+| IA | 2019-08 | Compiled CSV (no source files) | 2000-2025, 99 counties |
+| OR | 2019-10 | `Oregon pasted.xlsx` | 2000-2025, 36 counties |
+| IL | 2020-06 | `Summary Illinois.xlsx` | 2000-2025, 102 counties |
+| MI | 2021-01 | Compiled CSV (no source files) | 2010-2025, 83 counties |
+| WY | 2021-09 | Compiled CSV | 2014-2025, 23 counties |
+| MD | 2022-11 | `Maryland 20XX.xlsx` files | 2000-2025, 24 counties |
+
+- All court data is **annual** (county-year), not monthly
+- Only North Carolina has monthly breakdowns in source files (and NC is already in the ETS panel)
+- Court data compiled file: `/Users/bb1806/Documents/Court Data/county_court-issued_2000_2025_ben_update_3_19.csv`
+- Adding these 7 states via an annual panel would: (a) increase treated clusters from 11 to 18, (b) create multi-state annual cohorts (e.g., 2019: PA+IA+IN+OR = 4 states), (c) partially resolve the singleton-cohort problem
+- Tradeoff: annual data means fewer time periods, coarser treatment timing
+
+### Interpretation: Null Result vs. Underpowered
+
+The result is a **bound**, not a precise null:
+- **Can say**: "No evidence of effects above 5% on evictions" (TWFE-based, well-calibrated)
+- **Cannot say**: "Gambling doesn't increase evictions" (true effect could be 1-2%, well below MDE)
+- **Framing for policy**: gambling legalization doesn't cause an eviction *crisis*, but may cause smaller effects we can't detect
+- **Framing for Arnould Ventures**: we've established the analytical framework and ruled out large effects; funding would support expanding the eviction panel to tighten the MDE
+- **The 5% MDE is informative relative to Hollenbeck et al.** (7.5-10% credit effects), but eviction is a more extreme downstream margin with additional attenuation
 
 ## TO DO
 
-Create a working Callaway-Santa'Anna simulation with a 5% rejection rate when alpha=0.05 and the effect size is zero.
+- [ ] Build annual panel merging ETS (aggregated to annual) + Court Data states for 30+ state robustness check
+- [ ] Run CS calibration on the annual panel to test whether multi-state cohorts fix the het.-robust estimator problem
+- [ ] Consider sourcing monthly court data directly from state court systems (NJ Courts, Michigan SCAO, Iowa Judicial Branch) for states with online gambling
+- [ ] Run Goodman-Bacon (2021) decomposition on TWFE to quantify negative-weight concern
 
 ## Bundled R Packages (`did/`, `DRDID-master/`, `fastglm-master/`)
 
@@ -204,20 +318,34 @@ This repo includes local patched copies of three R packages to fix critical bugs
 
 ### Estimators
 
-1. **CS-DiD (Callaway & Sant'Anna 2021)** — Target primary estimator
-   - Implementation: `did::att_gt()` with bootstrap inference (`bstrap=TRUE`, `biters=50-199`)
-   - Strength: group-time heterogeneity, avoids negative weighting, handles staggered treatment properly
-   - Current issue: SEs too large, rejection rate under null far below nominal 5% — bugs being resolved (see patches)
-   - Weakness: 537/875 (g,t) cells non-identifiable due to unbalanced panel; computationally expensive
-   - Script: `power_simulation_cs.R`
-
-2. **TWFE (Two-Way Fixed Effects)** — Working baseline while CS-DiD is being fixed
+1. **TWFE (Two-Way Fixed Effects)** — Primary estimator for power analysis
    - Implementation: `fixest::feols()` with unit + time fixed effects
    - Inference: cluster-robust SEs at state level (fixest default)
-   - Limitation: does not properly capture dynamic treatment effects in staggered designs
+   - **Calibration**: SE/SD = 1.14, rejection under null = 1% (well-calibrated, slightly conservative)
+   - Limitation: does not properly capture dynamic treatment effects in staggered designs (Goodman-Bacon 2021). Less concerning for a null result.
    - Script: `analysis/main/power_simulation_twfe_statepanel_staggered_parallel_fixed.R`
 
-3. **Sun-Abraham (2021)** — Available for robustness checks via `fixest::sunab()`
+2. **CS-DiD (Callaway & Sant'Anna 2021)** — Heterogeneity-robust, miscalibrated on this design
+   - Implementation: `did::att_gt()` with analytic or bootstrap inference (`biters=199`)
+   - Strength: group-time heterogeneity, avoids negative weighting, handles staggered treatment properly
+   - **Calibration**: SE/SD = 0.67, rejection under null = 14% (over-rejects, SEs too small). NOT a `did` package bug — structural issue with singleton cohorts.
+   - Noise: 5.1x noisier than TWFE (SD of ATT across null sims)
+   - Effective MDE: ~25% (vs TWFE's 5%) — too large to be useful
+   - Script: `power_simulation_cs.R`, calibration: `analysis/diagnostics/cs_calibration_multi_estimator.R`
+
+3. **Sun-Abraham (2021)** — Heterogeneity-robust, also miscalibrated
+   - Implementation: `fixest::sunab()` with fixest cluster-robust SEs
+   - **Calibration**: SE/SD = 0.58, rejection under null = 21% (worst of all estimators tested)
+   - Noise: 4x noisier than TWFE
+   - Same structural issue as CS — uses fixest SEs (not `did` package), confirming the problem is the design not the software
+
+4. **didimputation (Borusyak, Jaravel & Spiess 2024)** — Installed, fails on this panel
+   - Implementation: `didimputation::did_imputation()`
+   - Status: runs on real data but fails in simulation (all 100 sims errored)
+
+5. **did2s (Gardner 2022)** — Installed, SE extraction issues
+   - Implementation: `did2s::did2s()`
+   - Status: SE extraction failed due to API differences; needs debugging
 
 ### Inference Methods
 
@@ -235,15 +363,19 @@ This repo includes local patched copies of three R packages to fix critical bugs
 
 ### Support Structure
 
-- 37 states (Maine excluded for data quality)
-- 15–18 treatment groups (depending on treatment definition: online, retail, first)
-- 875 total (g,t) cells; only 338 identifiable (38.6%) due to unbalanced panel
+- Raw ETS panel: 38 states (Maine repaired 2026-07-23 and re-included; formerly excluded for data quality)
+- Balanced panel: pretrends ~26 states (ME included); the CS calibration script still hardcodes `EXCLUDE_STATES=c("ME")` and reports 24 states until re-run
+- 11 treated states, each in its own cohort (singleton cohorts)
+- 13 never-treated states
+- 15–18 treatment groups in unbalanced panel (depending on treatment definition: online, retail, first)
+- 875 total (g,t) cells; only 338 identifiable (38.6%) in unbalanced panel
 
 ### Power Analysis Results
 
-- **Without COVID**: 80% power to detect 5% effect (MDE = 5 log points)
-- **With COVID**: 80% power to detect 8% effect (MDE = 8 log points)
-- Type I error: well-calibrated at ~5% for TWFE
+- **TWFE without COVID**: 80% power to detect 5% effect (MDE = 5 log points). Well-calibrated: SE/SD = 1.14, Type I error = 1-5%.
+- **TWFE with COVID**: 80% power to detect 8% effect (MDE = 8 log points)
+- **Heterogeneity-robust estimators (CS, SunAb)**: MDE ≈ 20-25% (4-5x noisier). Not useful for detecting plausible effect sizes.
+- **No formal power simulation exists for mortgage delinquency** (the mortgage panel has 51 states so power is likely better than evictions)
 
 ## Common Tasks
 
@@ -255,4 +387,5 @@ This repo includes local patched copies of three R packages to fix critical bugs
 
 - R >= 4.0
 - Core packages: tidyverse, fixest, lubridate, did, glue, patchwork
+- Calibration packages: did2s, didimputation (installed 2026-04-09)
 - Optional: fwildclusterboot (for wild bootstrap inference)

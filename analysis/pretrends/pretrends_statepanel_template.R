@@ -31,6 +31,8 @@ suppressPackageStartupMessages({
   library(glue)
 })
 
+source("utils/eviction_treatment_schedule.R")
+
 ################################################################################
 # SECTION 1: HELPER FUNCTIONS
 ################################################################################
@@ -80,12 +82,7 @@ run_serial_or_parallel <- function(X, FUN, cores = 1L) {
   mclapply(X, FUN, mc.cores = cores)
 }
 
-state_name_to_abb <- function(state_name) {
-  state_name <- trimws(state_name)
-  m <- setNames(state.abb, state.name)
-  m2 <- c(m, "District of Columbia" = "DC")
-  unname(m2[state_name])
-}
+state_name_to_abb <- eviction_state_name_to_abb
 
 safe_write_csv <- function(df, path) {
   dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
@@ -97,7 +94,10 @@ safe_write_csv <- function(df, path) {
 ################################################################################
 
 PANEL_FILE    <- getenv1("PANEL_FILE", "data/raw/state_month_panel_with_treatment.csv")
-EXCLUDE_STATES <- parse_chr_list(getenv1("EXCLUDE_STATES", "ME"))
+TREAT_SOURCE  <- tolower(getenv1("TREAT_SOURCE", "file"))
+TREAT_FILE    <- getenv1("TREAT_FILE", "data/raw/sports_gambling_legalization_dates.csv")
+TREAT_DATE_COL <- getenv1("TREAT_DATE_COL", "online_start_date")
+EXCLUDE_STATES <- parse_chr_list(getenv1("EXCLUDE_STATES", ""))  # ME repaired 2026-07-23; no longer excluded by default
 MIN_DATE      <- as.Date(getenv1("MIN_DATE", "2016-01-01"))
 MAX_DATE      <- as.Date(getenv1("MAX_DATE", "2024-12-31"))
 DROP_START    <- parse_date(getenv1("DROP_START", ""))
@@ -182,6 +182,9 @@ cat("", file = LOG_FILE)
 
 log_msg("=== Pre-trends diagnostics (state panel) ===")
 log_msg(glue("PANEL_FILE: {PANEL_FILE}"))
+log_msg(glue("TREAT_SOURCE: {TREAT_SOURCE}"))
+log_msg(glue("TREAT_FILE: {TREAT_FILE}"))
+log_msg(glue("TREAT_DATE_COL: {TREAT_DATE_COL}"))
 log_msg(glue("EXCLUDE_STATES: {paste(EXCLUDE_STATES, collapse=',')}"))
 log_msg(glue("MIN_DATE: {MIN_DATE}  MAX_DATE: {MAX_DATE}"))
 log_msg(glue("DROP_START: {fmt_date(DROP_START)}  DROP_END: {fmt_date(DROP_END)}"))
@@ -208,11 +211,14 @@ if (!file.exists(PANEL_FILE)) stop("PANEL_FILE not found: ", PANEL_FILE, call. =
 
 log_msg("Loading panel...")
 
-panel0 <- readr::read_csv(PANEL_FILE, show_col_types = FALSE) %>%
+panel0_raw <- readr::read_csv(PANEL_FILE, show_col_types = FALSE)
+has_panel_treat <- "treat_start" %in% names(panel0_raw)
+
+panel0 <- panel0_raw %>%
   transmute(
     state_abb = as.character(state_abb),
     month_date = as.Date(month_date),
-    treat_start = as.Date(treat_start),
+    panel_treat_start_raw = if (has_panel_treat) as.Date(treat_start) else as.Date(NA),
     filings_count = as.numeric(filings_count),
     renter_occupied_housing_units = as.numeric(renter_occupied_housing_units),
     filings_per_1k_renters = as.numeric(filings_per_1k_renters)
@@ -246,12 +252,40 @@ panel <- panel0 %>% filter(state_abb %in% keep_states)
 
 if (nrow(panel) < 200) stop("Too few rows after filtering; panel size=", nrow(panel), call. = FALSE)
 
-treat_by_state <- panel %>%
-  group_by(state_abb) %>%
-  summarise(
-    treat_start_state = if (all(is.na(treat_start))) as.Date(NA) else min(treat_start, na.rm = TRUE),
-    .groups = "drop"
-  )
+treat_by_state <- resolve_eviction_treatment_schedule(
+  panel_df = panel,
+  treat_source = TREAT_SOURCE,
+  treat_file = TREAT_FILE,
+  treat_date_col = TREAT_DATE_COL,
+  panel_treat_col = "panel_treat_start_raw"
+) %>%
+  rename(treat_start_state = treat_start)
+
+if (TREAT_SOURCE == "file" && has_panel_treat) {
+  panel_treat_by_state <- resolve_eviction_treatment_schedule(
+    panel_df = panel,
+    treat_source = "panel",
+    panel_treat_col = "panel_treat_start_raw"
+  ) %>%
+    rename(panel_treat_start = treat_start)
+
+  treat_mismatch <- treat_by_state %>%
+    left_join(panel_treat_by_state, by = "state_abb") %>%
+    mutate(
+      mismatch = xor(is.na(treat_start_state), is.na(panel_treat_start)) |
+        (!is.na(treat_start_state) & !is.na(panel_treat_start) & treat_start_state != panel_treat_start)
+    ) %>%
+    filter(mismatch)
+
+  if (nrow(treat_mismatch) > 0) {
+    log_msg(glue(
+      "Treatment schedule differs from embedded panel treat_start for {nrow(treat_mismatch)} states: ",
+      "{paste(treat_mismatch$state_abb, collapse=', ')}"
+    ))
+  } else {
+    log_msg("Treatment schedule matches embedded panel treat_start for all states in sample.")
+  }
+}
 
 panel <- panel %>%
   left_join(treat_by_state, by = "state_abb")
@@ -314,7 +348,8 @@ panel_summary <- tibble(
   n_states = n_states, n_treated = n_treated, n_never_treated = n_never,
   n_cohorts = n_cohorts, n_months = n_t, n_obs = nrow(panel),
   min_date = min(panel$month_date), max_date = max(panel$month_date),
-  coverage_threshold = COVERAGE_THRESHOLD, outcome = OUTCOME
+  coverage_threshold = COVERAGE_THRESHOLD, outcome = OUTCOME,
+  treat_source = TREAT_SOURCE, treat_date_col = TREAT_DATE_COL
 )
 safe_write_csv(panel_summary, file.path(OUT_DIR, "panel_summary.csv"))
 
@@ -643,8 +678,9 @@ run_cs_pretrends <- function(panel_df, bstrap, biters, label) {
         2 * pt(-abs(t_stat), df = n_cl - 1),
         NA_real_
       ),
-      ci_lo = att - qnorm(1 - ALPHA / 2) * se,
-      ci_hi = att + qnorm(1 - ALPHA / 2) * se
+      ci_mult = ifelse(is.finite(crit_val) & crit_val > 0, crit_val, qnorm(1 - ALPHA / 2)),
+      ci_lo = att - ci_mult * se,
+      ci_hi = att + ci_mult * se
     )
 
   # Pre-trend joint test: Holm-adjusted max-|t|
@@ -1141,6 +1177,9 @@ readme_lines <- c(
   "",
   "## Configuration",
   glue("- Panel: `{PANEL_FILE}`"),
+  glue("- Treatment source: `{TREAT_SOURCE}`"),
+  glue("- Treatment file: `{TREAT_FILE}`"),
+  glue("- Treatment date column: `{TREAT_DATE_COL}`"),
   glue("- Excluded states: {paste(EXCLUDE_STATES, collapse=', ')}"),
   glue("- Date range: {MIN_DATE} to {MAX_DATE}"),
   glue("- Dropped window: {fmt_date(DROP_START)} to {fmt_date(DROP_END)}"),
