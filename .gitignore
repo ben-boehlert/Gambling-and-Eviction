@@ -69,3 +69,11 @@ did-master/
 !INSTALL_PACKAGES.R
 !data/raw/combined_monthly_panel.csv
 !data/raw/state_month_panel_with_treatment.csv
+
+# Large raw source data — regenerable, kept out of git history
+# MD statistics PDFs (78MB) are re-downloadable via
+# data_prep/monthly_panel_expansion/01b_download_md_statistics_pdfs.R;
+# the manifest records the exact source URL per year and IS tracked.
+data/raw/monthly_expansion/md_raw/statistics_pdfs/
+# MD Socrata case-level extract (101MB), from 01_pull_md_socrata.R
+data/raw/maryland/
