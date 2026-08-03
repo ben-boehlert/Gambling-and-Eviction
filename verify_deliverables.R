@@ -206,6 +206,54 @@ check_file("output/my_csdid/figures/event_study.pdf", "Event study plot", requir
 check_file("output/my_csdid/figures/pretrends_test.pdf", "Pre-trends test plot", required = FALSE)
 
 # ========================================================================
+# 8. Blinded Power-Simulation Framework (docs/methodology/POWER_SIMULATION_*)
+# ========================================================================
+
+cat("8. BLINDED POWER-SIMULATION FRAMEWORK\n")
+cat("--------------------------------------\n")
+
+check_file("docs/methodology/POWER_SIMULATION_CODE_AUDIT.md", "Phase-1 code audit")
+check_file("docs/methodology/POWER_SIMULATION_BLINDNESS_PROTOCOL.md", "Blindness protocol")
+check_file("docs/methodology/POWER_SIMULATION_DESIGN.md", "Simulation design doc")
+check_file("docs/methodology/PRE_ANALYSIS_PLAN_POWER_LANGUAGE.md", "Draft PAP language")
+
+check_loadable("R/power/config.R", "Power framework: config")
+check_loadable("R/power/blindness_checks.R", "Power framework: blindness checks")
+check_loadable("R/power/load_blinded_panel.R", "Power framework: blinded loader")
+check_loadable("R/power/make_pseudo_schedules.R", "Power framework: pseudo-schedules")
+check_loadable("R/power/impose_effects.R", "Power framework: effect injection")
+check_loadable("R/power/run_estimators.R", "Power framework: estimator runners")
+check_loadable("R/power/summarize_operating_characteristics.R",
+               "Power framework: OC summarizer")
+check_loadable("R/power/validate_simulation.R", "Power framework: BHNS validation")
+check_loadable("R/power/run_scenario_grid.R", "Power framework: scenario-grid runner")
+
+check_file("config/power_validation.yml", "Power config: validation tier")
+check_file("config/power_primary.yml", "Power config: primary candidate set")
+check_file("config/power_sensitivity.yml", "Power config: sensitivity grid")
+
+check_file("scripts/run_power_validation.sh", "Power runner: validation")
+check_file("scripts/run_power_primary.sh", "Power runner: primary")
+check_file("scripts/run_power_sensitivity.sh", "Power runner: sensitivity")
+
+check_file("tests/run_tests.R", "Power framework: test entry point")
+
+cat("  Running power-framework test suite (tests/run_tests.R)...\n")
+test_result <- suppressWarnings(
+  system2("Rscript", "tests/run_tests.R", stdout = TRUE, stderr = TRUE)
+)
+test_status <- attr(test_result, "status")
+if (is.null(test_status)) test_status <- 0L
+if (test_status == 0L) {
+  cat("  ✓ Power framework test suite: PASS\n\n")
+  n_pass <- n_pass + 1
+} else {
+  cat("  ✗ Power framework test suite: FAILED (exit status ", test_status, ")\n", sep = "")
+  cat("    Run `Rscript tests/run_tests.R` directly for details.\n\n")
+  n_fail <- n_fail + 1
+}
+
+# ========================================================================
 # Summary
 # ========================================================================
 

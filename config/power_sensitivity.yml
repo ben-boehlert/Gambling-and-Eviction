@@ -1,0 +1,109 @@
+# =============================================================================
+# power_sensitivity.yml — sensitivity grid for the blinded power simulation
+# (POWER_SIMULATION_DESIGN.md §§5-11; schema shared with power_primary.yml).
+#
+# Same `scenarios:` block structure as the primary config: each block is a
+# named sensitivity family varying ONE dimension away from the primary
+# baseline (state level, S2, D1, count_nb, step, y_log1p, notyettreated),
+# which keeps the grid interpretable and the §15 fragility screen honest.
+#
+# Design §7 note on S4: the loader has no "S4" sample value — S4 (calendar
+# variants) is expressed as sample S2/S3 with covid = pre / post, which is
+# exactly the loader's partition (load_blinded_panel covid argument).
+# =============================================================================
+
+run_name: sensitivity
+
+# ---- Top-level defaults (sensitivity baseline; state level for runtime) -----
+
+level:      state
+sample:     [S2]
+covid:      drop
+treat_def:  online_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+est_anticipation: 0
+
+effect_grid:  [0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.10, 0.15, 0.20]
+
+estimators:   [cs, twfe, did2s]
+
+# ---- Execution (§11 sensitivity tier) ---------------------------------------
+
+n_reps:     200
+base_seed:  20260723
+mde_boot:   200
+alpha:      [0.1, 0.05, 0.01]
+min_pre:    12
+min_post:   6
+anticipation_months: 6
+
+# ---- Sensitivity families ---------------------------------------------------
+
+scenarios:
+
+  # S1 strict-universal window (28 months; §7 known limitation: short T).
+  # Support requirements relaxed to fit the short window; COVID keep is
+  # irrelevant (S1 ends 2018-04) but stated for clarity.
+  - name: sample_S1_short
+    sample: [S1]
+    covid: keep
+    min_pre: 6
+    min_post: 6
+
+  # S4 calendar variants: S2 partitioned pre-COVID / post-COVID (§7 S4).
+  - name: calendar_segments
+    sample: [S2]
+    covid: [pre, post]
+
+  # Alternative pseudo-treatment designs (§8): shifted actual (D2),
+  # untreated-risk-set draws (D3), never-treated placebo (D4).
+  - name: alt_designs
+    designs: [D2, D3, D4]
+
+  # Alternative injection mechanisms (§9): Poisson augmentation and BHNS
+  # binomial thinning (thinning is the negative-delta mechanism; here it
+  # stress-tests mechanism sensitivity of the OCs).
+  - name: alt_mechanisms
+    mechanisms: [count_pois, thinning]
+
+  # Alternative effect shapes (§9): temporary pulse, anticipation onset at
+  # e = -3, cohort-heterogeneous, state-heterogeneous, county-exposure-
+  # heterogeneous, intensity-proportional maturation ramp.
+  - name: alt_shapes
+    shapes: [temporary, anticipation, cohort_het, state_het, exposure_het,
+             intensity_ramp]
+
+  # Alternative outcome transforms (§6): Y2 log rate, Y3 asinh.
+  - name: alt_outcomes
+    outcomes: [y_lograte, y_asinh]
+
+  # Quarterly aggregation variant (§2).
+  - name: quarterly
+    quarterly: [true]
+
+  # T2 treatment definition: first legal sports betting (§3).
+  - name: treat_def_first
+    treat_def: [first_start_date]
+
+  # Never-treated control-group contrast (§4).
+  - name: nevertreated_controls
+    control_group: [nevertreated]
+
+  # Loader-side anticipation-exclusion sensitivity A in {0, 3, 12} (§4;
+  # 6 is the default used everywhere else).
+  - name: loader_anticipation
+    loader_anticipation: [0, 3, 12]
+
+  # Estimator-side anticipation sweep (§5 E1).
+  - name: est_anticipation_sweep
+    anticipation: [3, 6, 12]
+
+  # E4 Sun-Abraham diagnostic-only calibration (§5): documented, never
+  # preferred.
+  - name: sunab_diagnostic
+    estimators: [sunab]

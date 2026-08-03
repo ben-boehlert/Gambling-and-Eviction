@@ -17,6 +17,32 @@ cd scripts
 - **[Power Analysis Summary](docs/POWER_ANALYSIS_SUMMARY.md)** - Overview of power simulation results
 - **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
 
+## Blinded Power-Simulation Framework (Pre-Analysis Plan)
+
+A separate, blinded power-simulation framework (`R/power/`) supports the project's pre-analysis
+plan by evaluating candidate research designs on **untreated data only**, with known effects
+imposed of sizes drawn from external literature — never from this project's own estimates. Start
+here:
+
+- **[Blindness Protocol](docs/methodology/POWER_SIMULATION_BLINDNESS_PROTOCOL.md)** - What may and
+  may not be used, cutoffs, automated enforcement
+- **[Simulation Design](docs/methodology/POWER_SIMULATION_DESIGN.md)** - Estimand, calibration
+  samples, pseudo-treatment designs, effect grid (with sources), decision rule
+- **[Code Audit](docs/methodology/POWER_SIMULATION_CODE_AUDIT.md)** - What existed before this
+  framework and what it reuses/deprecates
+- **[Pre-Analysis Plan Language](docs/methodology/PRE_ANALYSIS_PLAN_POWER_LANGUAGE.md)** - Draft
+  PAP text, to be filled in only from blinded simulation output
+
+Run it:
+```bash
+Rscript tests/run_tests.R                     # unit tests (must pass first)
+bash scripts/run_power_validation.sh          # small BHNS-style validation
+bash scripts/run_power_primary.sh             # primary candidate specifications
+bash scripts/run_power_sensitivity.sh         # full sensitivity grid
+```
+All outputs are written to `output_blinded_power/` (gitignored, regenerable) and never mixed
+with `output/` or `figures/`.
+
 ## Repository Structure
 
 ```
@@ -30,12 +56,17 @@ analysis/       Main power simulation and analysis scripts (see analysis/README.
 data_prep/      Original data merging and preparation scripts
 plots/          Visualization utility scripts
 utils/          Diagnostic and utility tools
-scripts/        Shell scripts for replication (START HERE)
+scripts/        Shell scripts for replication (START HERE); also run_power_*.sh (blinded framework)
 data/           Data files (raw inputs and outputs)
 docs/           Documentation (see docs/README.md)
-  └─ methodology/ Detailed methodology documentation
+  └─ methodology/ Detailed methodology documentation, incl. POWER_SIMULATION_* (blinded framework)
 figures/        Generated visualizations
 patches/        CS-DiD package bug fixes (see patches/README.md)
+R/power/        Blinded power-simulation framework (config, loader, schedules, effects,
+                 estimators, OC summarizer, validation, scenario-grid runner)
+config/         Power-simulation scenario configs (power_validation/primary/sensitivity.yml)
+tests/          testthat suite for the power-simulation framework (tests/run_tests.R)
+output_blinded_power/  Power-simulation outputs only (gitignored; never output/ or figures/)
 ```
 
 ## Recent Updates

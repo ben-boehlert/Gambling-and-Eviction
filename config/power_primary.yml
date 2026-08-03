@@ -1,0 +1,119 @@
+# =============================================================================
+# power_primary.yml — primary candidate set for the blinded power simulation
+# (POWER_SIMULATION_DESIGN.md §§5-11; schema shared with power_validation.yml).
+#
+# Structure: an explicit `scenarios:` list of blocks. Each block is one named
+# scenario family; the (possibly list-valued) axes WITHIN a block are crossed,
+# and unstated axes inherit the top-level defaults below. This keeps the
+# candidate set finite and deliberate (~11 scenario families) instead of a
+# full cartesian product across every axis.
+#
+# Axis names accepted in blocks (singular or plural): level, sample, covid,
+# treat_def, design(s), mechanism(s), shape(s), outcome(s),
+# anticipation (= estimator-side CS anticipation, design §5 E1),
+# loader_anticipation (= blindness exclusion window A, protocol §4),
+# control_group, quarterly. Per-block execution overrides: estimators,
+# effect_grid, n_reps, estimator_reps, min_pre, min_post.
+# =============================================================================
+
+run_name: primary
+
+# ---- Top-level defaults (inherited by every block) --------------------------
+
+level:      county             # county outcomes are the primary unit (§2)
+sample:     [S2, S3]           # state-specific risk set + never-treated (§7)
+covid:      drop               # drop the COVID window (config default dates)
+treat_def:  online_start_date  # T1 primary treatment definition (§3)
+
+designs:      [D1]             # cohort-preserving reassignment, primary (§8)
+mechanisms:   [count_nb, deterministic]  # M1 primary + M2 benchmark (§9)
+shapes:       [step, ramp, delayed]      # constant/maturation/delayed (§9)
+outcomes:     [y_log1p]        # Y1 primary transform (§6)
+control_group: notyettreated   # pipeline-matching contrast (§4)
+
+# Estimator-side anticipation (CS `anticipation` argument): 0 default, 6 as a
+# dedicated block below (§5 E1). Loader-side exclusion stays at the protocol
+# default anticipation_months = 6 (§4).
+est_anticipation: 0
+
+# Effect grid in proportional-change units, dense at 1-6% where the MDE
+# plausibly lies (§10; all anchors external — see design doc).
+effect_grid:  [0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.10, 0.15, 0.20]
+
+estimators:   [cs, twfe, did2s]  # E1 intended spec, E2 benchmark, E3 alt (§5)
+
+# ---- Execution (§11) --------------------------------------------------------
+
+n_reps:     250                # default replications per scenario/grid point
+estimator_reps:                # per-estimator budgets: att_gt is the cost
+  cs:     250                  #   driver, so CS runs 250; the cheap
+  twfe:   500                  #   estimators run 500
+  did2s:  500
+base_seed:  20260723           # seed_rep = base_seed + 10007*rep + 101*scenario
+mde_boot:   200                # bootstrap draws for the MDE CI (§12)
+
+alpha:      [0.1, 0.05, 0.01]  # rejection-rate levels (§12)
+
+min_pre:    12                 # pseudo-schedule support requirements (§8)
+min_post:   6
+
+anticipation_months: 6         # loader-side blindness exclusion default (§4)
+
+# ---- Scenario families ------------------------------------------------------
+
+scenarios:
+
+  # 1-2. HEADLINE: county panel, NB count augmentation, constant step, both
+  # calibration samples reported side-by-side (§7 comparison discipline).
+  - name: headline_county_nb_step
+    level: county
+    sample: [S2, S3]
+    mechanisms: [count_nb]
+    shapes: [step]
+
+  # 3. Deterministic transformed-scale benchmark (M2): exact truth, isolates
+  # estimator noise from injection noise (§9).
+  - name: county_det_benchmark
+    level: county
+    sample: [S2]
+    mechanisms: [deterministic]
+    shapes: [step]
+
+  # 4-5. Effect dynamics: delayed onset (e = 6; Hollenbeck ~2-yr onset) and
+  # linear ramp to plateau at e = 18 (handle-maturation proxy) (§9).
+  - name: county_nb_dynamics
+    level: county
+    sample: [S2]
+    mechanisms: [count_nb]
+    shapes: [ramp, delayed]
+
+  # 6. Estimator-side anticipation 6 (CS anticipation argument, §5 E1) under
+  # the headline injection.
+  - name: county_est_anticipation6
+    level: county
+    sample: [S2]
+    mechanisms: [count_nb]
+    shapes: [step]
+    anticipation: [6]
+
+  # 7-8. State-aggregate comparison of the headline (secondary outcome unit,
+  # §2): quantifies what county disaggregation buys per §12.
+  - name: state_nb_step
+    level: state
+    sample: [S2, S3]
+    mechanisms: [count_nb]
+    shapes: [step]
+
+  # 9. State-level deterministic benchmark.
+  - name: state_det_benchmark
+    level: state
+    sample: [S2]
+    mechanisms: [deterministic]
+    shapes: [step]
+
+  # 10-11. State-level effect dynamics.
+  - name: state_nb_dynamics
+    level: state
+    sample: [S2]
+    mechanisms: [count_nb]
+    shapes: [ramp, delayed]

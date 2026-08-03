@@ -1,0 +1,44 @@
+# =============================================================================
+# power_validation.yml — small, fast validation tier for the blinded
+# power-simulation framework (POWER_SIMULATION_DESIGN.md §16).
+#
+# This is the config used by tests/CI and quick smoke runs. power_primary.yml
+# and power_sensitivity.yml extend the same schema by widening the scenario
+# axes (which are all lists so the grid expander can take their cross product).
+#
+# Blindness constants (anticipation_months, universal_cutoff, covid_drop,
+# base_seed) and the canonical data/output paths are supplied by defaults in
+# R/power/config.R; override them here only with justification.
+# =============================================================================
+
+# ---- Scenario axes (lists → crossed by the grid expander) -------------------
+
+level:      state              # panel level: state | county
+sample:     [S2]               # calibration samples: S1 | S2 | S3 (§7)
+treat_def:  online_start_date  # treatment definition (schedule column, §3)
+covid:      drop               # COVID handling: drop | pre | covid | post | keep
+
+designs:      [D1]             # pseudo-treatment designs (§8)
+mechanisms:   [deterministic]  # effect-injection mechanisms (§9)
+shapes:       [step]           # effect shapes (§9)
+estimators:   [twfe]           # estimators to run (§5)
+
+# Effect grid in proportional-change units (0 = null / size). §10.
+effect_grid:  [0, 0.05]
+
+# ---- Execution --------------------------------------------------------------
+
+n_reps:     25                 # replications per scenario (quick tier, §11)
+base_seed:  20260723           # master seed; seed_rep = base_seed + 10007*rep
+
+# Significance levels for operating characteristics (§12).
+alpha:      [0.1, 0.05, 0.01]
+
+# ---- Risk-set support requirements for pseudo-schedule assignment (§8) -------
+
+min_pre:    12                 # min untreated months before a pseudo date
+min_post:   6                  # min months at/after a pseudo date
+
+# ---- Anticipation exclusion (months); default 6, sensitivity {0,3,12} (§4) --
+
+anticipation_months: 6

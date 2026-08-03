@@ -9,6 +9,11 @@
 data/output/
 *_out/
 *_power_out*/
+output_blinded_power/
+# Della upload package for the blinded power framework — regenerable via
+# scripts/make_della_power_upload.sh (launcher templates are tracked in
+# scripts/della_power/)
+della_power_upload/
 
 # Backup directories (local only)
 backup_*/
