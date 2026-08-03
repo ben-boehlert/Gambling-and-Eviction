@@ -83,7 +83,83 @@ test_that("scenario ids are deterministic and unique", {
   g2 <- expand_scenario_grid(cfg)
   expect_identical(g1$scenario_id, g2$scenario_id)
   expect_equal(anyDuplicated(g1$scenario_id), 0L)
-  expect_true(all(grepl("^S\\d{3}_", g1$scenario_id)))
+  # Content-addressed: "S" + 10 hex digits + slug (never a positional index).
+  expect_true(all(grepl("^S[0-9a-f]{10}_", g1$scenario_id)))
+})
+
+# Reordering the scenarios list must leave every scenario's id AND seed
+# offset untouched — that is what makes `resume` sound across config edits.
+.cfg_blocks_reordered_path <- .write_yaml(c(
+  "level: state",
+  "sample: [S2]",
+  "covid: keep",
+  "treat_def: online_start_date",
+  "designs: [D1]",
+  "mechanisms: [deterministic]",
+  "shapes: [step]",
+  "estimators: [twfe]",
+  "effect_grid: [0, 0.05]",
+  "n_reps: 2",
+  "base_seed: 123",
+  "min_pre: 12",
+  "min_post: 6",
+  "scenarios:",
+  "  - name: b",
+  "  - name: a",
+  "    sample: [S2, S3]",
+  "    shapes: [step, ramp]"
+))
+
+test_that("scenario ids and seeds are invariant to config ordering", {
+  g1 <- expand_scenario_grid(read_power_config(.cfg_blocks_path))
+  g2 <- expand_scenario_grid(read_power_config(.cfg_blocks_reordered_path))
+
+  key <- function(g) {
+    o <- order(g$scenario_id)
+    g[o, c("scenario_id", "scenario_seed_offset", "name", "sample", "shape")]
+  }
+  expect_equal(as.data.frame(key(g1)), as.data.frame(key(g2)))
+
+  # Positions did move — so this is a real reorder, not a no-op config.
+  expect_false(identical(g1$scenario_id, g2$scenario_id))
+})
+
+test_that("scenario id changes when a hashed input changes", {
+  cfg  <- read_power_config(.cfg_blocks_path)
+  base <- expand_scenario_grid(cfg)
+
+  cfg_reps <- cfg; cfg_reps$n_reps <- 7L
+  cfg_seed <- cfg; cfg_seed$base_seed <- 999L
+  cfg_grid <- cfg; cfg_grid$effect_grid <- c(0, 0.05, 0.10)
+
+  for (alt in list(cfg_reps, cfg_seed, cfg_grid)) {
+    expect_false(any(expand_scenario_grid(alt)$scenario_id %in%
+                       base$scenario_id))
+  }
+})
+
+test_that("seed offsets stay inside the collision-free band", {
+  g <- expand_scenario_grid(read_power_config(.cfg_blocks_path))
+  expect_true(all(g$scenario_seed_offset >= 0L))
+  expect_true(all(g$scenario_seed_offset < 10007L))
+  expect_type(g$scenario_seed_offset, "integer")
+})
+
+test_that(".select_scenarios resolves indices, ids, and block names", {
+  g <- expand_scenario_grid(read_power_config(.cfg_blocks_path))
+
+  expect_equal(nrow(.select_scenarios(g, NULL)), nrow(g))
+  expect_equal(.select_scenarios(g, 2L)$scenario_id, g$scenario_id[2])
+  expect_equal(nrow(.select_scenarios(g, c(1L, 3L))), 2L)
+  # A block name selects every scenario the block expands to.
+  expect_equal(nrow(.select_scenarios(g, "a")), 4L)
+  expect_equal(nrow(.select_scenarios(g, "b")), 1L)
+  expect_equal(.select_scenarios(g, g$scenario_id[3])$scenario_id,
+               g$scenario_id[3])
+
+  expect_error(.select_scenarios(g, 99L), "out of range")
+  expect_error(.select_scenarios(g, "nope"), "no scenario matches")
+  expect_error(.select_scenarios(g, integer(0)), "empty")
 })
 
 test_that("per-rep seeds are deterministic and distinct across reps/scenarios", {
@@ -188,4 +264,85 @@ test_that("resume = TRUE skips scenarios whose partial is complete", {
                                run_name = rn, impose_fn = mock_impose_effect,
                                estimator_fn = mock_run_estimator)
   expect_false(any(r_fresh$results$att == 999))
+})
+
+# ---- Subset runs (the SLURM-array workflow) ---------------------------------
+
+# Multi-scenario but S2-only: sample S3 has no feasible D1 template placement
+# on the real blinded panel, so .cfg_blocks_path cannot actually be RUN (it
+# exists to exercise expansion arithmetic only). Blocks here differ on `shape`,
+# which varies the scenario without changing the panel.
+.cfg_subset_path <- .write_yaml(c(
+  "level: state",
+  "sample: [S2]",
+  "covid: keep",
+  "treat_def: online_start_date",
+  "designs: [D1]",
+  "mechanisms: [deterministic]",
+  "shapes: [step]",
+  "estimators: [twfe]",
+  "effect_grid: [0, 0.05]",
+  "n_reps: 2",
+  "base_seed: 123",
+  "min_pre: 12",
+  "min_post: 6",
+  "mde_boot: 20",
+  "scenarios:",
+  "  - name: a",
+  "    shapes: [step, ramp]",
+  "  - name: b"
+))
+
+test_that("a subset run writes only partials, and a later full run aggregates", {
+  rn <- paste0("_test_grid_subset_", format(Sys.time(), "%H%M%S"))
+  on.exit(unlink(.power_out_dir(rn), recursive = TRUE), add = TRUE)
+
+  grid <- expand_scenario_grid(read_power_config(.cfg_subset_path))
+  expect_equal(nrow(grid), 3L)
+  run_level <- c("results_raw.csv.gz", "oc_summary.csv", "mde_table.csv",
+                 "pretrend_summary.csv", "failures.csv",
+                 "scenario_truths.csv", "run_metadata.json")
+
+  # Each "array task" runs one scenario by index.
+  for (i in seq_len(nrow(grid))) {
+    ri <- run_scenario_grid(.cfg_subset_path, resume = TRUE, workers = 1,
+                            run_name = rn, scenarios = i,
+                            impose_fn = mock_impose_effect,
+                            estimator_fn = mock_run_estimator)
+    expect_equal(nrow(ri$grid), 1L)
+    expect_null(ri$results)   # subset runs do not summarize
+    expect_true(file.exists(
+      .power_out_file(rn, "partials", paste0(grid$scenario_id[i], ".csv"))))
+  }
+
+  # No run-level file was written by any task, so they cannot have raced.
+  for (f in run_level) {
+    expect_false(file.exists(file.path(.power_out_dir(rn), f)), info = f)
+  }
+
+  # The epilogue pass finds every partial complete and only summarizes.
+  agg <- run_scenario_grid(.cfg_subset_path, resume = TRUE, workers = 1,
+                           run_name = rn,
+                           impose_fn = mock_impose_effect,
+                           estimator_fn = mock_run_estimator)
+  for (f in run_level) {
+    expect_true(file.exists(file.path(agg$out_dir, f)), info = f)
+  }
+  # 3 scenarios x 2 reps x 2 deltas x 1 estimator.
+  expect_equal(nrow(agg$results), 12L)
+  expect_equal(dplyr::n_distinct(agg$results$scenario_id), 3L)
+})
+
+test_that("subset selection by block name matches selection by index", {
+  rn <- paste0("_test_grid_subsetname_", format(Sys.time(), "%H%M%S"))
+  on.exit(unlink(.power_out_dir(rn), recursive = TRUE), add = TRUE)
+
+  grid <- expand_scenario_grid(read_power_config(.cfg_subset_path))
+  b_idx <- which(grid$name == "b")
+
+  r <- run_scenario_grid(.cfg_subset_path, resume = FALSE, workers = 1,
+                         run_name = rn, scenarios = "b",
+                         impose_fn = mock_impose_effect,
+                         estimator_fn = mock_run_estimator)
+  expect_equal(r$grid$scenario_id, grid$scenario_id[b_idx])
 })

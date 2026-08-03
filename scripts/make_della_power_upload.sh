@@ -37,12 +37,14 @@ cp docs/methodology/POWER_SIMULATION_BLINDNESS_PROTOCOL.md "$DEST/docs/methodolo
 cp docs/methodology/POWER_SIMULATION_DESIGN.md             "$DEST/docs/methodology/"
 
 # --- Della launchers (version-controlled templates in scripts/della_power/) --
-cp scripts/della_power/setup.sh             "$DEST/"
-cp scripts/della_power/run_validation.sh    "$DEST/"
-cp scripts/della_power/run_primary.slurm    "$DEST/"
+cp scripts/della_power/setup.sh              "$DEST/"
+cp scripts/della_power/run_validation.sh     "$DEST/"
+cp scripts/della_power/list_scenarios.sh     "$DEST/"
+cp scripts/della_power/run_primary.slurm     "$DEST/"
 cp scripts/della_power/run_sensitivity.slurm "$DEST/"
-cp scripts/della_power/README.txt           "$DEST/"
-chmod +x "$DEST/setup.sh" "$DEST/run_validation.sh"
+cp scripts/della_power/run_aggregate.slurm   "$DEST/"
+cp scripts/della_power/README.txt            "$DEST/"
+chmod +x "$DEST/setup.sh" "$DEST/run_validation.sh" "$DEST/list_scenarios.sh"
 
 # --- Repo-root marker --------------------------------------------------------
 # power_repo_root() locates the project root by finding a file with this name.

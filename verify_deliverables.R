@@ -236,6 +236,63 @@ check_file("scripts/run_power_validation.sh", "Power runner: validation")
 check_file("scripts/run_power_primary.sh", "Power runner: primary")
 check_file("scripts/run_power_sensitivity.sh", "Power runner: sensitivity")
 
+check_file("scripts/make_della_power_upload.sh", "Della: upload-package builder")
+check_file("scripts/della_power/setup.sh", "Della launcher: setup")
+check_file("scripts/della_power/run_validation.sh", "Della launcher: validation")
+check_file("scripts/della_power/list_scenarios.sh", "Della launcher: scenario list")
+check_file("scripts/della_power/run_primary.slurm", "Della launcher: primary array")
+check_file("scripts/della_power/run_sensitivity.slurm", "Della launcher: sensitivity array")
+check_file("scripts/della_power/run_aggregate.slurm", "Della launcher: aggregate pass")
+
+# The --array range in each SLURM script must match the config's expanded
+# scenario count, or tasks silently go unrun (range too small) or fail with an
+# out-of-range error (too large). Checked here because the two live in
+# different files and drift the moment a scenario block is added or removed.
+check_slurm_array <- function(slurm_path, config_path, label) {
+  if (!file.exists(slurm_path) || !file.exists(config_path)) {
+    cat("  ✗ ", label, ": missing file\n", sep = "")
+    n_fail <<- n_fail + 1
+    return(invisible(NULL))
+  }
+  hdr <- grep("^#SBATCH --array=", readLines(slurm_path, warn = FALSE),
+              value = TRUE)
+  declared <- suppressWarnings(
+    as.integer(sub(".*--array=1-([0-9]+).*", "\\1", hdr[1])))
+  actual <- tryCatch(nrow(expand_scenario_grid(read_power_config(config_path))),
+                     error = function(e) NA_integer_)
+  if (!is.na(declared) && !is.na(actual) && declared == actual) {
+    cat("  ✓ ", label, ": --array=1-", declared, " matches ", actual,
+        " scenarios\n", sep = "")
+    n_pass <<- n_pass + 1
+  } else {
+    cat("  ✗ ", label, ": --array=1-", declared, " but config expands to ",
+        actual, " scenarios\n", sep = "")
+    n_fail <<- n_fail + 1
+  }
+}
+
+power_grid_ok <- tryCatch({
+  suppressMessages({
+    source("R/power/config.R"); source("R/power/blindness_checks.R")
+    source("R/power/load_blinded_panel.R")
+    source("R/power/make_pseudo_schedules.R")
+    source("R/power/summarize_operating_characteristics.R")
+    source("R/power/run_scenario_grid.R")
+  })
+  TRUE
+}, error = function(e) FALSE)
+
+if (power_grid_ok) {
+  check_slurm_array("scripts/della_power/run_primary.slurm",
+                    "config/power_primary.yml", "SLURM array range: primary")
+  check_slurm_array("scripts/della_power/run_sensitivity.slurm",
+                    "config/power_sensitivity.yml",
+                    "SLURM array range: sensitivity")
+} else {
+  cat("  ✗ SLURM array range: could not load power framework to check\n")
+  n_fail <- n_fail + 1
+}
+
 check_file("tests/run_tests.R", "Power framework: test entry point")
 
 cat("  Running power-framework test suite (tests/run_tests.R)...\n")

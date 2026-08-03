@@ -10,6 +10,13 @@
 #   RUN_NAME   output subdir under output_blinded_power/ (default: "primary";
 #              keep it stable to allow checkpoint/resume)
 #   RESUME     TRUE (default) to skip scenarios with complete partials
+#   SCENARIOS  optional comma-separated subset: scenario indices (1-based),
+#              block names, or scenario ids. Empty (default) = whole grid.
+#              A subset run writes per-scenario partials ONLY and skips the
+#              run-level summaries, so several may run concurrently without
+#              racing; re-run with SCENARIOS unset to aggregate. Example:
+#                SCENARIOS=7,8,9,10,11 bash scripts/run_power_primary.sh
+#                SCENARIOS=state_nb_step bash scripts/run_power_primary.sh
 # =============================================================================
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -26,6 +33,14 @@ Rscript --vanilla -e '
   rn <- Sys.getenv("RUN_NAME", "");  rn <- if (nzchar(rn)) rn else NULL
   rs <- toupper(Sys.getenv("RESUME", "TRUE")) != "FALSE"
 
+  sc <- Sys.getenv("SCENARIOS", "")
+  sc <- if (!nzchar(sc)) NULL else {
+    parts <- trimws(strsplit(sc, ",", fixed = TRUE)[[1]])
+    parts <- parts[nzchar(parts)]
+    # All-numeric -> positional indices; otherwise names / ids.
+    if (all(grepl("^[0-9]+$", parts))) as.integer(parts) else parts
+  }
+
   run_scenario_grid("config/power_primary.yml",
-                    resume = rs, workers = w, run_name = rn)
+                    resume = rs, workers = w, run_name = rn, scenarios = sc)
 '

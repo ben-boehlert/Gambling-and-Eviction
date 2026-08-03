@@ -102,16 +102,22 @@ if (!exists("summarize_oc", mode = "function")) {
 
 #' Deterministic per-replication seed
 #'
-#' seed_rep = base_seed + 10007 * rep + 101 * scenario_index. 10007 and 101
+#' seed_rep = base_seed + 10007 * rep + 101 * scenario_offset. 10007 and 101
 #' are coprime, so seeds are distinct across (rep, scenario) for any grid of
 #' realistic size (a collision needs |rep difference| to be a multiple of 101
-#' AND |scenario difference| = 10007/101 * that — impossible below 10007
-#' scenarios).
+#' AND |scenario offset difference| to be a multiple of 10007 — impossible
+#' because offsets are reduced mod 10007, so |difference| <= 10006).
+#'
+#' `scenario_offset` is derived from the scenario's CONTENT hash
+#' (\code{.scenario_seed_offset}), not its position in the config. Results
+#' therefore depend only on what a scenario is, never on where it sits in the
+#' scenarios list — reordering or inserting blocks leaves every other
+#' scenario's draws bit-identical.
 #'
 #' @export
-power_rep_seed <- function(base_seed, rep, scenario_index) {
+power_rep_seed <- function(base_seed, rep, scenario_offset) {
   as.integer(base_seed) + 10007L * as.integer(rep) +
-    101L * as.integer(scenario_index)
+    101L * as.integer(scenario_offset)
 }
 
 # ---------------------------------------------------------------------------
@@ -145,6 +151,82 @@ power_rep_seed <- function(base_seed, rep, scenario_index) {
               ifelse(g$quarterly, "-q", ""),
               ifelse(g$control_group == "nevertreated", "-nt", ""))
   tolower(gsub("[^A-Za-z0-9_-]", "", s))
+}
+
+# --- Content-addressed scenario identity -----------------------------------
+#
+# scenario_id must depend on WHAT a scenario is, never on WHERE it sits in the
+# config. A positional id (the previous "S%03d_" scheme) meant inserting or
+# reordering one block renamed every downstream partial, so `resume` re-ran
+# scenarios whose inputs had not changed at all. The hash below closes that,
+# and also covers the axes the slug omits (treat_def, loader_anticipation) and
+# the execution settings that change a partial's contents (estimators, effect
+# grid, replication counts, support minima, base seed). Same id <=> same
+# inputs <=> the partial on disk is reusable.
+
+# Canonicalise one identity field to a stable string. Doubles go through
+# "%.10g" so 0.05 has one representation on every platform; named vectors keep
+# their names so estimator_reps = c(cs = 250) never collides with c(twfe = 250).
+.canon_atom <- function(v) {
+  if (is.null(v) || length(v) == 0L) return("NULL")
+  nm <- names(v)
+  s <- if (is.double(v)) sprintf("%.10g", v) else as.character(v)
+  if (!is.null(nm)) s <- paste(nm, s, sep = "=")
+  paste(s, collapse = ",")
+}
+
+.canon_est_reps <- function(er) {
+  if (is.null(er) || length(er) == 0L) return(NULL)
+  er <- unlist(er)
+  stats::setNames(as.integer(er[order(names(er))]), sort(names(er)))
+}
+
+#' Canonical identity string for one scenario row
+#'
+#' `v` is an identity-schema version: bump it if the set of hashed fields
+#' changes, so stale partials from an older scheme are never silently adopted.
+#' @keywords internal
+.scenario_identity_string <- function(g, i, base_seed) {
+  id <- list(
+    v                   = 2L,
+    name                = g$name[i],
+    level               = g$level[i],
+    sample              = g$sample[i],
+    covid               = g$covid[i],
+    treat_def           = g$treat_def[i],
+    design              = g$design[i],
+    mechanism           = g$mechanism[i],
+    shape               = g$shape[i],
+    outcome             = g$outcome[i],
+    est_anticipation    = as.integer(g$est_anticipation[i]),
+    loader_anticipation = as.integer(g$loader_anticipation[i]),
+    control_group       = g$control_group[i],
+    quarterly           = as.logical(g$quarterly[i]),
+    estimators          = sort(as.character(unlist(g$estimators[[i]]))),
+    effect_grid         = sort(as.numeric(unlist(g$effect_grid[[i]]))),
+    n_reps              = as.integer(g$n_reps[i]),
+    estimator_reps      = .canon_est_reps(g$estimator_reps[[i]]),
+    min_pre             = as.integer(g$min_pre[i]),
+    min_post            = as.integer(g$min_post[i]),
+    base_seed           = as.integer(base_seed)
+  )
+  paste(paste0(names(id), ":", vapply(id, .canon_atom, character(1))),
+        collapse = "|")
+}
+
+# sha1 of the raw identity string (serialize = FALSE hashes the bytes, so the
+# digest does not depend on R's serialization version — the local machine and
+# Della's R/4.4.2 must agree).
+.scenario_hash <- function(g, i, base_seed) {
+  digest::digest(.scenario_identity_string(g, i, base_seed),
+                 algo = "sha1", serialize = FALSE)
+}
+
+# Seed offset from the hash. 7 hex digits max: 0xFFFFFFF = 268435455 fits in a
+# 32-bit int (8 would overflow to NA). Reduced mod 10007 to keep
+# power_rep_seed()'s collision argument intact.
+.scenario_seed_offset <- function(hash_hex) {
+  as.integer(strtoi(substr(hash_hex, 1L, 7L), 16L) %% 10007L)
 }
 
 #' Expand a power config into a deterministic scenario table
@@ -218,10 +300,75 @@ expand_scenario_grid <- function(cfg) {
       loader_anticipation = as.integer(.data$loader_anticipation),
       quarterly           = as.logical(.data$quarterly)
     )
+  # scenario_index is the deterministic position in the expanded grid. It is
+  # used ONLY to address scenarios for dispatch (e.g. a SLURM array task id).
+  # It never enters a filename or a seed — see .scenario_hash().
   grid$scenario_index <- seq_len(nrow(grid))
-  grid$scenario_id    <- sprintf("S%03d_%s", grid$scenario_index,
-                                 .scenario_slug(grid))
+
+  .assign_scenario_ids(grid, cfg$base_seed)
+}
+
+#' Attach content-addressed ids to an expanded grid
+#'
+#' Recomputed whenever anything hashed changes (notably after
+#' \code{n_reps_override}), so the invariant "same scenario_id <=> same
+#' inputs" holds for every code path that writes a partial. Leaves
+#' \code{scenario_index} untouched.
+#' @keywords internal
+.assign_scenario_ids <- function(grid, base_seed) {
+  hashes <- vapply(seq_len(nrow(grid)),
+                   function(i) .scenario_hash(grid, i, base_seed),
+                   character(1))
+  grid$scenario_hash        <- hashes
+  grid$scenario_seed_offset <- vapply(hashes, .scenario_seed_offset,
+                                      integer(1), USE.NAMES = FALSE)
+  grid$scenario_id <- paste0("S", substr(hashes, 1L, 10L), "_",
+                             .scenario_slug(grid))
+
+  if (anyDuplicated(grid$scenario_id)) {
+    dup <- unique(grid$scenario_id[duplicated(grid$scenario_id)])
+    stop("expand_scenario_grid: duplicate scenario identities — two blocks ",
+         "expand to the same scenario. Remove the redundant block(s): ",
+         paste(dup, collapse = ", "), call. = FALSE)
+  }
+  # Distinct scenarios sharing a seed offset is not a correctness bug (it just
+  # means common random numbers across those scenarios), but it is never
+  # intended, so surface it.
+  if (anyDuplicated(grid$scenario_seed_offset)) {
+    warning("expand_scenario_grid: seed-offset collision mod 10007; ",
+            "affected scenarios share replication seeds.", call. = FALSE)
+  }
   grid
+}
+
+#' Resolve the `scenarios` argument to a subset of the expanded grid
+#' @keywords internal
+.select_scenarios <- function(grid, scenarios) {
+  if (is.null(scenarios)) return(grid)
+  if (length(scenarios) == 0L) {
+    stop("run_scenario_grid: `scenarios` is empty.", call. = FALSE)
+  }
+
+  if (is.numeric(scenarios)) {
+    idx <- as.integer(scenarios)
+    bad <- idx[is.na(idx) | idx < 1L | idx > nrow(grid)]
+    if (length(bad)) {
+      stop(sprintf(paste0("run_scenario_grid: scenario index out of range: ",
+                          "%s (grid has %d scenarios)."),
+                   paste(bad, collapse = ", "), nrow(grid)), call. = FALSE)
+    }
+    return(grid[sort(unique(idx)), , drop = FALSE])
+  }
+
+  sel <- as.character(scenarios)
+  unmatched <- setdiff(sel, c(grid$scenario_id, grid$name))
+  if (length(unmatched)) {
+    stop(sprintf(paste0("run_scenario_grid: no scenario matches %s. ",
+                        "Known block names: %s."),
+                 paste(shQuote(unmatched), collapse = ", "),
+                 paste(unique(grid$name), collapse = ", ")), call. = FALSE)
+  }
+  grid[grid$scenario_id %in% sel | grid$name %in% sel, , drop = FALSE]
 }
 
 #' Per-estimator replication counts for a scenario
@@ -335,6 +482,15 @@ expand_scenario_grid <- function(cfg) {
 #' @param workers Parallel workers (default: max(1, availableCores() - 2)).
 #' @param run_name Output subdirectory name (default: config run_name or a
 #'   timestamped name; pass a stable name to enable resume across sessions).
+#' @param scenarios Optional subset to run. Numeric = positions in the
+#'   expanded grid (1-based, as reported by \code{expand_scenario_grid()});
+#'   character = scenario_id or block \code{name} (a name selects every
+#'   scenario that block expands to). NULL (default) runs the whole grid.
+#'   When a subset is given the run writes ONLY per-scenario partials and
+#'   skips the run-level summaries, so concurrent workers (e.g. SLURM array
+#'   tasks) cannot race on the same output files. Re-run once with
+#'   scenarios = NULL afterwards to aggregate: every partial is complete, so
+#'   that pass only summarizes and writes.
 #' @param n_reps_override Override every scenario's replication counts (used
 #'   by smoke tests, e.g. n_reps_override = 3).
 #' @param impose_fn,estimator_fn Test hooks: mock implementations of the
@@ -345,15 +501,22 @@ expand_scenario_grid <- function(cfg) {
 run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
                               run_name = NULL, n_reps_override = NULL,
                               impose_fn = NULL, estimator_fn = NULL,
-                              batch_size = 25L) {
+                              batch_size = 25L, scenarios = NULL) {
   t_start <- Sys.time()
   cfg  <- read_power_config(config_path)
   fns  <- .ensure_sim_functions(impose_fn, estimator_fn)
   grid <- expand_scenario_grid(cfg)
 
+  n_all  <- nrow(grid)
+  subset_run <- !is.null(scenarios)
+  grid <- .select_scenarios(grid, scenarios)
+
   if (!is.null(n_reps_override)) {
     grid$n_reps <- as.integer(n_reps_override)
     grid$estimator_reps <- rep(list(NULL), nrow(grid))
+    # n_reps is hashed, so the ids must follow the override — otherwise a
+    # 3-rep smoke run would write to the same partial as a 500-rep run.
+    grid <- .assign_scenario_ids(grid, cfg$base_seed)
   }
 
   run_name <- run_name %||% cfg$run_name %||%
@@ -388,8 +551,14 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
   real_schedule <- guarded_read_csv(cfg$schedule)
   alpha_vec <- as.numeric(unlist(cfg$alpha %||% c(0.10, 0.05, 0.01)))
 
-  cat(sprintf("[%s] run_scenario_grid: %d scenario(s), workers = %d, run = %s\n",
-              .ts(), nrow(grid), workers, run_name))
+  cat(sprintf("[%s] run_scenario_grid: %d of %d scenario(s), workers = %d, run = %s\n",
+              .ts(), nrow(grid), n_all, workers, run_name))
+  if (subset_run) {
+    cat(sprintf("[%s]   subset: %s\n", .ts(),
+                paste(grid$scenario_index, collapse = ", ")))
+    cat(sprintf(paste0("[%s]   partials only — run again with no subset to ",
+                       "write the run-level summaries.\n"), .ts()))
+  }
 
   panel_cache <- new.env(parent = emptyenv())
   get_panel <- function(sc) {
@@ -467,7 +636,7 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
       # than a serial run. Pin the kind so the explicit per-rep seeds produce
       # identical streams either way (furrr restores RNG state afterwards).
       suppressWarnings(RNGkind("Mersenne-Twister", "Inversion", "Rejection"))
-      seed_rep <- power_rep_seed(cfg$base_seed, rep, sc$scenario_index)
+      seed_rep <- power_rep_seed(cfg$base_seed, rep, sc$scenario_seed_offset)
       sched <- make_pseudo_schedule(
         design = sc$design, panel = panel, real_schedule = real_schedule,
         treat_def = sc$treat_def, min_pre = sc$min_pre,
@@ -528,6 +697,16 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
     readr::write_csv(sc_res, partial)
     cat(sprintf("[%s] %s END (%d rows -> %s)\n",
                 .ts(), sc$scenario_id, nrow(sc_res), basename(partial)))
+  }
+
+  # A subset run is one worker among several (typically a SLURM array task).
+  # Every scenario's partial is already on disk; stopping here means the
+  # concurrent tasks never race to write the shared run-level files.
+  if (subset_run) {
+    cat(sprintf("[%s] DONE (subset): %d scenario partial(s) in %s\n",
+                .ts(), nrow(grid), partials_dir))
+    return(invisible(list(results = NULL, oc = NULL, mde = NULL,
+                          pretrends = NULL, grid = grid, out_dir = out_dir)))
   }
 
   # ---- Stack from partials (single code path for fresh + resumed rows) ----

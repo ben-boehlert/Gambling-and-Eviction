@@ -15,8 +15,8 @@ module load R/4.4.2
 echo "Installing CRAN dependencies (this can take ~10-20 min; fwildclusterboot compiles)..."
 Rscript -e '
   pkgs <- c("dplyr", "tidyr", "readr", "tibble", "purrr", "rlang",
-            "lubridate", "yaml", "jsonlite", "fixest", "did", "did2s",
-            "fwildclusterboot", "furrr", "future", "testthat")
+            "lubridate", "yaml", "jsonlite", "digest", "fixest", "did",
+            "did2s", "fwildclusterboot", "furrr", "future", "testthat")
   lib <- Sys.getenv("R_LIBS_USER")
   dir.create(lib, recursive = TRUE, showWarnings = FALSE)
   missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]
