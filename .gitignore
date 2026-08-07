@@ -82,3 +82,4 @@ did-master/
 data/raw/monthly_expansion/md_raw/statistics_pdfs/
 # MD Socrata case-level extract (101MB), from 01_pull_md_socrata.R
 data/raw/maryland/
+della_power_upload.zip

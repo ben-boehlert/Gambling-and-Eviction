@@ -12,8 +12,32 @@ WHAT THIS RUNS
   POWER_SIMULATION_BLINDNESS_PROTOCOL.md (both included).
 
 UPLOAD (from your laptop)
-  scp -r della_power_upload della:/scratch/gpfs/DESMOND/ben/eviction_gambling/
+  rsync -av --exclude 'output_blinded_power' della_power_upload/ \
+    bb1806@della8.princeton.edu:/scratch/gpfs/DESMOND/ben/eviction_gambling/della_power_upload/
   # any /scratch path works — nothing here hardcodes the location
+
+  Use rsync, NOT `scp -r`: once the folder exists on Della, `scp -r <dir>
+  host:<path>/` nests it as <path>/della_power_upload/della_power_upload. The
+  trailing slashes above sync CONTENTS; --exclude preserves an existing run's
+  output_blinded_power/.
+
+  Host notes:
+   - `della` alone is only an ~/.ssh/config alias — it does not resolve unless
+     you have defined it. Use the full hostname, or add:
+       Host della
+         HostName della8.princeton.edu
+         User <netid>
+         ControlMaster auto
+         ControlPath ~/.ssh/cm-%r@%h:%p
+         ControlPersist 10m
+     (ControlPersist reuses one authenticated connection, so you Duo once.)
+   - `della.princeton.edu` round-robins across login nodes. If one is drained
+     you get "Not allowed at this time" and the connection closes BEFORE
+     authentication — that is a closed node, not a credential problem. Target
+     a specific node (della8/della9) instead.
+   - Browser alternative, no SSH at all: https://mydella.princeton.edu
+     (Open OnDemand; VPN required off campus). Files -> upload a zip of this
+     folder, then Clusters -> Della Shell Access to unzip and sbatch.
 
 RUN (on Della, in order)
   1. bash setup.sh              # once, LOGIN node — installs CRAN packages
@@ -37,6 +61,15 @@ WHY THE SEPARATE AGGREGATE STEP
   oc_summary.csv etc. they would race on the same files. run_aggregate.slurm
   stacks the partials and writes the run-level outputs. It also re-runs any
   scenario whose partial is missing, so it doubles as a completeness check.
+
+  Two ways to run it:
+    sbatch run_aggregate.slurm [primary|sensitivity]   # always safe
+    bash run_aggregate.sh      [primary|sensitivity]   # login node
+
+  The login-node version first verifies EVERY partial is complete and refuses
+  to proceed otherwise — aggregating with a gap would recompute that scenario
+  (~51 core-hours for a county scenario) on a shared login node. If it refuses,
+  it names the missing scenarios; re-submit the array, then aggregate.
 
 MONITOR
   squeue -u $USER
@@ -71,6 +104,8 @@ CONTENTS
   run_primary.slurm       array job, one task per primary scenario
   run_sensitivity.slurm   array job, one task per sensitivity scenario
   run_aggregate.slurm     post-array pass that writes the run-level summaries
+  run_aggregate.sh        same, on the login node; refuses if a partial is
+                          incomplete (would recompute it there)
   R/power/                the 9 framework modules
   config/                 power_validation / power_primary / power_sensitivity.yml
   tests/                  testthat suite (run via tests/run_tests.R)

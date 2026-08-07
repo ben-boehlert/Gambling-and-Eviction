@@ -33,7 +33,7 @@
 # per-scenario partials only, never the shared run-level summaries:
 #
 #   sbatch --dependency=afterok:<ARRAY_JOB_ID> run_aggregate.slurm
-#   # or, once the array is done:  bash run_aggregate.sh config/power_primary.yml primary
+#   # or, once every task has finished:  bash run_aggregate.sh
 
 set -e
 module purge

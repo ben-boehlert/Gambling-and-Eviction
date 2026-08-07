@@ -8,7 +8,12 @@
 # regenerable and gitignored.
 #
 # Usage:  bash scripts/make_della_power_upload.sh
-# Then:   scp -r della_power_upload della:/scratch/gpfs/DESMOND/ben/eviction_gambling/
+# Then:   rsync -av --exclude 'output_blinded_power' della_power_upload/ \
+#             della:/scratch/gpfs/DESMOND/ben/eviction_gambling/della_power_upload/
+#
+# Use rsync, not `scp -r`: once the folder exists on Della, `scp -r <dir> host:<path>/`
+# nests it as <path>/della_power_upload/della_power_upload. The trailing slashes
+# above sync CONTENTS, and --exclude keeps an existing run's outputs intact.
 #         (or your own /scratch/gpfs/<netid>/ path — nothing inside hardcodes it)
 # =============================================================================
 set -euo pipefail
@@ -43,8 +48,10 @@ cp scripts/della_power/list_scenarios.sh     "$DEST/"
 cp scripts/della_power/run_primary.slurm     "$DEST/"
 cp scripts/della_power/run_sensitivity.slurm "$DEST/"
 cp scripts/della_power/run_aggregate.slurm   "$DEST/"
+cp scripts/della_power/run_aggregate.sh      "$DEST/"
 cp scripts/della_power/README.txt            "$DEST/"
-chmod +x "$DEST/setup.sh" "$DEST/run_validation.sh" "$DEST/list_scenarios.sh"
+chmod +x "$DEST/setup.sh" "$DEST/run_validation.sh" "$DEST/list_scenarios.sh" \
+         "$DEST/run_aggregate.sh"
 
 # --- Repo-root marker --------------------------------------------------------
 # power_repo_root() locates the project root by finding a file with this name.

@@ -528,9 +528,23 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
   # (its environment hints are stripped), which silently collapsed the shell
   # runners to a single worker. parallel::detectCores() reads the hardware
   # directly, so take the max of the two before subtracting the headroom.
-  workers <- workers %||%
-    max(1L, max(future::availableCores(), parallel::detectCores(), 1L,
-                na.rm = TRUE) - 2L)
+  # Inside a SLURM allocation the cgroup limit is authoritative:
+  # parallel::detectCores() reports the WHOLE node (96+ on Della), so the
+  # fallback below would oversubscribe an 8-cpu array task by ~12x and thrash.
+  # SLURM_CPUS_PER_TASK is the only trustworthy number when it is set.
+  if (is.null(workers)) {
+    slurm_cpus <- suppressWarnings(
+      as.integer(Sys.getenv("SLURM_CPUS_PER_TASK", ""))
+    )
+    workers <- if (!is.na(slurm_cpus) && slurm_cpus > 0L) {
+      slurm_cpus
+    } else {
+      # Outside SLURM: availableCores() returns 2 under `Rscript --vanilla`
+      # (its environment hints are stripped), so fall back to the hardware.
+      max(1L, max(future::availableCores(), parallel::detectCores(), 1L,
+                  na.rm = TRUE) - 2L)
+    }
+  }
   workers <- as.integer(workers)
   if (workers > 1L) {
     future::plan(future::multisession, workers = workers)
