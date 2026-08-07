@@ -16,6 +16,27 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+# R is not on PATH by default on module-based clusters, and a `module load`
+# run inside another script (e.g. run_validation.sh) does NOT persist to your
+# interactive shell — so this script has to load R itself. On a laptop with R
+# already on PATH the whole block is a no-op.
+if ! command -v Rscript >/dev/null 2>&1; then
+  # `module` is a shell function, not a binary, so it may not exist in a
+  # non-interactive shell until the modules init is sourced.
+  if [ -n "${MODULESHOME:-}" ] && [ -f "$MODULESHOME/init/bash" ]; then
+    # shellcheck disable=SC1091
+    . "$MODULESHOME/init/bash"
+  fi
+  if command -v module >/dev/null 2>&1; then
+    module load R/4.4.2 || true
+  fi
+fi
+if ! command -v Rscript >/dev/null 2>&1; then
+  echo "list_scenarios.sh: Rscript not found." >&2
+  echo "  On Della:  module load R/4.4.2" >&2
+  exit 1
+fi
+
 CONFIG="${1:-config/power_primary.yml}"
 export LS_CONFIG="$CONFIG"
 
