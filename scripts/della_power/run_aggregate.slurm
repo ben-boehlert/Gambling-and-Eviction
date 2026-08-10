@@ -38,7 +38,9 @@ RUN="${1:-primary}"
 case "$RUN" in
   primary)     CONFIG="config/power_primary.yml" ;;
   sensitivity) CONFIG="config/power_sensitivity.yml" ;;
-  *) echo "run_aggregate.slurm: unknown run '$RUN' (want primary|sensitivity)" >&2
+  cheap)       CONFIG="config/power_cheap.yml" ;;
+  smoke)       CONFIG="config/power_smoke.yml" ;;
+  *) echo "run_aggregate.slurm: unknown run '$RUN' (want primary|sensitivity|cheap|smoke)" >&2
      exit 1 ;;
 esac
 

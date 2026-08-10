@@ -1,0 +1,67 @@
+# =============================================================================
+# power_smoke.yml — 2-scenario SMOKE TEST of the cheap pilot: the county and
+# state headline cells only, 50 reps, 4-point effect grid, TWFE + did2s.
+#
+# Purpose: prove the full array -> partials -> aggregate pipeline end-to-end
+# in ~1h of wall clock BEFORE committing to the 28-30h county scenarios in
+# power_cheap.yml. Results are throwaway (MC SE on a rejection rate is ~3pp
+# at 50 reps; the 4-delta grid makes the MDE interpolation coarse) — this
+# validates plumbing, not operating characteristics.
+#
+# Same base_seed as primary/cheap so reps 1-50 use the same simulated panels
+# as the corresponding reps of the real runs.
+#
+# Scenario count: 2. run_smoke.slurm --array must be 1-2
+# (verify: bash list_scenarios.sh config/power_smoke.yml).
+# =============================================================================
+
+run_name: smoke
+
+# ---- Top-level defaults -----------------------------------------------------
+
+level:      county
+sample:     [S2]
+covid:      drop
+treat_def:  online_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+
+# Null for size, plus small/mid/large effects for a monotonicity sanity check.
+effect_grid:  [0, 0.02, 0.05, 0.10]
+
+estimators:   [twfe, did2s]
+
+# ---- Execution --------------------------------------------------------------
+
+n_reps:     50
+estimator_reps:
+  twfe:   50
+  did2s:  50
+base_seed:  20260723           # matches power_primary/power_cheap — pairing
+mde_boot:   50
+
+alpha:      [0.1, 0.05, 0.01]
+
+min_pre:    12
+min_post:   6
+
+anticipation_months: 6
+
+# ---- Scenario families ------------------------------------------------------
+
+scenarios:
+
+  # 1. County headline cell.
+  - name: headline_county_nb_step
+    level: county
+
+  # 2. State headline cell.
+  - name: state_nb_step
+    level: state
+# =============================================================================

@@ -1,0 +1,5 @@
+method,n_valid,rejection
+TWFE analytic,30,0.03333333333333333
+TWFE wild cluster boot,30,0.03333333333333333
+SunAb analytic,30,0.43333333333333335
+SunAb boot_aggregate,30,0.2

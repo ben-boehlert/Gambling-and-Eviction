@@ -1,0 +1,76 @@
+SOURCE_URL: https://www.nccourts.gov/about/data-and-statistics
+FETCH_DATE: 2026-04-15
+ENTITY: NC
+SOURCE_TYPE: primary
+---
+North Carolina Judicial Branch - Data and Statistics
+
+The NC Administrative Office of the Courts (AOC) publishes eviction (summary
+ejectment, SUME) statistics in two forms:
+
+1) OpenDataSoft-based data portal: data.nccourts.gov
+   Three key datasets (each has CSV/JSON/API export):
+
+   a) Caseload Inventory - caseload statistics per fiscal year (July 1 - June 30)
+      including cases filed, disposed, and pending. County-level.
+      https://data.nccourts.gov/explore/dataset/caseload-inventory/
+
+   b) Caseload Ranked Criminal Charge / Civil Issue / Civil Order Result
+      https://data.nccourts.gov/explore/dataset/caseload-ranked-event/
+      Breaks out civil issue types — summary ejectment (SUME) is one of the
+      civil issue categories explicitly tracked.
+
+   c) Caseload Dispositions
+      https://data.nccourts.gov/explore/dataset/caseload-disposition/
+
+   Case Statistics Dashboard (landing):
+      https://data.nccourts.gov/pages/dashboard/
+      Sections: Overview, Criminal, Civil, Compare. Civil section breaks out
+      summary ejectment as a distinct issue type with filed/disposed/pending
+      counts at the statewide and county level.
+
+   Frequency: FISCAL YEAR (July 1 - June 30). Not monthly in the public portal.
+   For monthly/fiscal-period granularity the AOC uses 13 "judicial periods" per
+   year internally, but the public dataset aggregates to fiscal year.
+
+2) PDF publications (nccourts.gov):
+   - Civil Overall Caseload Activity Report
+     https://www.nccourts.gov/documents/publications/civil-overall-caseload-activity-report
+     County-level and statewide filed/pending/disposed civil cases, fiscal year.
+
+   - Civil Issue Filings / Order Results
+     https://www.nccourts.gov/documents/publications/civil-issue-filingsorder-results
+     Breakouts by civil issue (including SUME) by county.
+
+   - North Carolina Courts Statistical and Operational Reports
+     https://www.nccourts.gov/documents/publications/north-carolina-courts-statistical-and-operational-reports
+     Historical archive.
+
+   - Judicial Branch Annual Reports (FY2019-20 through FY2023-24 available).
+
+Geographic granularity: 100 NC counties + statewide aggregates.
+Temporal coverage: Multiple fiscal years, with at least FY2019-20 through
+  FY2023-24 confirmed. Historical SUME series likely extends to early 2000s in
+  the Statistical and Operational Reports archive.
+
+Access format: OpenDataSoft API + CSV/Excel download from data.nccourts.gov;
+  PDFs from nccourts.gov publications pages.
+
+IMPORTANT CAVEAT: the existing Gambling-and-Eviction project notes that NC has
+  monthly county-level filings in Excel (see CLAUDE.md: "NC AOC publishes
+  monthly county-level filings in Excel"). This monthly granularity is NOT
+  advertised in the standard public dashboard (which is fiscal-year only). The
+  monthly Excel files are likely either (a) older AOC "Civil Overall Caseload
+  Activity" monthly reports that predate the new dashboard launch, or (b) the
+  source files compiled into the existing repo's ETS panel. Worth direct outreach
+  to the NC AOC Research and Planning Division to confirm whether a monthly
+  county-level SUME extract is available for 2016-present.
+
+Related:
+  - https://www.nccourts.gov/news/tag/press-release/north-carolina-judicial-branch-launches-new-case-statistics-dashboard
+  - Small Claims: Summary Ejectment (procedural info)
+    https://www.nccourts.gov/assets/inline-files/Small-Claims-Summary-Ejectment.pdf
+
+Procedural note: in NC, summary ejectment cases are filed in Small Claims
+  Magistrate Court (not District or Superior Court civil divisions). Appeals go
+  to District Court. The SUME issue code tracks small claims filings.

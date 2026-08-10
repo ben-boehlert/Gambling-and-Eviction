@@ -1,0 +1,17 @@
+state_abb,state_fips,quarter_start,year,quarter,case_category,case_status,source,n_counties_reporting,n_counties_expected,n_counties_projected,coverage_complete,filings_count
+IL,17,2022-01-01,2022,1,EVICTION,New Filed,Illinois Courts Power BI,102,102,0,TRUE,14240
+IL,17,2022-04-01,2022,2,EVICTION,New Filed,Illinois Courts Power BI,102,102,0,TRUE,15105
+IL,17,2022-07-01,2022,3,EVICTION,New Filed,Illinois Courts Power BI,102,102,0,TRUE,17500
+IL,17,2022-10-01,2022,4,EVICTION,New Filed,Illinois Courts Power BI,102,102,0,TRUE,15820
+IL,17,2023-01-01,2023,1,EVICTION,New Filed,Illinois Courts Power BI,102,102,0,TRUE,16183
+IL,17,2023-04-01,2023,2,EVICTION,New Filed,Illinois Courts Power BI,102,102,0,TRUE,15246
+IL,17,2023-07-01,2023,3,EVICTION,New Filed,Illinois Courts Power BI,102,102,0,TRUE,16756
+IL,17,2023-10-01,2023,4,EVICTION,New Filed,Illinois Courts Power BI,102,102,0,TRUE,16104
+IL,17,2024-01-01,2024,1,EVICTION,New Filed,Illinois Courts Power BI,102,102,0,TRUE,16203
+IL,17,2024-04-01,2024,2,EVICTION,New Filed,Illinois Courts Power BI,102,102,0,TRUE,15554
+IL,17,2024-07-01,2024,3,EVICTION,New Filed,Illinois Courts Power BI,102,102,1,TRUE,16612
+IL,17,2024-10-01,2024,4,EVICTION,New Filed,Illinois Courts Power BI,102,102,1,TRUE,15757
+IL,17,2025-01-01,2025,1,EVICTION,New Filed,Illinois Courts Power BI,101,102,0,FALSE,15185
+IL,17,2025-04-01,2025,2,EVICTION,New Filed,Illinois Courts Power BI,101,102,0,FALSE,14670
+IL,17,2025-07-01,2025,3,EVICTION,New Filed,Illinois Courts Power BI,101,102,0,FALSE,15955
+IL,17,2025-10-01,2025,4,EVICTION,New Filed,Illinois Courts Power BI,101,102,0,FALSE,15407

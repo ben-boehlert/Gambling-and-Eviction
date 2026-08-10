@@ -1,0 +1,140 @@
+ETS (full, no border restriction) county-month rows: 116903
+ETS unique counties: 1384
+ETS states: 32
+ETS month range: 2016-01-01 to 2025-11-01
+Treated states (any date, from state_month_panel_with_treatment.csv): 23 / 39
+Full ETS county-month rows (pre-exposure-merge): 116903
+Counties: 1384
+States: 32
+Months: 119
+=== MERGING county_exposure_panel.csv ===
+Exposure panel rows: 372960
+Exposure panel counties: 3108
+Exposure panel month range: 2016-01-01 to 2025-12-01
+ETS county-months with NO exposure-panel match: 1453
+Unmatched distinct counties: 32
+Unmatched counties (name, state):
+# A tibble: 32 × 3
+   fips_pad name                  state_abb
+   <chr>    <chr>                 <chr>    
+ 1 02013    Aleutians East        AK       
+ 2 02016    Aleutians West        AK       
+ 3 02020    Anchorage             AK       
+ 4 02050    Bethel                AK       
+ 5 02060    Bristol Bay           AK       
+ 6 02063    Chugach               AK       
+ 7 02066    Copper River          AK       
+ 8 02070    Dillingham            AK       
+ 9 02090    Fairbanks North Star  AK       
+10 02100    Haines                AK       
+11 02105    Hoonah-Angoon         AK       
+12 02110    Juneau                AK       
+13 02122    Kenai Peninsula       AK       
+14 02130    Ketchikan Gateway     AK       
+15 02150    Kodiak Island         AK       
+16 02158    Kusilvak              AK       
+17 02170    Matanuska-Susitna     AK       
+18 02180    Nome                  AK       
+19 02185    North Slope           AK       
+20 02188    Northwest Arctic      AK       
+21 02195    Petersburg            AK       
+22 02198    Prince of Wales-Hyder AK       
+23 02220    Sitka                 AK       
+24 02230    Skagway               AK       
+25 02240    Southeast Fairbanks   AK       
+26 02275    Wrangell              AK       
+27 02282    Yakutat               AK       
+28 02290    Yukon-Koyukuk         AK       
+29 15001    Hawaii                HI       
+30 15003    Honolulu              HI       
+31 15007    Kauai                 HI       
+32 15009    Maui                  HI       
+Unmatched counties' states: AK, HI
+Confirmed: all unmatched counties are in AK or HI (outside the CONUS+DC exposure-panel universe). Dropping explicitly.
+Confirmed: Virginia independent cities fully match the exposure panel (0 unmatched VA rows).
+Full ETS county-month rows after dropping AK/HI: 115450
+Counties after dropping AK/HI: 1352
+States after dropping AK/HI: 30
+Merged panel rows: 115450
+PASS: 100% of (AK/HI-dropped) ETS county-months matched an exposure row.
+=== ASSERTIONS ===
+PASS: fips x month key unique and non-missing ( 115450 rows )
+PASS: 100% ETS-to-exposure match rate confirmed (AK/HI explicitly excluded and documented).
+=== CROSS-CHECK: treat_start/ever_treated vs exposure G ===
+States with treat_start/G disagreement: 9 / 30
+# A tibble: 9 × 7
+  state_abb treat_start ever_treated G          ever_treated_exposure
+  <chr>     <date>      <lgl>        <date>     <lgl>                
+1 AR        2019-07-01  TRUE         2022-03-01 TRUE                 
+2 DE        2018-06-01  TRUE         NA         FALSE                
+3 IN        2019-09-01  TRUE         2019-10-01 TRUE                 
+4 MS        2018-08-01  TRUE         NA         FALSE                
+5 MT        2020-03-01  TRUE         NA         FALSE                
+6 NC        2021-03-01  TRUE         NA         FALSE                
+7 ND        2021-06-01  TRUE         NA         FALSE                
+8 NY        2019-07-01  TRUE         2022-01-01 TRUE                 
+9 PA        2018-11-01  TRUE         2019-05-01 TRUE                 
+# ℹ 2 more variables: ever_treated_agree <lgl>, date_agree <lgl>
+PASS: no disagreement case has treat_start == G with mismatched ever_treated (i.e., all disagreement traces to the documented treat_start (first-legal-any-form) vs. G (online-only) definitional difference, not a join bug).
+PASS: S60 * own_legal = 0 in every merged row (structural invariant inherited from the exposure panel).
+INFO (not hard-failed, see note above): S60 * treated(ETS/border-definition) violations = 3436 rows / 115450 ( 2.976 % ) -- this IS the contamination number requested in the deliverable, driven by treat_start != G, not a bug.
+Wrote panel: /Users/bb1806/Documents/GitHub Doc/Gambling-and-Eviction/data/processed/county_month_ets_exposure_panel.csv
+=== (a) FINAL PANEL DIMENSIONS ===
+Counties: 1352
+States: 30
+Months: 119
+Rows: 115450
+Reference (output/border_diagnostic/all_county_panel_summary.csv): 1368 counties, 31 states, 92 months, 89047 obs -- that panel additionally drops ME, drops the COVID window (2020-03-01 to 2022-03-31), and drops non-finite log1p(filings_count) rows; none of those are part of build_border_county_panel.R's cleaning logic, so this script's larger, unfiltered dimensions are the expected and documented deviation.
+=== (b) EXPOSURE-PATH TABLE WITHIN THE ETS SAMPLE ===
+Exposure path (60mi):
+# A tibble: 4 × 2
+  path                  n_counties
+  <chr>                      <int>
+1 direct_only                  423
+2 never_exposed                411
+3 spillover_only               342
+4 spillover_then_direct        176
+Exposure path (15mi):
+# A tibble: 4 × 2
+  path                  n_counties
+  <chr>                      <int>
+1 never_exposed                636
+2 direct_only                  553
+3 spillover_only               117
+4 spillover_then_direct         46
+=== (c) CONTAMINATION NUMBER ===
+Among county-months with treated == FALSE (current-design controls): 75455 rows; share with S60 == 1: 20.38 %
+Never-treated-state ('clean control') county pool: 562 counties
+  of which ever S60 == 1 (spillover-exposed clean-pool counties): 267
+  of which never S60 == 1 (truly unexposed): 295
+=== (d) SPILLOVER-ONLY AND NEVER-EXPOSED COUNTY COUNTS (60mi) ===
+Spillover-only counties (60mi): 342
+  Top states:
+# A tibble: 10 × 2
+   state_abb     n
+   <chr>     <int>
+ 1 KY          113
+ 2 NC           62
+ 3 WI           37
+ 4 OK           33
+ 5 MN           23
+ 6 ID           22
+ 7 UT           18
+ 8 VT           14
+ 9 MT            9
+10 ME            6
+Never-exposed counties (60mi, donut clean controls): 411
+  Top states:
+# A tibble: 10 × 2
+   state_abb     n
+   <chr>     <int>
+ 1 MN           64
+ 2 ND           52
+ 3 SC           46
+ 4 OK           44
+ 5 FL           42
+ 6 NC           38
+ 7 WI           35
+ 8 MT           26
+ 9 ID           21
+10 TX           12

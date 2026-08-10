@@ -63,6 +63,7 @@ OUT_DIR <- Sys.getenv("OUT_DIR", "output/pretrends_evaluation")
 OUTCOME <- Sys.getenv("OUTCOME", "log1p_filings_count")  # or "log1p_rate"
 ALPHA <- as.numeric(Sys.getenv("ALPHA", "0.05"))
 SEED <- as.integer(Sys.getenv("SEED", "42"))
+SPEC_FILTER_RAW <- Sys.getenv("SPEC_FILTER", "")
 set.seed(SEED)
 
 # Create output directory
@@ -253,6 +254,17 @@ SPECIFICATIONS <- list(
     description = "Uses only pre-pandemic data"
   ),
 
+  post_covid = list(
+    name = "Post-COVID Only",
+    exclude_states = "ME",
+    min_date = as.Date("2021-08-01"),
+    max_date = as.Date("2024-12-31"),
+    drop_covid = FALSE,
+    min_e = -6,
+    max_e = 24,
+    description = "Uses only post-COVID data after the eviction moratoria period"
+  ),
+
   narrow_window = list(
     name = "Narrow Window (±6 months)",
     exclude_states = "ME",
@@ -263,6 +275,16 @@ SPECIFICATIONS <- list(
     description = "Focuses on ±6 months around treatment"
   )
 )
+
+if (nzchar(SPEC_FILTER_RAW)) {
+  spec_filter <- trimws(strsplit(SPEC_FILTER_RAW, ",", fixed = TRUE)[[1]])
+  spec_filter <- spec_filter[nzchar(spec_filter)]
+  missing_specs <- setdiff(spec_filter, names(SPECIFICATIONS))
+  if (length(missing_specs) > 0) {
+    stop(glue("Unknown spec(s) in SPEC_FILTER: {paste(missing_specs, collapse=', ')}"))
+  }
+  SPECIFICATIONS <- SPECIFICATIONS[spec_filter]
+}
 
 build_panel_for_spec <- function(panel_raw, gambling_dates, spec) {
   log_msg(glue("\nBuilding panel for: {spec$name}"))
@@ -279,6 +301,10 @@ build_panel_for_spec <- function(panel_raw, gambling_dates, spec) {
   }
 
   # Apply date filters
+  if (!is.null(spec$min_date)) {
+    panel <- panel %>% filter(month_date >= spec$min_date)
+  }
+
   if (!is.null(spec$max_date)) {
     panel <- panel %>% filter(month_date <= spec$max_date)
   }
@@ -895,9 +921,22 @@ for (spec_name in names(SPECIFICATIONS)) {
   equiv_result <- run_equivalence_tests(twfe_result, spec)
   cs_result <- run_cs_did_analysis(panel, spec)
 
+  panel_summary <- tibble(
+    specification = spec$name,
+    n_states = n_distinct(panel$state_abb),
+    n_treated = n_distinct(panel$state_abb[panel$g > 0]),
+    n_never_treated = n_distinct(panel$state_abb[panel$g == 0]),
+    n_obs = nrow(panel),
+    min_date = min(panel$month_date, na.rm = TRUE),
+    max_date = max(panel$month_date, na.rm = TRUE),
+    min_e = spec$min_e,
+    max_e = spec$max_e
+  )
+
   # Store results
   all_results[[spec_name]] <- list(
     spec = spec,
+    panel_summary = panel_summary,
     twfe = twfe_result,
     power = power_result,
     honestdid = honest_result,
@@ -909,6 +948,7 @@ for (spec_name in names(SPECIFICATIONS)) {
   spec_dir <- file.path(OUT_DIR, spec_name)
   dir.create(spec_dir, recursive = TRUE, showWarnings = FALSE)
 
+  readr::write_csv(panel_summary, file.path(spec_dir, "panel_summary.csv"))
   readr::write_csv(twfe_result$coefs, file.path(spec_dir, "event_study_coefs.csv"))
   readr::write_csv(twfe_result$pretrends_test, file.path(spec_dir, "pretrends_ftest.csv"))
 
@@ -1016,6 +1056,10 @@ for (spec_name in names(all_results)) {
     comparison,
     tibble(
       specification = res$spec$name,
+      n_states = res$panel_summary$n_states,
+      n_treated = res$panel_summary$n_treated,
+      n_never_treated = res$panel_summary$n_never_treated,
+      n_obs = res$panel_summary$n_obs,
       twfe_ftest_pval = res$twfe$pretrends_test$p_value,
       cs_did_pval = cs_pvalue,
       max_abs_pretrend = max_pre,

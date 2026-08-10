@@ -1,0 +1,110 @@
+# =============================================================================
+# power_cheap.yml — CHEAP pilot of the primary candidate set: TWFE + did2s
+# only, no CS. Purpose: validate the full pipeline (array -> partials ->
+# aggregate) and produce the cheap-estimator operating characteristics before
+# committing to the expensive att_gt replications.
+#
+# Derived from power_primary.yml with three deliberate deviations:
+#   1. estimators: [twfe, did2s] — cs removed (att_gt is the cost driver;
+#      county scenarios needed 50-63h with it, ~28-30h without).
+#   2. S3 sample blocks removed — D1 cohort-preserving reassignment is
+#      structurally infeasible on the never-treated sample (the real online
+#      template needs ~24 states across 18 cohorts; S3 has 12-14 states).
+#      The never-treated comparison belongs to design D4 (sensitivity run).
+#   3. county_est_anticipation6 removed — `anticipation` is an att_gt-only
+#      argument (run_estimators.R); with cs absent the block is a no-op
+#      duplicate of the headline.
+#
+# base_seed is IDENTICAL to power_primary.yml on purpose: seed_rep depends
+# only on (base_seed, rep, scenario), so a later cs-only run on the same
+# scenario axes sees the same simulated panels rep-for-rep, keeping estimator
+# comparisons paired across runs.
+#
+# Scenario count: 8. run_cheap.slurm --array must be 1-8
+# (verify: bash list_scenarios.sh config/power_cheap.yml).
+# =============================================================================
+
+run_name: cheap
+
+# ---- Top-level defaults (inherited by every block) --------------------------
+
+level:      county
+sample:     [S2]
+covid:      drop
+treat_def:  online_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb, deterministic]
+shapes:       [step, ramp, delayed]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+
+effect_grid:  [0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.10, 0.15, 0.20]
+
+estimators:   [twfe, did2s]
+
+# ---- Execution --------------------------------------------------------------
+
+n_reps:     500
+estimator_reps:
+  twfe:   500
+  did2s:  500
+base_seed:  20260723           # matches power_primary.yml — see header note
+mde_boot:   200
+
+alpha:      [0.1, 0.05, 0.01]
+
+min_pre:    12
+min_post:   6
+
+anticipation_months: 6
+
+# ---- Scenario families ------------------------------------------------------
+
+scenarios:
+
+  # 1. HEADLINE: county panel, NB count augmentation, constant step, S2 only
+  # (S3 infeasible under D1 — see header).
+  - name: headline_county_nb_step
+    level: county
+    sample: [S2]
+    mechanisms: [count_nb]
+    shapes: [step]
+
+  # 2. Deterministic transformed-scale benchmark (M2).
+  - name: county_det_benchmark
+    level: county
+    sample: [S2]
+    mechanisms: [deterministic]
+    shapes: [step]
+
+  # 3-4. Effect dynamics: delayed onset and linear ramp.
+  - name: county_nb_dynamics
+    level: county
+    sample: [S2]
+    mechanisms: [count_nb]
+    shapes: [ramp, delayed]
+
+  # 5. State-aggregate comparison of the headline.
+  - name: state_nb_step
+    level: state
+    sample: [S2]
+    mechanisms: [count_nb]
+    shapes: [step]
+
+  # 6. State-level deterministic benchmark.
+  - name: state_det_benchmark
+    level: state
+    sample: [S2]
+    mechanisms: [deterministic]
+    shapes: [step]
+
+  # 7-8. State-level effect dynamics.
+  - name: state_nb_dynamics
+    level: state
+    sample: [S2]
+    mechanisms: [count_nb]
+    shapes: [ramp, delayed]
+# =============================================================================

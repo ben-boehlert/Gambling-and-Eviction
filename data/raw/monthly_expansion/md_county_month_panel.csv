@@ -1,0 +1,1177 @@
+state_abb,county,month,warrant_petitions,evictions_executed,warrant_cancelled,warrant_expired
+MD,Allegany,2022-01-01,0,0,0,0
+MD,Allegany,2022-02-01,0,0,0,0
+MD,Allegany,2022-03-01,0,0,0,0
+MD,Allegany,2022-04-01,0,0,0,0
+MD,Allegany,2022-05-01,0,0,0,0
+MD,Allegany,2022-06-01,0,0,0,0
+MD,Allegany,2022-07-01,0,0,0,0
+MD,Allegany,2022-08-01,0,0,0,0
+MD,Allegany,2022-09-01,0,0,0,0
+MD,Allegany,2022-10-01,0,0,0,0
+MD,Allegany,2022-11-01,0,0,0,0
+MD,Allegany,2022-12-01,0,0,0,0
+MD,Allegany,2023-01-01,0,22,0,0
+MD,Allegany,2023-02-01,0,18,0,0
+MD,Allegany,2023-03-01,0,20,0,0
+MD,Allegany,2023-04-01,0,16,0,0
+MD,Allegany,2023-05-01,0,11,0,0
+MD,Allegany,2023-06-01,17,10,0,0
+MD,Allegany,2023-07-01,20,13,10,4
+MD,Allegany,2023-08-01,31,16,1,1
+MD,Allegany,2023-09-01,18,17,1,2
+MD,Allegany,2023-10-01,21,15,8,6
+MD,Allegany,2023-11-01,11,8,0,2
+MD,Allegany,2023-12-01,29,8,2,1
+MD,Allegany,2024-01-01,37,22,12,1
+MD,Allegany,2024-02-01,29,19,19,0
+MD,Allegany,2024-03-01,10,10,8,1
+MD,Allegany,2024-04-01,20,10,4,1
+MD,Allegany,2024-05-01,14,9,5,2
+MD,Allegany,2024-06-01,17,10,2,1
+MD,Allegany,2024-07-01,21,14,7,0
+MD,Allegany,2024-08-01,25,21,7,2
+MD,Allegany,2024-09-01,25,15,7,0
+MD,Allegany,2024-10-01,28,13,7,0
+MD,Allegany,2024-11-01,16,16,8,4
+MD,Allegany,2024-12-01,12,3,3,3
+MD,Allegany,2025-01-01,15,8,5,0
+MD,Allegany,2025-02-01,14,13,4,1
+MD,Allegany,2025-03-01,13,8,4,3
+MD,Allegany,2025-04-01,25,19,5,1
+MD,Allegany,2025-05-01,19,12,6,1
+MD,Allegany,2025-06-01,21,15,2,0
+MD,Allegany,2025-07-01,33,25,5,0
+MD,Allegany,2025-08-01,19,13,3,2
+MD,Allegany,2025-09-01,29,21,4,3
+MD,Allegany,2025-10-01,37,18,5,0
+MD,Allegany,2025-11-01,20,16,9,2
+MD,Allegany,2025-12-01,23,6,3,1
+MD,Allegany,2026-01-01,21,14,13,2
+MD,Anne Arundel,2022-01-01,0,0,0,0
+MD,Anne Arundel,2022-02-01,0,0,0,0
+MD,Anne Arundel,2022-03-01,0,0,0,0
+MD,Anne Arundel,2022-04-01,0,0,0,0
+MD,Anne Arundel,2022-05-01,0,0,0,0
+MD,Anne Arundel,2022-06-01,0,0,0,0
+MD,Anne Arundel,2022-07-01,0,0,0,0
+MD,Anne Arundel,2022-08-01,0,0,0,0
+MD,Anne Arundel,2022-09-01,0,0,0,0
+MD,Anne Arundel,2022-10-01,0,0,0,0
+MD,Anne Arundel,2022-11-01,0,0,0,0
+MD,Anne Arundel,2022-12-01,0,0,0,0
+MD,Anne Arundel,2023-01-01,0,41,0,0
+MD,Anne Arundel,2023-02-01,0,130,0,0
+MD,Anne Arundel,2023-03-01,0,97,0,0
+MD,Anne Arundel,2023-04-01,0,141,0,0
+MD,Anne Arundel,2023-05-01,0,113,0,0
+MD,Anne Arundel,2023-06-01,919,130,0,0
+MD,Anne Arundel,2023-07-01,795,111,258,3
+MD,Anne Arundel,2023-08-01,890,113,348,41
+MD,Anne Arundel,2023-09-01,945,76,18,4
+MD,Anne Arundel,2023-10-01,705,138,645,72
+MD,Anne Arundel,2023-11-01,985,74,612,25
+MD,Anne Arundel,2023-12-01,907,69,597,19
+MD,Anne Arundel,2024-01-01,960,92,833,43
+MD,Anne Arundel,2024-02-01,694,90,586,10
+MD,Anne Arundel,2024-03-01,739,147,745,16
+MD,Anne Arundel,2024-04-01,979,94,620,2
+MD,Anne Arundel,2024-05-01,846,80,619,31
+MD,Anne Arundel,2024-06-01,546,155,595,49
+MD,Anne Arundel,2024-07-01,929,99,542,5
+MD,Anne Arundel,2024-08-01,958,136,558,31
+MD,Anne Arundel,2024-09-01,765,90,364,27
+MD,Anne Arundel,2024-10-01,708,121,687,11
+MD,Anne Arundel,2024-11-01,699,72,511,61
+MD,Anne Arundel,2024-12-01,773,44,344,13
+MD,Anne Arundel,2025-01-01,746,39,443,171
+MD,Anne Arundel,2025-02-01,917,122,530,24
+MD,Anne Arundel,2025-03-01,626,159,559,19
+MD,Anne Arundel,2025-04-01,670,135,648,14
+MD,Anne Arundel,2025-05-01,661,72,414,4
+MD,Anne Arundel,2025-06-01,728,95,443,4
+MD,Anne Arundel,2025-07-01,789,106,534,20
+MD,Anne Arundel,2025-08-01,761,85,432,9
+MD,Anne Arundel,2025-09-01,729,113,536,30
+MD,Anne Arundel,2025-10-01,879,108,478,11
+MD,Anne Arundel,2025-11-01,702,14,115,0
+MD,Anne Arundel,2025-12-01,780,18,118,26
+MD,Anne Arundel,2026-01-01,717,138,370,18
+MD,Baltimore,2022-01-01,0,0,0,0
+MD,Baltimore,2022-02-01,0,0,0,0
+MD,Baltimore,2022-03-01,0,0,0,0
+MD,Baltimore,2022-04-01,0,0,0,0
+MD,Baltimore,2022-05-01,0,0,0,0
+MD,Baltimore,2022-06-01,0,0,0,0
+MD,Baltimore,2022-07-01,0,0,0,0
+MD,Baltimore,2022-08-01,0,0,0,0
+MD,Baltimore,2022-09-01,0,0,0,0
+MD,Baltimore,2022-10-01,0,0,0,0
+MD,Baltimore,2022-11-01,0,0,0,0
+MD,Baltimore,2022-12-01,0,0,0,0
+MD,Baltimore,2023-01-01,0,487,0,0
+MD,Baltimore,2023-02-01,0,564,0,0
+MD,Baltimore,2023-03-01,0,388,0,0
+MD,Baltimore,2023-04-01,0,241,0,0
+MD,Baltimore,2023-05-01,0,431,0,0
+MD,Baltimore,2023-06-01,5257,403,0,0
+MD,Baltimore,2023-07-01,5167,360,1664,341
+MD,Baltimore,2023-08-01,5045,488,2966,2293
+MD,Baltimore,2023-09-01,4005,449,2721,2446
+MD,Baltimore,2023-10-01,4012,510,3227,952
+MD,Baltimore,2023-11-01,4765,466,3471,682
+MD,Baltimore,2023-12-01,4358,218,1840,536
+MD,Baltimore,2024-01-01,5054,520,3921,780
+MD,Baltimore,2024-02-01,4725,511,3364,569
+MD,Baltimore,2024-03-01,3971,493,3420,776
+MD,Baltimore,2024-04-01,4808,505,4032,491
+MD,Baltimore,2024-05-01,3474,486,3261,362
+MD,Baltimore,2024-06-01,3142,415,3149,653
+MD,Baltimore,2024-07-01,4066,366,2922,551
+MD,Baltimore,2024-08-01,4718,400,2746,326
+MD,Baltimore,2024-09-01,3428,417,2655,392
+MD,Baltimore,2024-10-01,3306,561,3164,373
+MD,Baltimore,2024-11-01,2969,306,2035,928
+MD,Baltimore,2024-12-01,3295,230,1827,326
+MD,Baltimore,2025-01-01,3524,414,2037,597
+MD,Baltimore,2025-02-01,3262,358,3004,257
+MD,Baltimore,2025-03-01,2870,335,2688,504
+MD,Baltimore,2025-04-01,3244,365,2738,352
+MD,Baltimore,2025-05-01,3304,363,2857,318
+MD,Baltimore,2025-06-01,3313,282,1538,266
+MD,Baltimore,2025-07-01,3397,443,2646,399
+MD,Baltimore,2025-08-01,2753,337,2907,350
+MD,Baltimore,2025-09-01,3207,372,2485,201
+MD,Baltimore,2025-10-01,4170,326,1916,327
+MD,Baltimore,2025-11-01,2753,232,1953,221
+MD,Baltimore,2025-12-01,3547,193,2035,374
+MD,Baltimore,2026-01-01,2315,184,1891,357
+MD,Baltimore City,2022-01-01,0,2,0,0
+MD,Baltimore City,2022-02-01,0,0,0,0
+MD,Baltimore City,2022-03-01,0,0,0,0
+MD,Baltimore City,2022-04-01,0,0,0,0
+MD,Baltimore City,2022-05-01,0,0,0,0
+MD,Baltimore City,2022-06-01,0,0,0,0
+MD,Baltimore City,2022-07-01,0,0,0,0
+MD,Baltimore City,2022-08-01,0,2,0,0
+MD,Baltimore City,2022-09-01,0,27,0,0
+MD,Baltimore City,2022-10-01,0,208,0,0
+MD,Baltimore City,2022-11-01,0,220,0,0
+MD,Baltimore City,2022-12-01,0,65,0,0
+MD,Baltimore City,2023-01-01,0,109,0,1
+MD,Baltimore City,2023-02-01,0,517,2,1
+MD,Baltimore City,2023-03-01,0,503,0,2
+MD,Baltimore City,2023-04-01,0,558,0,0
+MD,Baltimore City,2023-05-01,1,752,1,2
+MD,Baltimore City,2023-06-01,3027,606,44,5
+MD,Baltimore City,2023-07-01,2485,118,150,21
+MD,Baltimore City,2023-08-01,2807,1101,285,56
+MD,Baltimore City,2023-09-01,3745,782,48,39
+MD,Baltimore City,2023-10-01,3215,225,94,198
+MD,Baltimore City,2023-11-01,2949,205,354,337
+MD,Baltimore City,2023-12-01,2309,142,656,643
+MD,Baltimore City,2024-01-01,2996,229,706,703
+MD,Baltimore City,2024-02-01,2817,321,1330,376
+MD,Baltimore City,2024-03-01,2977,363,391,906
+MD,Baltimore City,2024-04-01,3622,310,67,145
+MD,Baltimore City,2024-05-01,2947,95,13,11
+MD,Baltimore City,2024-06-01,1624,41,9,8
+MD,Baltimore City,2024-07-01,2581,32,10,0
+MD,Baltimore City,2024-08-01,3779,160,13,17
+MD,Baltimore City,2024-09-01,2211,576,20,2
+MD,Baltimore City,2024-10-01,2698,461,18,11
+MD,Baltimore City,2024-11-01,2836,326,21,4
+MD,Baltimore City,2024-12-01,3022,230,20,0
+MD,Baltimore City,2025-01-01,2254,292,5,7
+MD,Baltimore City,2025-02-01,2492,154,7,4
+MD,Baltimore City,2025-03-01,2951,585,27,60
+MD,Baltimore City,2025-04-01,2772,556,47,94
+MD,Baltimore City,2025-05-01,2374,293,107,26
+MD,Baltimore City,2025-06-01,2886,336,797,0
+MD,Baltimore City,2025-07-01,2962,332,1814,59
+MD,Baltimore City,2025-08-01,2871,456,1150,59
+MD,Baltimore City,2025-09-01,2472,711,747,905
+MD,Baltimore City,2025-10-01,3299,538,1987,1254
+MD,Baltimore City,2025-11-01,2413,292,632,67
+MD,Baltimore City,2025-12-01,2854,251,1393,228
+MD,Baltimore City,2026-01-01,2351,341,314,59
+MD,Calvert,2022-01-01,0,0,0,0
+MD,Calvert,2022-02-01,0,0,0,0
+MD,Calvert,2022-03-01,0,0,0,0
+MD,Calvert,2022-04-01,0,0,0,0
+MD,Calvert,2022-05-01,0,0,0,0
+MD,Calvert,2022-06-01,0,0,0,0
+MD,Calvert,2022-07-01,0,0,0,0
+MD,Calvert,2022-08-01,0,0,0,0
+MD,Calvert,2022-09-01,0,0,0,0
+MD,Calvert,2022-10-01,0,0,0,0
+MD,Calvert,2022-11-01,0,0,0,0
+MD,Calvert,2022-12-01,0,0,0,0
+MD,Calvert,2023-01-01,0,2,0,0
+MD,Calvert,2023-02-01,0,5,0,0
+MD,Calvert,2023-03-01,0,5,0,0
+MD,Calvert,2023-04-01,0,5,0,0
+MD,Calvert,2023-05-01,0,5,0,0
+MD,Calvert,2023-06-01,24,5,0,0
+MD,Calvert,2023-07-01,13,8,14,5
+MD,Calvert,2023-08-01,57,6,12,5
+MD,Calvert,2023-09-01,16,5,29,3
+MD,Calvert,2023-10-01,26,3,12,4
+MD,Calvert,2023-11-01,27,2,20,5
+MD,Calvert,2023-12-01,49,5,10,2
+MD,Calvert,2024-01-01,10,6,35,3
+MD,Calvert,2024-02-01,35,4,23,3
+MD,Calvert,2024-03-01,17,1,19,4
+MD,Calvert,2024-04-01,20,3,19,1
+MD,Calvert,2024-05-01,21,1,16,0
+MD,Calvert,2024-06-01,27,4,14,1
+MD,Calvert,2024-07-01,22,6,16,1
+MD,Calvert,2024-08-01,21,4,16,0
+MD,Calvert,2024-09-01,33,3,20,2
+MD,Calvert,2024-10-01,10,4,10,0
+MD,Calvert,2024-11-01,8,2,2,3
+MD,Calvert,2024-12-01,10,7,5,11
+MD,Calvert,2025-01-01,15,2,3,1
+MD,Calvert,2025-02-01,28,5,14,1
+MD,Calvert,2025-03-01,33,8,30,0
+MD,Calvert,2025-04-01,25,5,14,1
+MD,Calvert,2025-05-01,8,4,9,0
+MD,Calvert,2025-06-01,19,5,16,0
+MD,Calvert,2025-07-01,13,4,11,0
+MD,Calvert,2025-08-01,17,2,10,0
+MD,Calvert,2025-09-01,11,2,13,5
+MD,Calvert,2025-10-01,31,5,10,1
+MD,Calvert,2025-11-01,7,5,6,0
+MD,Calvert,2025-12-01,34,1,11,1
+MD,Calvert,2026-01-01,12,4,13,4
+MD,Caroline,2022-01-01,0,0,0,0
+MD,Caroline,2022-02-01,0,0,0,0
+MD,Caroline,2022-03-01,0,0,0,0
+MD,Caroline,2022-04-01,0,0,0,0
+MD,Caroline,2022-05-01,0,0,0,0
+MD,Caroline,2022-06-01,0,0,0,0
+MD,Caroline,2022-07-01,0,0,0,0
+MD,Caroline,2022-08-01,0,0,0,0
+MD,Caroline,2022-09-01,0,0,0,0
+MD,Caroline,2022-10-01,0,0,0,0
+MD,Caroline,2022-11-01,0,0,0,0
+MD,Caroline,2022-12-01,0,0,0,0
+MD,Caroline,2023-01-01,0,7,0,0
+MD,Caroline,2023-02-01,0,2,0,0
+MD,Caroline,2023-03-01,0,7,0,0
+MD,Caroline,2023-04-01,0,4,0,0
+MD,Caroline,2023-05-01,0,2,0,0
+MD,Caroline,2023-06-01,15,4,0,0
+MD,Caroline,2023-07-01,6,7,2,1
+MD,Caroline,2023-08-01,9,3,6,0
+MD,Caroline,2023-09-01,13,4,10,0
+MD,Caroline,2023-10-01,12,1,4,1
+MD,Caroline,2023-11-01,10,4,6,0
+MD,Caroline,2023-12-01,5,3,5,1
+MD,Caroline,2024-01-01,12,5,3,0
+MD,Caroline,2024-02-01,9,1,8,0
+MD,Caroline,2024-03-01,13,1,9,0
+MD,Caroline,2024-04-01,8,4,10,1
+MD,Caroline,2024-05-01,14,8,6,0
+MD,Caroline,2024-06-01,7,5,2,0
+MD,Caroline,2024-07-01,9,3,4,0
+MD,Caroline,2024-08-01,14,4,4,0
+MD,Caroline,2024-09-01,9,4,2,0
+MD,Caroline,2024-10-01,13,10,5,1
+MD,Caroline,2024-11-01,8,2,2,0
+MD,Caroline,2024-12-01,11,3,4,1
+MD,Caroline,2025-01-01,15,2,9,0
+MD,Caroline,2025-02-01,11,5,15,1
+MD,Caroline,2025-03-01,6,1,0,1
+MD,Caroline,2025-04-01,10,4,4,1
+MD,Caroline,2025-05-01,9,5,2,1
+MD,Caroline,2025-06-01,9,5,1,2
+MD,Caroline,2025-07-01,8,5,2,1
+MD,Caroline,2025-08-01,11,3,6,1
+MD,Caroline,2025-09-01,6,5,2,0
+MD,Caroline,2025-10-01,17,3,6,3
+MD,Caroline,2025-11-01,13,2,7,0
+MD,Caroline,2025-12-01,3,4,7,0
+MD,Caroline,2026-01-01,10,2,1,3
+MD,Carroll,2022-01-01,0,0,0,0
+MD,Carroll,2022-02-01,0,0,0,0
+MD,Carroll,2022-03-01,0,0,0,0
+MD,Carroll,2022-04-01,0,0,0,0
+MD,Carroll,2022-05-01,0,0,0,0
+MD,Carroll,2022-06-01,0,0,0,0
+MD,Carroll,2022-07-01,0,0,0,0
+MD,Carroll,2022-08-01,0,0,0,0
+MD,Carroll,2022-09-01,0,0,0,0
+MD,Carroll,2022-10-01,0,0,0,0
+MD,Carroll,2022-11-01,0,0,0,0
+MD,Carroll,2022-12-01,0,0,0,0
+MD,Carroll,2023-01-01,0,6,0,0
+MD,Carroll,2023-02-01,0,7,0,0
+MD,Carroll,2023-03-01,0,6,0,0
+MD,Carroll,2023-04-01,0,7,0,0
+MD,Carroll,2023-05-01,0,11,0,0
+MD,Carroll,2023-06-01,38,5,0,0
+MD,Carroll,2023-07-01,35,14,27,0
+MD,Carroll,2023-08-01,31,10,16,0
+MD,Carroll,2023-09-01,30,7,26,0
+MD,Carroll,2023-10-01,26,15,17,0
+MD,Carroll,2023-11-01,24,5,25,0
+MD,Carroll,2023-12-01,34,3,9,0
+MD,Carroll,2024-01-01,33,7,34,0
+MD,Carroll,2024-02-01,43,6,31,4
+MD,Carroll,2024-03-01,23,7,32,0
+MD,Carroll,2024-04-01,23,13,21,0
+MD,Carroll,2024-05-01,18,4,8,0
+MD,Carroll,2024-06-01,27,3,18,0
+MD,Carroll,2024-07-01,29,8,24,0
+MD,Carroll,2024-08-01,26,2,21,0
+MD,Carroll,2024-09-01,15,3,16,0
+MD,Carroll,2024-10-01,21,2,18,0
+MD,Carroll,2024-11-01,14,4,12,2
+MD,Carroll,2024-12-01,25,1,14,0
+MD,Carroll,2025-01-01,28,4,21,0
+MD,Carroll,2025-02-01,29,6,19,0
+MD,Carroll,2025-03-01,19,7,24,0
+MD,Carroll,2025-04-01,16,9,10,1
+MD,Carroll,2025-05-01,23,7,12,0
+MD,Carroll,2025-06-01,26,5,9,0
+MD,Carroll,2025-07-01,32,13,26,0
+MD,Carroll,2025-08-01,25,2,21,1
+MD,Carroll,2025-09-01,32,7,26,0
+MD,Carroll,2025-10-01,40,7,20,0
+MD,Carroll,2025-11-01,27,3,21,0
+MD,Carroll,2025-12-01,23,7,21,0
+MD,Carroll,2026-01-01,32,1,10,0
+MD,Cecil,2022-01-01,0,0,0,0
+MD,Cecil,2022-02-01,0,0,0,0
+MD,Cecil,2022-03-01,0,0,0,0
+MD,Cecil,2022-04-01,0,0,0,0
+MD,Cecil,2022-05-01,0,0,0,0
+MD,Cecil,2022-06-01,0,0,0,0
+MD,Cecil,2022-07-01,0,0,0,0
+MD,Cecil,2022-08-01,0,0,0,0
+MD,Cecil,2022-09-01,0,0,0,0
+MD,Cecil,2022-10-01,0,0,0,0
+MD,Cecil,2022-11-01,0,0,0,0
+MD,Cecil,2022-12-01,0,0,0,0
+MD,Cecil,2023-01-01,0,37,0,0
+MD,Cecil,2023-02-01,0,14,0,0
+MD,Cecil,2023-03-01,0,30,0,0
+MD,Cecil,2023-04-01,0,26,0,0
+MD,Cecil,2023-05-01,0,27,0,0
+MD,Cecil,2023-06-01,98,42,0,0
+MD,Cecil,2023-07-01,104,20,61,2
+MD,Cecil,2023-08-01,86,42,59,7
+MD,Cecil,2023-09-01,125,25,78,5
+MD,Cecil,2023-10-01,112,34,57,0
+MD,Cecil,2023-11-01,66,27,52,6
+MD,Cecil,2023-12-01,106,19,57,4
+MD,Cecil,2024-01-01,107,23,77,3
+MD,Cecil,2024-02-01,90,54,76,8
+MD,Cecil,2024-03-01,89,26,84,7
+MD,Cecil,2024-04-01,97,25,75,1
+MD,Cecil,2024-05-01,88,40,54,2
+MD,Cecil,2024-06-01,113,29,97,1
+MD,Cecil,2024-07-01,120,36,69,1
+MD,Cecil,2024-08-01,93,26,55,0
+MD,Cecil,2024-09-01,104,28,87,0
+MD,Cecil,2024-10-01,65,27,35,0
+MD,Cecil,2024-11-01,80,19,51,0
+MD,Cecil,2024-12-01,79,24,50,0
+MD,Cecil,2025-01-01,111,16,75,0
+MD,Cecil,2025-02-01,77,17,80,0
+MD,Cecil,2025-03-01,106,20,69,0
+MD,Cecil,2025-04-01,68,23,48,0
+MD,Cecil,2025-05-01,107,14,53,1
+MD,Cecil,2025-06-01,98,19,83,2
+MD,Cecil,2025-07-01,109,25,65,0
+MD,Cecil,2025-08-01,102,39,69,1
+MD,Cecil,2025-09-01,122,22,79,0
+MD,Cecil,2025-10-01,130,19,66,0
+MD,Cecil,2025-11-01,111,19,61,0
+MD,Cecil,2025-12-01,104,29,88,5
+MD,Cecil,2026-01-01,85,25,60,0
+MD,Charles,2022-01-01,0,0,0,0
+MD,Charles,2022-02-01,0,0,0,0
+MD,Charles,2022-03-01,0,0,0,0
+MD,Charles,2022-04-01,0,0,0,0
+MD,Charles,2022-05-01,0,0,0,0
+MD,Charles,2022-06-01,0,0,0,0
+MD,Charles,2022-07-01,0,0,0,0
+MD,Charles,2022-08-01,0,0,0,0
+MD,Charles,2022-09-01,0,0,0,0
+MD,Charles,2022-10-01,0,0,0,0
+MD,Charles,2022-11-01,0,0,0,0
+MD,Charles,2022-12-01,0,0,0,0
+MD,Charles,2023-01-01,0,22,0,0
+MD,Charles,2023-02-01,0,26,0,0
+MD,Charles,2023-03-01,0,24,0,0
+MD,Charles,2023-04-01,0,16,0,0
+MD,Charles,2023-05-01,0,38,0,0
+MD,Charles,2023-06-01,190,30,0,0
+MD,Charles,2023-07-01,104,16,92,3
+MD,Charles,2023-08-01,126,25,98,6
+MD,Charles,2023-09-01,213,43,166,3
+MD,Charles,2023-10-01,161,21,102,1
+MD,Charles,2023-11-01,92,17,91,0
+MD,Charles,2023-12-01,109,14,124,0
+MD,Charles,2024-01-01,188,23,144,0
+MD,Charles,2024-02-01,174,31,121,0
+MD,Charles,2024-03-01,166,17,120,0
+MD,Charles,2024-04-01,126,31,157,0
+MD,Charles,2024-05-01,105,29,113,1
+MD,Charles,2024-06-01,166,23,93,1
+MD,Charles,2024-07-01,218,19,116,1
+MD,Charles,2024-08-01,126,20,163,1
+MD,Charles,2024-09-01,133,16,87,0
+MD,Charles,2024-10-01,170,19,161,0
+MD,Charles,2024-11-01,108,18,91,0
+MD,Charles,2024-12-01,155,13,81,0
+MD,Charles,2025-01-01,98,12,112,0
+MD,Charles,2025-02-01,97,24,113,1
+MD,Charles,2025-03-01,89,21,91,0
+MD,Charles,2025-04-01,134,9,66,0
+MD,Charles,2025-05-01,78,13,85,0
+MD,Charles,2025-06-01,117,13,62,0
+MD,Charles,2025-07-01,115,25,122,0
+MD,Charles,2025-08-01,113,17,97,0
+MD,Charles,2025-09-01,133,13,110,0
+MD,Charles,2025-10-01,205,17,106,0
+MD,Charles,2025-11-01,90,17,77,0
+MD,Charles,2025-12-01,135,13,59,0
+MD,Charles,2026-01-01,92,23,120,19
+MD,Dorchester,2022-01-01,0,0,0,0
+MD,Dorchester,2022-02-01,0,0,0,0
+MD,Dorchester,2022-03-01,0,0,0,0
+MD,Dorchester,2022-04-01,0,0,0,0
+MD,Dorchester,2022-05-01,0,0,0,0
+MD,Dorchester,2022-06-01,0,0,0,0
+MD,Dorchester,2022-07-01,0,0,0,0
+MD,Dorchester,2022-08-01,0,0,0,0
+MD,Dorchester,2022-09-01,0,0,0,0
+MD,Dorchester,2022-10-01,0,0,0,0
+MD,Dorchester,2022-11-01,0,0,0,0
+MD,Dorchester,2022-12-01,0,0,0,0
+MD,Dorchester,2023-01-01,0,14,0,0
+MD,Dorchester,2023-02-01,0,10,0,0
+MD,Dorchester,2023-03-01,0,8,0,0
+MD,Dorchester,2023-04-01,0,10,0,0
+MD,Dorchester,2023-05-01,0,11,0,0
+MD,Dorchester,2023-06-01,54,12,0,0
+MD,Dorchester,2023-07-01,35,15,27,12
+MD,Dorchester,2023-08-01,43,10,28,4
+MD,Dorchester,2023-09-01,37,15,17,0
+MD,Dorchester,2023-10-01,51,6,14,1
+MD,Dorchester,2023-11-01,20,5,35,4
+MD,Dorchester,2023-12-01,49,6,14,8
+MD,Dorchester,2024-01-01,25,11,33,0
+MD,Dorchester,2024-02-01,23,14,17,0
+MD,Dorchester,2024-03-01,39,3,16,18
+MD,Dorchester,2024-04-01,29,11,20,0
+MD,Dorchester,2024-05-01,16,12,12,9
+MD,Dorchester,2024-06-01,31,7,4,0
+MD,Dorchester,2024-07-01,12,7,20,8
+MD,Dorchester,2024-08-01,42,10,9,2
+MD,Dorchester,2024-09-01,26,10,22,1
+MD,Dorchester,2024-10-01,26,9,15,0
+MD,Dorchester,2024-11-01,23,8,17,0
+MD,Dorchester,2024-12-01,15,13,11,6
+MD,Dorchester,2025-01-01,24,8,6,2
+MD,Dorchester,2025-02-01,30,9,9,2
+MD,Dorchester,2025-03-01,13,9,21,0
+MD,Dorchester,2025-04-01,14,3,3,8
+MD,Dorchester,2025-05-01,35,4,12,1
+MD,Dorchester,2025-06-01,14,9,19,1
+MD,Dorchester,2025-07-01,13,3,4,0
+MD,Dorchester,2025-08-01,15,3,9,12
+MD,Dorchester,2025-09-01,12,7,12,0
+MD,Dorchester,2025-10-01,34,2,4,1
+MD,Dorchester,2025-11-01,28,11,14,1
+MD,Dorchester,2025-12-01,9,7,13,0
+MD,Dorchester,2026-01-01,33,3,11,8
+MD,Frederick,2022-01-01,0,0,0,0
+MD,Frederick,2022-02-01,0,0,0,0
+MD,Frederick,2022-03-01,0,0,0,0
+MD,Frederick,2022-04-01,0,0,0,0
+MD,Frederick,2022-05-01,0,0,0,0
+MD,Frederick,2022-06-01,0,0,0,0
+MD,Frederick,2022-07-01,0,0,0,0
+MD,Frederick,2022-08-01,0,0,0,0
+MD,Frederick,2022-09-01,0,0,0,0
+MD,Frederick,2022-10-01,0,0,0,0
+MD,Frederick,2022-11-01,0,0,0,0
+MD,Frederick,2022-12-01,0,0,0,0
+MD,Frederick,2023-01-01,0,10,0,0
+MD,Frederick,2023-02-01,0,10,0,0
+MD,Frederick,2023-03-01,0,5,0,0
+MD,Frederick,2023-04-01,0,9,0,0
+MD,Frederick,2023-05-01,0,12,0,0
+MD,Frederick,2023-06-01,198,10,0,0
+MD,Frederick,2023-07-01,138,5,83,0
+MD,Frederick,2023-08-01,129,13,171,0
+MD,Frederick,2023-09-01,148,15,69,0
+MD,Frederick,2023-10-01,149,13,148,1
+MD,Frederick,2023-11-01,123,3,110,2
+MD,Frederick,2023-12-01,149,12,109,0
+MD,Frederick,2024-01-01,166,8,171,0
+MD,Frederick,2024-02-01,177,14,140,0
+MD,Frederick,2024-03-01,112,8,152,1
+MD,Frederick,2024-04-01,105,3,110,0
+MD,Frederick,2024-05-01,119,10,84,0
+MD,Frederick,2024-06-01,90,8,70,0
+MD,Frederick,2024-07-01,139,12,117,5
+MD,Frederick,2024-08-01,106,13,109,1
+MD,Frederick,2024-09-01,88,5,92,0
+MD,Frederick,2024-10-01,95,17,63,0
+MD,Frederick,2024-11-01,82,9,73,0
+MD,Frederick,2024-12-01,68,6,43,0
+MD,Frederick,2025-01-01,112,5,112,1
+MD,Frederick,2025-02-01,101,6,79,0
+MD,Frederick,2025-03-01,105,7,112,1
+MD,Frederick,2025-04-01,114,13,83,0
+MD,Frederick,2025-05-01,105,8,95,1
+MD,Frederick,2025-06-01,57,7,76,4
+MD,Frederick,2025-07-01,99,8,75,0
+MD,Frederick,2025-08-01,104,13,57,0
+MD,Frederick,2025-09-01,74,12,88,0
+MD,Frederick,2025-10-01,187,10,98,1
+MD,Frederick,2025-11-01,85,11,50,0
+MD,Frederick,2025-12-01,88,4,90,0
+MD,Frederick,2026-01-01,119,2,75,0
+MD,Garrett,2022-01-01,0,0,0,0
+MD,Garrett,2022-02-01,0,0,0,0
+MD,Garrett,2022-03-01,0,0,0,0
+MD,Garrett,2022-04-01,0,0,0,0
+MD,Garrett,2022-05-01,0,0,0,0
+MD,Garrett,2022-06-01,0,0,0,0
+MD,Garrett,2022-07-01,0,0,0,0
+MD,Garrett,2022-08-01,0,0,0,0
+MD,Garrett,2022-09-01,0,0,0,0
+MD,Garrett,2022-10-01,0,0,0,0
+MD,Garrett,2022-11-01,0,0,0,0
+MD,Garrett,2022-12-01,0,0,0,0
+MD,Garrett,2023-01-01,0,1,0,0
+MD,Garrett,2023-02-01,0,0,0,0
+MD,Garrett,2023-03-01,0,2,0,0
+MD,Garrett,2023-04-01,0,5,0,0
+MD,Garrett,2023-05-01,0,2,0,0
+MD,Garrett,2023-06-01,6,5,0,0
+MD,Garrett,2023-07-01,2,3,0,0
+MD,Garrett,2023-08-01,4,2,2,0
+MD,Garrett,2023-09-01,3,0,3,0
+MD,Garrett,2023-10-01,4,2,2,0
+MD,Garrett,2023-11-01,6,1,4,0
+MD,Garrett,2023-12-01,5,4,2,0
+MD,Garrett,2024-01-01,4,4,2,0
+MD,Garrett,2024-02-01,1,0,0,0
+MD,Garrett,2024-03-01,3,1,1,0
+MD,Garrett,2024-04-01,1,0,2,0
+MD,Garrett,2024-05-01,1,1,1,0
+MD,Garrett,2024-06-01,5,1,0,0
+MD,Garrett,2024-07-01,4,3,2,0
+MD,Garrett,2024-08-01,2,3,2,0
+MD,Garrett,2024-09-01,1,1,0,0
+MD,Garrett,2024-10-01,2,0,0,0
+MD,Garrett,2024-11-01,1,0,2,0
+MD,Garrett,2024-12-01,1,1,1,0
+MD,Garrett,2025-01-01,6,2,2,0
+MD,Garrett,2025-02-01,1,2,0,0
+MD,Garrett,2025-03-01,3,1,1,0
+MD,Garrett,2025-04-01,6,3,2,0
+MD,Garrett,2025-05-01,1,4,0,0
+MD,Garrett,2025-06-01,3,0,0,0
+MD,Garrett,2025-07-01,0,3,0,0
+MD,Garrett,2025-08-01,10,1,0,0
+MD,Garrett,2025-09-01,0,3,6,0
+MD,Garrett,2025-10-01,5,1,0,0
+MD,Garrett,2025-11-01,2,1,0,0
+MD,Garrett,2025-12-01,5,3,1,0
+MD,Garrett,2026-01-01,1,0,2,0
+MD,Harford,2022-01-01,0,0,0,0
+MD,Harford,2022-02-01,0,0,0,0
+MD,Harford,2022-03-01,0,0,0,0
+MD,Harford,2022-04-01,0,0,0,0
+MD,Harford,2022-05-01,0,0,0,0
+MD,Harford,2022-06-01,0,0,0,0
+MD,Harford,2022-07-01,0,0,0,0
+MD,Harford,2022-08-01,0,0,0,0
+MD,Harford,2022-09-01,0,0,0,0
+MD,Harford,2022-10-01,0,0,0,0
+MD,Harford,2022-11-01,0,0,0,0
+MD,Harford,2022-12-01,0,0,0,0
+MD,Harford,2023-01-01,0,50,0,0
+MD,Harford,2023-02-01,0,30,0,0
+MD,Harford,2023-03-01,0,51,0,0
+MD,Harford,2023-04-01,0,34,0,0
+MD,Harford,2023-05-01,0,43,0,0
+MD,Harford,2023-06-01,307,73,0,0
+MD,Harford,2023-07-01,244,23,120,3
+MD,Harford,2023-08-01,296,21,166,41
+MD,Harford,2023-09-01,429,38,159,35
+MD,Harford,2023-10-01,289,46,299,13
+MD,Harford,2023-11-01,339,52,224,27
+MD,Harford,2023-12-01,377,32,204,13
+MD,Harford,2024-01-01,402,42,276,6
+MD,Harford,2024-02-01,421,54,362,23
+MD,Harford,2024-03-01,345,28,294,17
+MD,Harford,2024-04-01,320,40,227,11
+MD,Harford,2024-05-01,340,68,215,11
+MD,Harford,2024-06-01,335,33,146,29
+MD,Harford,2024-07-01,340,27,292,42
+MD,Harford,2024-08-01,363,43,265,20
+MD,Harford,2024-09-01,384,31,257,18
+MD,Harford,2024-10-01,299,48,256,14
+MD,Harford,2024-11-01,444,29,138,30
+MD,Harford,2024-12-01,299,22,179,10
+MD,Harford,2025-01-01,228,36,244,10
+MD,Harford,2025-02-01,364,26,177,23
+MD,Harford,2025-03-01,240,62,242,24
+MD,Harford,2025-04-01,249,33,167,16
+MD,Harford,2025-05-01,184,38,175,6
+MD,Harford,2025-06-01,256,12,92,20
+MD,Harford,2025-07-01,234,43,206,32
+MD,Harford,2025-08-01,248,29,117,1
+MD,Harford,2025-09-01,245,69,210,4
+MD,Harford,2025-10-01,317,31,158,40
+MD,Harford,2025-11-01,228,19,102,0
+MD,Harford,2025-12-01,204,38,130,29
+MD,Harford,2026-01-01,245,39,146,39
+MD,Howard,2022-01-01,0,0,0,0
+MD,Howard,2022-02-01,0,0,0,0
+MD,Howard,2022-03-01,0,0,0,0
+MD,Howard,2022-04-01,0,0,0,0
+MD,Howard,2022-05-01,0,0,0,0
+MD,Howard,2022-06-01,0,0,0,0
+MD,Howard,2022-07-01,0,0,0,0
+MD,Howard,2022-08-01,0,0,0,0
+MD,Howard,2022-09-01,0,0,0,0
+MD,Howard,2022-10-01,0,0,0,0
+MD,Howard,2022-11-01,0,0,0,0
+MD,Howard,2022-12-01,0,0,0,0
+MD,Howard,2023-01-01,0,47,0,0
+MD,Howard,2023-02-01,0,28,0,0
+MD,Howard,2023-03-01,0,30,0,0
+MD,Howard,2023-04-01,0,53,0,0
+MD,Howard,2023-05-01,0,66,0,0
+MD,Howard,2023-06-01,442,39,0,0
+MD,Howard,2023-07-01,356,36,283,10
+MD,Howard,2023-08-01,434,70,382,3
+MD,Howard,2023-09-01,472,33,279,9
+MD,Howard,2023-10-01,337,34,286,3
+MD,Howard,2023-11-01,246,50,372,2
+MD,Howard,2023-12-01,417,28,264,0
+MD,Howard,2024-01-01,296,29,275,0
+MD,Howard,2024-02-01,412,53,302,1
+MD,Howard,2024-03-01,432,32,311,0
+MD,Howard,2024-04-01,310,56,410,1
+MD,Howard,2024-05-01,308,34,418,0
+MD,Howard,2024-06-01,329,37,198,1
+MD,Howard,2024-07-01,158,47,263,0
+MD,Howard,2024-08-01,342,46,230,0
+MD,Howard,2024-09-01,368,39,214,1
+MD,Howard,2024-10-01,249,34,305,1
+MD,Howard,2024-11-01,219,43,123,0
+MD,Howard,2024-12-01,339,29,183,0
+MD,Howard,2025-01-01,342,38,228,1
+MD,Howard,2025-02-01,293,13,250,1
+MD,Howard,2025-03-01,238,33,274,0
+MD,Howard,2025-04-01,375,33,240,0
+MD,Howard,2025-05-01,276,32,249,2
+MD,Howard,2025-06-01,283,39,239,0
+MD,Howard,2025-07-01,286,32,267,0
+MD,Howard,2025-08-01,304,40,274,0
+MD,Howard,2025-09-01,309,40,286,0
+MD,Howard,2025-10-01,486,28,275,0
+MD,Howard,2025-11-01,225,18,197,0
+MD,Howard,2025-12-01,274,21,285,0
+MD,Howard,2026-01-01,300,27,228,0
+MD,Kent,2022-01-01,0,0,0,0
+MD,Kent,2022-02-01,0,0,0,0
+MD,Kent,2022-03-01,0,0,0,0
+MD,Kent,2022-04-01,0,0,0,0
+MD,Kent,2022-05-01,0,0,0,0
+MD,Kent,2022-06-01,0,0,0,0
+MD,Kent,2022-07-01,0,0,0,0
+MD,Kent,2022-08-01,0,0,0,0
+MD,Kent,2022-09-01,0,0,0,0
+MD,Kent,2022-10-01,0,0,0,0
+MD,Kent,2022-11-01,0,0,0,0
+MD,Kent,2022-12-01,0,0,0,0
+MD,Kent,2023-01-01,0,0,0,0
+MD,Kent,2023-02-01,0,0,0,0
+MD,Kent,2023-03-01,0,0,0,0
+MD,Kent,2023-04-01,0,2,0,0
+MD,Kent,2023-05-01,0,1,0,0
+MD,Kent,2023-06-01,4,1,0,0
+MD,Kent,2023-07-01,5,1,4,1
+MD,Kent,2023-08-01,2,2,0,0
+MD,Kent,2023-09-01,5,4,0,1
+MD,Kent,2023-10-01,3,0,4,0
+MD,Kent,2023-11-01,6,1,1,0
+MD,Kent,2023-12-01,2,1,3,2
+MD,Kent,2024-01-01,3,1,1,0
+MD,Kent,2024-02-01,5,2,2,0
+MD,Kent,2024-03-01,6,0,3,0
+MD,Kent,2024-04-01,3,3,7,0
+MD,Kent,2024-05-01,7,1,0,0
+MD,Kent,2024-06-01,2,1,2,0
+MD,Kent,2024-07-01,3,1,7,0
+MD,Kent,2024-08-01,10,1,4,0
+MD,Kent,2024-09-01,5,1,3,0
+MD,Kent,2024-10-01,7,4,6,0
+MD,Kent,2024-11-01,2,2,4,0
+MD,Kent,2024-12-01,3,1,1,0
+MD,Kent,2025-01-01,0,1,0,0
+MD,Kent,2025-02-01,4,0,0,0
+MD,Kent,2025-03-01,7,2,4,0
+MD,Kent,2025-04-01,3,2,1,0
+MD,Kent,2025-05-01,7,3,5,0
+MD,Kent,2025-06-01,4,0,1,0
+MD,Kent,2025-07-01,4,1,5,0
+MD,Kent,2025-08-01,5,2,0,0
+MD,Kent,2025-09-01,3,2,3,0
+MD,Kent,2025-10-01,2,0,2,0
+MD,Kent,2025-11-01,4,0,1,0
+MD,Kent,2025-12-01,0,0,1,1
+MD,Kent,2026-01-01,3,1,1,1
+MD,Montgomery,2022-01-01,0,0,0,0
+MD,Montgomery,2022-02-01,0,0,0,0
+MD,Montgomery,2022-03-01,0,0,0,0
+MD,Montgomery,2022-04-01,0,0,0,0
+MD,Montgomery,2022-05-01,0,0,0,0
+MD,Montgomery,2022-06-01,0,0,0,0
+MD,Montgomery,2022-07-01,0,0,0,0
+MD,Montgomery,2022-08-01,0,0,0,0
+MD,Montgomery,2022-09-01,0,0,0,0
+MD,Montgomery,2022-10-01,0,0,0,0
+MD,Montgomery,2022-11-01,0,0,0,0
+MD,Montgomery,2022-12-01,0,0,0,0
+MD,Montgomery,2023-01-01,0,79,0,0
+MD,Montgomery,2023-02-01,0,32,0,0
+MD,Montgomery,2023-03-01,0,196,0,0
+MD,Montgomery,2023-04-01,0,126,0,0
+MD,Montgomery,2023-05-01,0,157,0,0
+MD,Montgomery,2023-06-01,765,132,0,0
+MD,Montgomery,2023-07-01,468,53,219,65
+MD,Montgomery,2023-08-01,600,111,468,204
+MD,Montgomery,2023-09-01,495,54,214,60
+MD,Montgomery,2023-10-01,575,90,360,86
+MD,Montgomery,2023-11-01,501,74,322,52
+MD,Montgomery,2023-12-01,931,66,318,2
+MD,Montgomery,2024-01-01,777,100,478,43
+MD,Montgomery,2024-02-01,1008,123,557,131
+MD,Montgomery,2024-03-01,722,146,703,133
+MD,Montgomery,2024-04-01,624,130,673,147
+MD,Montgomery,2024-05-01,817,133,411,62
+MD,Montgomery,2024-06-01,541,70,432,158
+MD,Montgomery,2024-07-01,1100,74,463,59
+MD,Montgomery,2024-08-01,1437,146,550,136
+MD,Montgomery,2024-09-01,1618,121,693,79
+MD,Montgomery,2024-10-01,1336,81,964,0
+MD,Montgomery,2024-11-01,1302,68,268,0
+MD,Montgomery,2024-12-01,970,119,372,124
+MD,Montgomery,2025-01-01,967,107,783,271
+MD,Montgomery,2025-02-01,818,109,1128,133
+MD,Montgomery,2025-03-01,978,138,708,112
+MD,Montgomery,2025-04-01,782,175,855,84
+MD,Montgomery,2025-05-01,640,106,557,22
+MD,Montgomery,2025-06-01,746,118,498,69
+MD,Montgomery,2025-07-01,793,120,675,121
+MD,Montgomery,2025-08-01,645,164,453,85
+MD,Montgomery,2025-09-01,772,174,495,83
+MD,Montgomery,2025-10-01,964,106,651,50
+MD,Montgomery,2025-11-01,712,115,419,1
+MD,Montgomery,2025-12-01,573,75,413,18
+MD,Montgomery,2026-01-01,636,56,299,33
+MD,Prince George's,2022-01-01,0,0,0,0
+MD,Prince George's,2022-02-01,0,0,0,0
+MD,Prince George's,2022-03-01,0,0,0,0
+MD,Prince George's,2022-04-01,0,0,0,0
+MD,Prince George's,2022-05-01,0,0,0,0
+MD,Prince George's,2022-06-01,0,0,0,0
+MD,Prince George's,2022-07-01,0,0,0,0
+MD,Prince George's,2022-08-01,0,0,0,0
+MD,Prince George's,2022-09-01,0,0,0,0
+MD,Prince George's,2022-10-01,0,0,0,0
+MD,Prince George's,2022-11-01,0,0,0,0
+MD,Prince George's,2022-12-01,0,0,0,0
+MD,Prince George's,2023-01-01,0,408,0,0
+MD,Prince George's,2023-02-01,0,211,0,0
+MD,Prince George's,2023-03-01,0,200,0,0
+MD,Prince George's,2023-04-01,0,125,0,0
+MD,Prince George's,2023-05-01,0,182,0,0
+MD,Prince George's,2023-06-01,293,175,0,0
+MD,Prince George's,2023-07-01,4597,515,3060,112
+MD,Prince George's,2023-08-01,3529,784,2611,63
+MD,Prince George's,2023-09-01,1670,633,2369,42
+MD,Prince George's,2023-10-01,1137,555,910,708
+MD,Prince George's,2023-11-01,168,371,622,457
+MD,Prince George's,2023-12-01,1409,389,504,343
+MD,Prince George's,2024-01-01,1112,0,0,0
+MD,Prince George's,2024-02-01,3093,0,0,0
+MD,Prince George's,2024-03-01,3873,0,0,0
+MD,Prince George's,2024-04-01,2953,0,0,0
+MD,Prince George's,2024-05-01,3096,0,0,0
+MD,Prince George's,2024-06-01,2654,0,0,0
+MD,Prince George's,2024-07-01,3152,46,156,0
+MD,Prince George's,2024-08-01,3323,48,167,7
+MD,Prince George's,2024-09-01,2966,401,1415,0
+MD,Prince George's,2024-10-01,2011,341,1113,0
+MD,Prince George's,2024-11-01,2163,198,1210,0
+MD,Prince George's,2024-12-01,2032,75,246,0
+MD,Prince George's,2025-01-01,1560,1001,558,0
+MD,Prince George's,2025-02-01,2096,429,1335,0
+MD,Prince George's,2025-03-01,2726,414,1607,0
+MD,Prince George's,2025-04-01,1924,856,2403,0
+MD,Prince George's,2025-05-01,2025,155,367,0
+MD,Prince George's,2025-06-01,2085,0,400,0
+MD,Prince George's,2025-07-01,1586,1003,1021,0
+MD,Prince George's,2025-08-01,2187,465,1444,0
+MD,Prince George's,2025-09-01,2037,350,1061,0
+MD,Prince George's,2025-10-01,3283,361,1651,0
+MD,Prince George's,2025-11-01,1488,262,1184,0
+MD,Prince George's,2025-12-01,1884,218,1398,0
+MD,Prince George's,2026-01-01,1318,224,1780,0
+MD,Queen Anne's,2022-01-01,0,0,0,0
+MD,Queen Anne's,2022-02-01,0,0,0,0
+MD,Queen Anne's,2022-03-01,0,0,0,0
+MD,Queen Anne's,2022-04-01,0,0,0,0
+MD,Queen Anne's,2022-05-01,0,0,0,0
+MD,Queen Anne's,2022-06-01,0,0,0,0
+MD,Queen Anne's,2022-07-01,0,0,0,0
+MD,Queen Anne's,2022-08-01,0,0,0,0
+MD,Queen Anne's,2022-09-01,0,0,0,0
+MD,Queen Anne's,2022-10-01,0,0,0,0
+MD,Queen Anne's,2022-11-01,0,0,0,0
+MD,Queen Anne's,2022-12-01,0,0,0,0
+MD,Queen Anne's,2023-01-01,0,1,0,0
+MD,Queen Anne's,2023-02-01,0,0,0,0
+MD,Queen Anne's,2023-03-01,0,2,0,0
+MD,Queen Anne's,2023-04-01,0,2,0,0
+MD,Queen Anne's,2023-05-01,0,4,0,0
+MD,Queen Anne's,2023-06-01,6,4,0,0
+MD,Queen Anne's,2023-07-01,4,2,1,0
+MD,Queen Anne's,2023-08-01,10,4,4,0
+MD,Queen Anne's,2023-09-01,5,3,4,0
+MD,Queen Anne's,2023-10-01,9,1,3,1
+MD,Queen Anne's,2023-11-01,5,3,4,0
+MD,Queen Anne's,2023-12-01,6,2,2,0
+MD,Queen Anne's,2024-01-01,5,1,5,0
+MD,Queen Anne's,2024-02-01,8,1,5,0
+MD,Queen Anne's,2024-03-01,5,2,7,0
+MD,Queen Anne's,2024-04-01,10,3,2,0
+MD,Queen Anne's,2024-05-01,6,4,4,0
+MD,Queen Anne's,2024-06-01,3,4,2,0
+MD,Queen Anne's,2024-07-01,12,3,3,0
+MD,Queen Anne's,2024-08-01,6,4,7,0
+MD,Queen Anne's,2024-09-01,9,1,7,0
+MD,Queen Anne's,2024-10-01,4,1,4,0
+MD,Queen Anne's,2024-11-01,5,2,1,0
+MD,Queen Anne's,2024-12-01,7,0,1,0
+MD,Queen Anne's,2025-01-01,2,2,8,0
+MD,Queen Anne's,2025-02-01,12,0,3,0
+MD,Queen Anne's,2025-03-01,4,2,9,0
+MD,Queen Anne's,2025-04-01,4,0,6,0
+MD,Queen Anne's,2025-05-01,5,1,3,0
+MD,Queen Anne's,2025-06-01,3,1,1,0
+MD,Queen Anne's,2025-07-01,3,1,2,0
+MD,Queen Anne's,2025-08-01,14,0,4,0
+MD,Queen Anne's,2025-09-01,13,2,7,0
+MD,Queen Anne's,2025-10-01,19,1,17,1
+MD,Queen Anne's,2025-11-01,10,3,12,0
+MD,Queen Anne's,2025-12-01,5,2,7,0
+MD,Queen Anne's,2026-01-01,9,3,1,0
+MD,Saint Mary's,2022-01-01,0,0,0,0
+MD,Saint Mary's,2022-02-01,0,0,0,0
+MD,Saint Mary's,2022-03-01,0,0,0,0
+MD,Saint Mary's,2022-04-01,0,0,0,0
+MD,Saint Mary's,2022-05-01,0,0,0,0
+MD,Saint Mary's,2022-06-01,0,0,0,0
+MD,Saint Mary's,2022-07-01,0,0,0,0
+MD,Saint Mary's,2022-08-01,0,0,0,0
+MD,Saint Mary's,2022-09-01,0,0,0,0
+MD,Saint Mary's,2022-10-01,0,0,0,0
+MD,Saint Mary's,2022-11-01,0,0,0,0
+MD,Saint Mary's,2022-12-01,0,0,0,0
+MD,Saint Mary's,2023-01-01,0,8,0,0
+MD,Saint Mary's,2023-02-01,0,7,0,0
+MD,Saint Mary's,2023-03-01,0,0,0,0
+MD,Saint Mary's,2023-04-01,0,3,0,0
+MD,Saint Mary's,2023-05-01,0,5,0,0
+MD,Saint Mary's,2023-06-01,49,7,0,0
+MD,Saint Mary's,2023-07-01,58,8,53,1
+MD,Saint Mary's,2023-08-01,59,6,48,0
+MD,Saint Mary's,2023-09-01,50,8,43,0
+MD,Saint Mary's,2023-10-01,94,7,69,1
+MD,Saint Mary's,2023-11-01,71,7,50,0
+MD,Saint Mary's,2023-12-01,58,4,57,0
+MD,Saint Mary's,2024-01-01,88,3,83,4
+MD,Saint Mary's,2024-02-01,65,3,52,1
+MD,Saint Mary's,2024-03-01,59,12,62,0
+MD,Saint Mary's,2024-04-01,50,16,52,1
+MD,Saint Mary's,2024-05-01,35,9,27,2
+MD,Saint Mary's,2024-06-01,78,7,36,1
+MD,Saint Mary's,2024-07-01,48,11,42,0
+MD,Saint Mary's,2024-08-01,58,13,29,4
+MD,Saint Mary's,2024-09-01,64,13,41,2
+MD,Saint Mary's,2024-10-01,55,12,39,1
+MD,Saint Mary's,2024-11-01,43,4,44,1
+MD,Saint Mary's,2024-12-01,64,13,28,1
+MD,Saint Mary's,2025-01-01,45,19,37,0
+MD,Saint Mary's,2025-02-01,40,13,22,5
+MD,Saint Mary's,2025-03-01,39,7,42,2
+MD,Saint Mary's,2025-04-01,49,5,25,1
+MD,Saint Mary's,2025-05-01,57,11,37,2
+MD,Saint Mary's,2025-06-01,55,5,40,1
+MD,Saint Mary's,2025-07-01,45,13,23,6
+MD,Saint Mary's,2025-08-01,46,21,49,5
+MD,Saint Mary's,2025-09-01,68,13,17,0
+MD,Saint Mary's,2025-10-01,63,8,61,1
+MD,Saint Mary's,2025-11-01,63,5,9,0
+MD,Saint Mary's,2025-12-01,54,6,69,0
+MD,Saint Mary's,2026-01-01,68,7,41,1
+MD,Somerset,2022-01-01,0,0,0,0
+MD,Somerset,2022-02-01,0,0,0,0
+MD,Somerset,2022-03-01,0,0,0,0
+MD,Somerset,2022-04-01,0,0,0,0
+MD,Somerset,2022-05-01,0,0,0,0
+MD,Somerset,2022-06-01,0,0,0,0
+MD,Somerset,2022-07-01,0,0,0,0
+MD,Somerset,2022-08-01,0,0,0,0
+MD,Somerset,2022-09-01,0,0,0,0
+MD,Somerset,2022-10-01,0,0,0,0
+MD,Somerset,2022-11-01,0,0,0,0
+MD,Somerset,2022-12-01,0,0,0,0
+MD,Somerset,2023-01-01,0,7,0,0
+MD,Somerset,2023-02-01,0,14,0,0
+MD,Somerset,2023-03-01,0,10,0,0
+MD,Somerset,2023-04-01,0,6,0,0
+MD,Somerset,2023-05-01,0,4,0,0
+MD,Somerset,2023-06-01,17,5,0,0
+MD,Somerset,2023-07-01,36,7,17,0
+MD,Somerset,2023-08-01,44,9,25,0
+MD,Somerset,2023-09-01,33,8,38,0
+MD,Somerset,2023-10-01,44,7,33,0
+MD,Somerset,2023-11-01,17,5,28,0
+MD,Somerset,2023-12-01,38,1,7,0
+MD,Somerset,2024-01-01,22,7,28,1
+MD,Somerset,2024-02-01,7,1,18,0
+MD,Somerset,2024-03-01,30,3,12,0
+MD,Somerset,2024-04-01,14,7,20,1
+MD,Somerset,2024-05-01,14,5,10,0
+MD,Somerset,2024-06-01,11,0,7,0
+MD,Somerset,2024-07-01,16,2,12,0
+MD,Somerset,2024-08-01,21,1,10,0
+MD,Somerset,2024-09-01,34,4,24,0
+MD,Somerset,2024-10-01,22,10,22,0
+MD,Somerset,2024-11-01,26,0,6,0
+MD,Somerset,2024-12-01,17,3,13,0
+MD,Somerset,2025-01-01,9,1,18,1
+MD,Somerset,2025-02-01,22,1,20,0
+MD,Somerset,2025-03-01,13,2,9,0
+MD,Somerset,2025-04-01,10,6,4,1
+MD,Somerset,2025-05-01,20,1,8,0
+MD,Somerset,2025-06-01,16,3,10,1
+MD,Somerset,2025-07-01,14,4,15,1
+MD,Somerset,2025-08-01,26,1,9,0
+MD,Somerset,2025-09-01,17,6,17,0
+MD,Somerset,2025-10-01,26,8,15,0
+MD,Somerset,2025-11-01,15,2,12,0
+MD,Somerset,2025-12-01,17,6,6,0
+MD,Somerset,2026-01-01,22,4,13,1
+MD,Talbot,2022-01-01,0,0,0,0
+MD,Talbot,2022-02-01,0,0,0,0
+MD,Talbot,2022-03-01,0,0,0,0
+MD,Talbot,2022-04-01,0,0,0,0
+MD,Talbot,2022-05-01,0,0,0,0
+MD,Talbot,2022-06-01,0,0,0,0
+MD,Talbot,2022-07-01,0,0,0,0
+MD,Talbot,2022-08-01,0,0,0,0
+MD,Talbot,2022-09-01,0,0,0,0
+MD,Talbot,2022-10-01,0,0,0,0
+MD,Talbot,2022-11-01,0,0,0,0
+MD,Talbot,2022-12-01,0,0,0,0
+MD,Talbot,2023-01-01,0,3,0,0
+MD,Talbot,2023-02-01,0,2,0,0
+MD,Talbot,2023-03-01,0,2,0,0
+MD,Talbot,2023-04-01,0,2,0,0
+MD,Talbot,2023-05-01,0,1,0,0
+MD,Talbot,2023-06-01,6,5,0,0
+MD,Talbot,2023-07-01,2,3,1,0
+MD,Talbot,2023-08-01,4,1,2,0
+MD,Talbot,2023-09-01,4,3,2,0
+MD,Talbot,2023-10-01,2,1,0,0
+MD,Talbot,2023-11-01,6,4,1,0
+MD,Talbot,2023-12-01,4,3,1,0
+MD,Talbot,2024-01-01,13,4,3,0
+MD,Talbot,2024-02-01,13,6,10,0
+MD,Talbot,2024-03-01,8,2,0,0
+MD,Talbot,2024-04-01,1,4,5,0
+MD,Talbot,2024-05-01,4,2,1,0
+MD,Talbot,2024-06-01,4,2,1,0
+MD,Talbot,2024-07-01,7,4,3,0
+MD,Talbot,2024-08-01,7,4,1,0
+MD,Talbot,2024-09-01,4,2,0,0
+MD,Talbot,2024-10-01,5,5,3,0
+MD,Talbot,2024-11-01,9,6,0,0
+MD,Talbot,2024-12-01,7,3,0,0
+MD,Talbot,2025-01-01,3,5,3,0
+MD,Talbot,2025-02-01,3,0,3,0
+MD,Talbot,2025-03-01,2,2,0,0
+MD,Talbot,2025-04-01,6,5,2,0
+MD,Talbot,2025-05-01,7,1,2,0
+MD,Talbot,2025-06-01,3,5,1,0
+MD,Talbot,2025-07-01,10,4,3,0
+MD,Talbot,2025-08-01,6,3,3,0
+MD,Talbot,2025-09-01,13,2,7,0
+MD,Talbot,2025-10-01,8,2,3,0
+MD,Talbot,2025-11-01,6,2,3,0
+MD,Talbot,2025-12-01,6,2,0,0
+MD,Talbot,2026-01-01,2,2,5,2
+MD,Washington,2022-01-01,0,0,0,0
+MD,Washington,2022-02-01,0,0,0,0
+MD,Washington,2022-03-01,0,0,0,0
+MD,Washington,2022-04-01,0,0,0,0
+MD,Washington,2022-05-01,0,0,0,0
+MD,Washington,2022-06-01,0,0,0,0
+MD,Washington,2022-07-01,0,0,0,0
+MD,Washington,2022-08-01,0,0,0,0
+MD,Washington,2022-09-01,0,0,0,0
+MD,Washington,2022-10-01,0,0,0,0
+MD,Washington,2022-11-01,0,0,0,0
+MD,Washington,2022-12-01,0,0,0,0
+MD,Washington,2023-01-01,0,58,0,0
+MD,Washington,2023-02-01,0,50,0,0
+MD,Washington,2023-03-01,0,68,0,0
+MD,Washington,2023-04-01,0,30,0,0
+MD,Washington,2023-05-01,0,50,0,0
+MD,Washington,2023-06-01,217,53,0,0
+MD,Washington,2023-07-01,213,54,73,40
+MD,Washington,2023-08-01,303,111,100,58
+MD,Washington,2023-09-01,194,73,114,23
+MD,Washington,2023-10-01,176,75,82,70
+MD,Washington,2023-11-01,181,59,83,67
+MD,Washington,2023-12-01,176,46,61,20
+MD,Washington,2024-01-01,157,60,73,68
+MD,Washington,2024-02-01,189,68,118,32
+MD,Washington,2024-03-01,146,44,78,26
+MD,Washington,2024-04-01,155,53,71,36
+MD,Washington,2024-05-01,114,62,84,30
+MD,Washington,2024-06-01,166,30,28,26
+MD,Washington,2024-07-01,152,47,106,27
+MD,Washington,2024-08-01,213,41,52,27
+MD,Washington,2024-09-01,148,59,125,35
+MD,Washington,2024-10-01,183,42,50,33
+MD,Washington,2024-11-01,123,46,84,31
+MD,Washington,2024-12-01,123,29,51,34
+MD,Washington,2025-01-01,104,33,65,16
+MD,Washington,2025-02-01,103,30,38,44
+MD,Washington,2025-03-01,114,37,52,36
+MD,Washington,2025-04-01,111,43,42,32
+MD,Washington,2025-05-01,119,50,41,22
+MD,Washington,2025-06-01,119,48,25,14
+MD,Washington,2025-07-01,130,55,55,38
+MD,Washington,2025-08-01,146,34,52,8
+MD,Washington,2025-09-01,152,69,65,25
+MD,Washington,2025-10-01,157,49,41,37
+MD,Washington,2025-11-01,115,29,30,39
+MD,Washington,2025-12-01,109,26,43,30
+MD,Washington,2026-01-01,149,24,52,26
+MD,Wicomico,2022-01-01,0,0,0,0
+MD,Wicomico,2022-02-01,0,0,0,0
+MD,Wicomico,2022-03-01,0,0,0,0
+MD,Wicomico,2022-04-01,0,0,0,0
+MD,Wicomico,2022-05-01,0,0,0,0
+MD,Wicomico,2022-06-01,0,0,0,0
+MD,Wicomico,2022-07-01,0,0,0,0
+MD,Wicomico,2022-08-01,0,0,0,0
+MD,Wicomico,2022-09-01,0,0,0,0
+MD,Wicomico,2022-10-01,0,0,0,0
+MD,Wicomico,2022-11-01,0,0,0,0
+MD,Wicomico,2022-12-01,0,0,0,0
+MD,Wicomico,2023-01-01,0,20,0,0
+MD,Wicomico,2023-02-01,0,33,0,0
+MD,Wicomico,2023-03-01,0,37,0,0
+MD,Wicomico,2023-04-01,0,24,0,0
+MD,Wicomico,2023-05-01,0,43,0,0
+MD,Wicomico,2023-06-01,140,31,0,0
+MD,Wicomico,2023-07-01,165,38,99,1
+MD,Wicomico,2023-08-01,159,47,116,0
+MD,Wicomico,2023-09-01,171,35,116,0
+MD,Wicomico,2023-10-01,174,52,107,1
+MD,Wicomico,2023-11-01,223,22,84,0
+MD,Wicomico,2023-12-01,106,42,136,3
+MD,Wicomico,2024-01-01,239,36,164,1
+MD,Wicomico,2024-02-01,116,40,119,0
+MD,Wicomico,2024-03-01,127,25,88,0
+MD,Wicomico,2024-04-01,102,32,93,0
+MD,Wicomico,2024-05-01,129,46,81,0
+MD,Wicomico,2024-06-01,99,40,84,0
+MD,Wicomico,2024-07-01,113,22,64,0
+MD,Wicomico,2024-08-01,140,36,95,0
+MD,Wicomico,2024-09-01,148,36,105,0
+MD,Wicomico,2024-10-01,131,34,104,0
+MD,Wicomico,2024-11-01,118,32,61,1
+MD,Wicomico,2024-12-01,121,31,91,0
+MD,Wicomico,2025-01-01,121,19,80,0
+MD,Wicomico,2025-02-01,84,23,74,1
+MD,Wicomico,2025-03-01,85,29,68,0
+MD,Wicomico,2025-04-01,108,33,80,0
+MD,Wicomico,2025-05-01,98,23,55,0
+MD,Wicomico,2025-06-01,110,35,55,0
+MD,Wicomico,2025-07-01,102,38,83,0
+MD,Wicomico,2025-08-01,93,22,60,0
+MD,Wicomico,2025-09-01,151,22,54,0
+MD,Wicomico,2025-10-01,140,48,94,0
+MD,Wicomico,2025-11-01,105,25,66,0
+MD,Wicomico,2025-12-01,138,36,88,1
+MD,Wicomico,2026-01-01,163,30,113,1
+MD,Worcester,2022-01-01,0,0,0,0
+MD,Worcester,2022-02-01,0,0,0,0
+MD,Worcester,2022-03-01,0,0,0,0
+MD,Worcester,2022-04-01,0,0,0,0
+MD,Worcester,2022-05-01,0,0,0,0
+MD,Worcester,2022-06-01,0,0,0,0
+MD,Worcester,2022-07-01,0,0,0,0
+MD,Worcester,2022-08-01,0,0,0,0
+MD,Worcester,2022-09-01,0,0,0,0
+MD,Worcester,2022-10-01,0,0,0,0
+MD,Worcester,2022-11-01,0,0,0,0
+MD,Worcester,2022-12-01,0,0,0,0
+MD,Worcester,2023-01-01,0,8,0,0
+MD,Worcester,2023-02-01,0,6,0,0
+MD,Worcester,2023-03-01,0,5,0,0
+MD,Worcester,2023-04-01,0,6,0,0
+MD,Worcester,2023-05-01,0,4,0,0
+MD,Worcester,2023-06-01,3,6,0,0
+MD,Worcester,2023-07-01,6,4,11,0
+MD,Worcester,2023-08-01,3,10,15,0
+MD,Worcester,2023-09-01,4,7,6,0
+MD,Worcester,2023-10-01,4,9,14,0
+MD,Worcester,2023-11-01,2,11,13,0
+MD,Worcester,2023-12-01,3,3,8,0
+MD,Worcester,2024-01-01,3,4,10,0
+MD,Worcester,2024-02-01,11,3,14,0
+MD,Worcester,2024-03-01,7,3,9,0
+MD,Worcester,2024-04-01,4,6,11,0
+MD,Worcester,2024-05-01,9,4,4,0
+MD,Worcester,2024-06-01,5,7,5,0
+MD,Worcester,2024-07-01,9,5,5,0
+MD,Worcester,2024-08-01,5,2,5,0
+MD,Worcester,2024-09-01,9,3,6,0
+MD,Worcester,2024-10-01,15,3,11,0
+MD,Worcester,2024-11-01,2,6,5,0
+MD,Worcester,2024-12-01,10,1,2,0
+MD,Worcester,2025-01-01,16,4,9,0
+MD,Worcester,2025-02-01,11,7,6,0
+MD,Worcester,2025-03-01,10,10,12,0
+MD,Worcester,2025-04-01,8,1,6,0
+MD,Worcester,2025-05-01,9,4,10,0
+MD,Worcester,2025-06-01,8,0,9,0
+MD,Worcester,2025-07-01,15,7,5,0
+MD,Worcester,2025-08-01,14,5,9,0
+MD,Worcester,2025-09-01,12,4,5,0
+MD,Worcester,2025-10-01,10,8,10,0
+MD,Worcester,2025-11-01,10,0,3,0
+MD,Worcester,2025-12-01,12,1,10,0
+MD,Worcester,2026-01-01,13,1,9,0

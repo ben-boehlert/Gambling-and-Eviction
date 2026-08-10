@@ -1,0 +1,21 @@
+state_abb,state_fips,period_end,year,case_type_code,case_type_name,action_name,source,n_counties_reporting,n_counties_expected,coverage_complete,reported_county_sum,filings_count
+MI,26,2006-12-31,2006,LT,Landlord/Tenant Summary Proceedings,New Filings,Michigan Courts Interactive Court Data Dashboard,81,83,FALSE,213340,NA
+MI,26,2007-12-31,2007,LT,Landlord/Tenant Summary Proceedings,New Filings,Michigan Courts Interactive Court Data Dashboard,81,83,FALSE,223552,NA
+MI,26,2008-12-31,2008,LT,Landlord/Tenant Summary Proceedings,New Filings,Michigan Courts Interactive Court Data Dashboard,81,83,FALSE,228907,NA
+MI,26,2009-12-31,2009,LT,Landlord/Tenant Summary Proceedings,New Filings,Michigan Courts Interactive Court Data Dashboard,81,83,FALSE,208035,NA
+MI,26,2010-12-31,2010,LT,Landlord/Tenant Summary Proceedings,New Filings,Michigan Courts Interactive Court Data Dashboard,81,83,FALSE,204538,NA
+MI,26,2011-12-31,2011,LT,Landlord/Tenant Summary Proceedings,New Filings,Michigan Courts Interactive Court Data Dashboard,81,83,FALSE,218150,NA
+MI,26,2012-12-31,2012,LT,Landlord/Tenant Summary Proceedings,New Filings,Michigan Courts Interactive Court Data Dashboard,81,83,FALSE,215149,NA
+MI,26,2013-12-31,2013,LT,Landlord/Tenant Summary Proceedings,New Filings,Michigan Courts Interactive Court Data Dashboard,81,83,FALSE,214079,NA
+MI,26,2014-12-31,2014,LT,Landlord/Tenant Summary Proceedings,New Filings,Michigan Courts Interactive Court Data Dashboard,81,83,FALSE,206662,NA
+MI,26,2015-12-31,2015,LT,Landlord/Tenant Summary Proceedings,New Filings,Michigan Courts Interactive Court Data Dashboard,81,83,FALSE,200607,NA
+MI,26,2016-12-31,2016,LT,Landlord/Tenant Summary Proceedings,New Filings,Michigan Courts Interactive Court Data Dashboard,81,83,FALSE,191807,NA
+MI,26,2017-12-31,2017,LT,Landlord/Tenant Summary Proceedings,New Filings,Michigan Courts Interactive Court Data Dashboard,81,83,FALSE,189237,NA
+MI,26,2018-12-31,2018,LT,Landlord/Tenant Summary Proceedings,New Filings,Michigan Courts Interactive Court Data Dashboard,81,83,FALSE,187757,NA
+MI,26,2019-12-31,2019,LT,Landlord/Tenant Summary Proceedings,New Filings,Michigan Courts Interactive Court Data Dashboard,81,83,FALSE,193007,NA
+MI,26,2020-12-31,2020,LT,Landlord/Tenant Summary Proceedings,New Filings,Michigan Courts Interactive Court Data Dashboard,81,83,FALSE,93953,NA
+MI,26,2021-12-31,2021,LT,Landlord/Tenant Summary Proceedings,New Filings,Michigan Courts Interactive Court Data Dashboard,81,83,FALSE,125215,NA
+MI,26,2022-12-31,2022,LT,Landlord/Tenant Summary Proceedings,New Filings,Michigan Courts Interactive Court Data Dashboard,81,83,FALSE,173019,NA
+MI,26,2023-12-31,2023,LT,Landlord/Tenant Summary Proceedings,New Filings,Michigan Courts Interactive Court Data Dashboard,81,83,FALSE,179433,NA
+MI,26,2024-12-31,2024,LT,Landlord/Tenant Summary Proceedings,New Filings,Michigan Courts Interactive Court Data Dashboard,81,83,FALSE,177348,NA
+MI,26,2025-12-31,2025,LT,Landlord/Tenant Summary Proceedings,New Filings,Michigan Courts Interactive Court Data Dashboard,82,83,FALSE,176275,NA

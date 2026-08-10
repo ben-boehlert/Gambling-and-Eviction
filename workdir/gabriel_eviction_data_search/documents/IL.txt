@@ -1,0 +1,46 @@
+SOURCE_URL: https://www.illinoiscourts.gov/courts/circuit-court/illinois-circuit-court-statistical-reports/
+FETCH_DATE: 2026-04-15
+ENTITY: IL
+SOURCE_TYPE: primary
+---
+Illinois Office of the Illinois Courts (AOIC) — Circuit Court Statistical Reports
+
+The Administrative Office of the Illinois Courts (AOIC) publishes QUARTERLY Illinois Circuit Court Statistical Reports covering years 2018 to the present. These are compiled into annual Statistical Summaries (published as part of the Annual Report of the Illinois Courts).
+
+Two Power BI dashboards are the primary access point for interactive data:
+  - 2022–2025 dashboard: https://app.powerbigov.us/view?r=eyJrIjoiMThmYmQxZTEtYWQxMi00NDliLTliNTEtYTQ4MzYzZDJjZTNkIiwidCI6ImRjNjQxZWU0LTViNWQtNDlhMC04ZmY0LTdhYWZjNjExOGE0MiJ9
+  - 2018–2021 dashboard: https://app.powerbigov.us/view?r=eyJrIjoiZWU2YzFkYzMtZmU0NS00Mzc3LTk3ZGEtOThjNzlkNjk5ZWYyIiwidCI6ImRjNjQxZWU0LTViNWQtNDlhMC04ZmY0LTdhYWZjNjExOGE0MiJ9
+
+Statewide Landlord-Tenant Eviction Dashboard (Power BI):
+  https://app.powerbigov.us/view?r=eyJrIjoiZGE3NzljYmItYTBmZC00OGI2LTliYTgtYzY5ZjI0N2U0MWYxIiwidCI6IjM0NTZmZTkyLWNiZDEtNDA2ZC1iNWEzLTUzNjRiZWMwYTgzMyJ9
+  Note: URL discovered via search; title "Statewide Landlord Tenant Eviction Dashboard" suggests state-court-published eviction data, but the dashboard does not appear to be linked directly from the AOIC statistical reports page at the time of this fetch. May be an AOIC dashboard hosted on powerbigov.us (the US government Power BI tenant).
+
+Report structure:
+  - Quarterly + annual Statistical Summaries
+  - Categories: Civil, Family, Criminal, Conservation & Traffic, Juvenile, Other
+  - Geographic unit: COUNTY (Illinois has 102 counties; each has a circuit court clerk)
+  - Published as a mix of Power BI dashboards and PDF Annual Report Statistical Summaries
+
+PDFs found:
+  - 2023 Annual Report Statistical Summary:
+    https://ilcourtsaudio.blob.core.windows.net/antilles-resources/resources/2e8fe39f-d040-47ee-a2b5-d53880fccb19/2023%20Annual%20Report%20Statistical%20Summary.pdf
+  - 2022 Annual Report Statistical Summary:
+    https://ilcourtsaudio.blob.core.windows.net/antilles-resources/resources/ee461f13-58e4-4d3b-9803-4017c7549b6f/2022%20Annual%20Report%20Statistical%20Summary.pdf
+
+Eviction-specific classification:
+  - In Illinois, evictions were formerly called "Forcible Entry and Detainer" and are now simply "Eviction" cases (statutory rename in 2018).
+  - These fall under Civil / Small Claims or Civil / Law depending on amount sought, and are typically broken out in the AOIC Annual Statistical Summary tables.
+
+Frequency: QUARTERLY reports at the county level (AOIC), with annual consolidated statistical summaries. Dashboard data updates match report cadence.
+Access: Power BI dashboards (no native CSV export mentioned) + downloadable PDF Annual Report Statistical Summaries. Raw CSV/Excel may be available by request or via the dashboard's "export data" button in Power BI.
+
+Cook County (Circuit Court of Cook County) — supplementary:
+  - Cook County Circuit Court publishes a separate eviction dashboard (updated monthly per LCBH/Chicago Evictions portal).
+  - Law Center for Better Housing (LCBH) maintains chicago-evictions data at https://eviction.lcbh.org/data with monthly tracking by Community Area and Ward, 2010-present.
+  - Cook County is ~40% of IL population and likely >50% of eviction filings.
+
+For the Gambling-and-Eviction project:
+  - IL legalized online sports betting in March 2020 (retail Aug 2019).
+  - County-quarter data from AOIC covers 2018-present; can construct a quarterly state panel.
+  - Monthly state-level data likely requires either (a) the statewide eviction dashboard if it has a monthly toggle, or (b) aggregation of Cook + other county-level sources.
+  - Illinois is NOT in the ETS monthly panel, so this is an "expansion state" for our analysis.

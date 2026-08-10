@@ -1,0 +1,48 @@
+SOURCE_URL: https://www.njcourts.gov/public/statistics
+FETCH_DATE: 2026-04-15
+ENTITY: NJ
+SOURCE_TYPE: primary
+---
+NJ Courts Statistics Page (njcourts.gov/public/statistics)
+
+This is the landing page for the New Jersey Judiciary's publicly available caseload
+statistics. It hosts both interactive dashboards and PDF reports.
+
+Interactive dashboards (Tableau-based, require JS):
+  - "Filings and Resolutions Dashboard - Current" (court year-to-date, updated monthly)
+  - "Filings and Resolutions Dashboard - Court Year" (historical full court years)
+  - "Backlog Dashboard - Current" and "Court Year"
+  Dashboards allow filtering by case type (landlord-tenant IS a case type in Special
+  Civil Part) and by county/vicinage. Updated monthly. Court year runs July-June.
+
+PDF reports:
+  - Court Management Statistics (monthly; county/vicinage breakdowns)
+  - Civil Statistics Report (Superior Court, includes Special Civil Part filings
+    and resolutions by case type — landlord-tenant is a Special Civil Part case type)
+  - Municipal Court Statistics
+  - Superior Court Caseload Reference Guide, 2018-2022
+  Reports historically available from July 2004 to June 2025.
+
+Geographic granularity: 15 vicinages (each covers 1-3 counties) and statewide totals.
+  NJ has 21 counties but courts are organized into 15 vicinages.
+
+Frequency: Monthly for dashboards and Court Management PDFs; fiscal year cumulative
+  for the Civil Statistics Reports.
+
+Coverage: Landlord-tenant is the largest category in Special Civil Part. NJ Special
+  Civil Part handles all residential & commercial L/T cases statewide (not split
+  across small claims or housing court).
+
+Directive 15-23 (Aug 2023) materially changed filing procedures — LCIS (Landlord
+Case Information Statement) now required — which may create a break in series.
+
+Access method: Dashboards (Tableau, interactive, manual download of underlying data
+may require selecting crosstab export); PDF reports downloadable from the statistics
+page. No documented bulk API or CSV feed.
+
+Contact: webmaster.mailbox@njcourts.gov for questions.
+
+Related pages:
+  - https://www.njcourts.gov/public/statistics (this page)
+  - https://www.njcourts.gov/self-help/landlord-tenant (citizen-facing info)
+  - https://www.njcourts.gov/attorneys/directives/15-23 (2023 procedural changes)

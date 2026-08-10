@@ -1,0 +1,50 @@
+SOURCE_URL: https://ww2.nycourts.gov/landlord-tenant-data-34621
+FETCH_DATE: 2026-04-15
+ENTITY: NY
+SOURCE_TYPE: primary
+---
+NY Office of Court Administration (OCA) — Landlord-Tenant Data
+
+Official description (from NYCOURTS.GOV Landlord-Tenant Data page):
+
+The New York State Unified Court System / Office of Court Administration (OCA) publishes case-level de-identified landlord-tenant data for all local civil courts in New York State (EXCLUDING Town & Village courts). Data is made available as downloadable XML files. A rolling five years of data are available at any time, and the files are UPDATED MONTHLY.
+
+Case classifications included in the dataset:
+  - Article 7A
+  - Breach of Warranty of Habitability
+  - Harassment
+  - Holdover
+  - HP (Housing Part)
+  - HP with Harassment
+  - Illegal Activity
+  - Illegal Lockout
+  - Non-Payment
+
+Scope:
+  - Statewide: all New York City Housing Courts (all 5 boroughs) plus District Courts (Nassau, Suffolk), City Courts (upstate cities), and NYC Civil Court LT parts.
+  - Does NOT include Town & Village justice courts, which handle some LT matters in rural/suburban NY outside city limits.
+
+Access method:
+  - Self-service XML download from nycourts.gov (no FOIL / no login required for the public release).
+  - A companion SFTP feed is provided to certain research partners (e.g., Housing Data Coalition) that contains richer detail.
+
+Companion resource — Housing Data Coalition (HDC) ETL:
+  - GitHub: https://github.com/housing-data-coalition/oca
+  - HDC ingests the OCA XML feed via SFTP and parses the nested XML into ~11 relational CSV tables: cases, parties, addresses, events, appearances, motions, decisions, judgments, warrants, etc.
+  - HDC coverage is NYC only (NYC Housing Court), but their parsing logic is directly applicable to the statewide XML feed.
+  - Data dictionary lives in the NYCDB wiki: https://github.com/nycdb/nycdb/wiki/Dataset:-OCA-Housing-Court-Records
+
+Companion resource — Statewide Landlord-Tenant Eviction Dashboard:
+  - URL: https://ww2.nycourts.gov/lt-evictions-33576
+  - Shows eviction FILING trends from January 2019 to present, updated WEEKLY.
+  - Geographic unit: county (shown on statewide map and in tables).
+  - Publicly viewable dashboard; data download availability unclear from landing page, but counts can be extracted.
+
+Frequency: MONTHLY refresh of case-level XML feed. Weekly refresh of the dashboard.
+Geographic level: case-level with court-of-filing identifier, which maps to county.
+Coverage years: rolling 5-year window (so ~2021–present as of April 2026). Older data exists in HDC archive and NYCDB; OCA's public feed drops older years.
+
+For the Gambling-and-Eviction project:
+  - NY is already in the ETS monthly panel, but the OCA feed provides MONTHLY, CASE-LEVEL data statewide (not just NYC), with richer classification than ETS.
+  - NY legalized online sports betting 2022-01. Pre-treatment data (2019-2021) is available in the current rolling window.
+  - To extend back to 2016, would need older HDC archives (NYC only) or a FOIL request to OCA for earlier years.

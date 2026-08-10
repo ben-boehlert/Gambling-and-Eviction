@@ -1,0 +1,2 @@
+panel_label,n_units,n_states,n_months,n_obs,n_treated_units,n_treated_states,share_post_treat,avg_counties_per_state_month
+border_state_agg_twfe,26,26,92,2041,17,17,0.3375796178343949,10.51

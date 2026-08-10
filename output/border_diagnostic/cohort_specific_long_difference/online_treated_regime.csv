@@ -1,0 +1,10 @@
+state_abb,online_start_date,retail_start_date,first_start_date,online_regime,online_first_clean_months_0_11,online_first_clean_months_12_23,online_first_clean_months_24_35,online_first_clean_placebo,primary_months_0_11,primary_months_12_23,primary_months_24_35,primary_placebo,clean_design_eligible
+WV,2018-08-01,2018-08-01,2018-08-01,online_first_or_simultaneous,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE
+PA,2019-05-01,2018-11-01,2018-11-01,retail_first,FALSE,FALSE,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE,FALSE
+IN,2019-10-01,2019-09-01,2019-09-01,retail_first,FALSE,FALSE,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE,FALSE
+CO,2020-05-01,2020-05-01,2020-05-01,online_first_or_simultaneous,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,FALSE,TRUE
+TN,2020-11-01,,2020-11-01,online_first_or_simultaneous,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE
+VA,2021-01-01,,2021-01-01,online_first_or_simultaneous,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE
+CT,2021-10-01,2021-10-01,2021-10-01,online_first_or_simultaneous,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE
+NY,2022-01-01,2019-07-01,2019-07-01,retail_first,FALSE,FALSE,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE,FALSE
+AR,2022-03-01,2019-07-01,2019-07-01,retail_first,FALSE,FALSE,FALSE,FALSE,TRUE,TRUE,TRUE,TRUE,FALSE

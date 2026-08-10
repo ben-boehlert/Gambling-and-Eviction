@@ -1,0 +1,237 @@
+state_abb,specification,horizon,cohort_start,online_regime,treated_regime,pre_start,pre_end,post_start,post_end,pre_total,post_total,is_placebo,pre_start_date,pre_end_date,post_start_date,post_end_date,n_counties,state_first_month,state_last_month,is_supported_state,exclusion_reason
+AR,primary,placebo,2022-03-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2019-09-01,2020-08-01,2020-09-01,2021-08-01,31,2016-01-01,2025-09-01,TRUE,supported
+AR,primary,months_0_11,2022-03-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2019-09-01,2021-08-01,2022-03-01,2023-02-01,34,2016-01-01,2025-09-01,TRUE,supported
+AR,primary,months_12_23,2022-03-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2019-09-01,2021-08-01,2023-03-01,2024-02-01,33,2016-01-01,2025-09-01,TRUE,supported
+AR,primary,months_24_35,2022-03-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2019-09-01,2021-08-01,2024-03-01,2025-02-01,33,2016-01-01,2025-09-01,TRUE,supported
+AR,not_yet_controls,placebo,2022-03-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2019-09-01,2020-08-01,2020-09-01,2021-08-01,31,2016-01-01,2025-09-01,TRUE,supported
+AR,not_yet_controls,months_0_11,2022-03-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2019-09-01,2021-08-01,2022-03-01,2023-02-01,34,2016-01-01,2025-09-01,TRUE,supported
+AR,not_yet_controls,months_12_23,2022-03-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2019-09-01,2021-08-01,2023-03-01,2024-02-01,33,2016-01-01,2025-09-01,TRUE,supported
+AR,not_yet_controls,months_24_35,2022-03-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2019-09-01,2021-08-01,2024-03-01,2025-02-01,33,2016-01-01,2025-09-01,TRUE,supported
+AR,rate_outcome,placebo,2022-03-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2019-09-01,2020-08-01,2020-09-01,2021-08-01,31,2016-01-01,2025-09-01,TRUE,supported
+AR,rate_outcome,months_0_11,2022-03-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2019-09-01,2021-08-01,2022-03-01,2023-02-01,34,2016-01-01,2025-09-01,TRUE,supported
+AR,rate_outcome,months_12_23,2022-03-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2019-09-01,2021-08-01,2023-03-01,2024-02-01,33,2016-01-01,2025-09-01,TRUE,supported
+AR,rate_outcome,months_24_35,2022-03-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2019-09-01,2021-08-01,2024-03-01,2025-02-01,33,2016-01-01,2025-09-01,TRUE,supported
+AR,renter_weighted,placebo,2022-03-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2019-09-01,2020-08-01,2020-09-01,2021-08-01,31,2016-01-01,2025-09-01,TRUE,supported
+AR,renter_weighted,months_0_11,2022-03-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2019-09-01,2021-08-01,2022-03-01,2023-02-01,34,2016-01-01,2025-09-01,TRUE,supported
+AR,renter_weighted,months_12_23,2022-03-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2019-09-01,2021-08-01,2023-03-01,2024-02-01,33,2016-01-01,2025-09-01,TRUE,supported
+AR,renter_weighted,months_24_35,2022-03-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2019-09-01,2021-08-01,2024-03-01,2025-02-01,33,2016-01-01,2025-09-01,TRUE,supported
+AR,strict_coverage,placebo,2022-03-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2019-09-01,2020-08-01,2020-09-01,2021-08-01,23,2016-01-01,2025-09-01,TRUE,supported
+AR,strict_coverage,months_0_11,2022-03-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2019-09-01,2021-08-01,2022-03-01,2023-02-01,25,2016-01-01,2025-09-01,TRUE,supported
+AR,strict_coverage,months_12_23,2022-03-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2019-09-01,2021-08-01,2023-03-01,2024-02-01,24,2016-01-01,2025-09-01,TRUE,supported
+AR,strict_coverage,months_24_35,2022-03-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2019-09-01,2021-08-01,2024-03-01,2025-02-01,25,2016-01-01,2025-09-01,TRUE,supported
+AR,complete_coverage,placebo,2022-03-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2019-09-01,2020-08-01,2020-09-01,2021-08-01,12,2016-01-01,2025-09-01,TRUE,supported
+AR,complete_coverage,months_0_11,2022-03-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2019-09-01,2021-08-01,2022-03-01,2023-02-01,10,2016-01-01,2025-09-01,TRUE,supported
+AR,complete_coverage,months_12_23,2022-03-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2019-09-01,2021-08-01,2023-03-01,2024-02-01,10,2016-01-01,2025-09-01,TRUE,supported
+AR,complete_coverage,months_24_35,2022-03-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2019-09-01,2021-08-01,2024-03-01,2025-02-01,10,2016-01-01,2025-09-01,TRUE,supported
+CO,primary,placebo,2020-05-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2017-11-01,2018-10-01,2018-11-01,2019-10-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,primary,months_0_11,2020-05-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2017-11-01,2019-10-01,2020-05-01,2021-04-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,primary,months_12_23,2020-05-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2017-11-01,2019-10-01,2021-05-01,2022-04-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,primary,months_24_35,2020-05-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2017-11-01,2019-10-01,2022-05-01,2023-04-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,not_yet_controls,placebo,2020-05-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2017-11-01,2018-10-01,2018-11-01,2019-10-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,not_yet_controls,months_0_11,2020-05-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2017-11-01,2019-10-01,2020-05-01,2021-04-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,not_yet_controls,months_12_23,2020-05-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2017-11-01,2019-10-01,2021-05-01,2022-04-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,not_yet_controls,months_24_35,2020-05-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2017-11-01,2019-10-01,2022-05-01,2023-04-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,rate_outcome,placebo,2020-05-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2017-11-01,2018-10-01,2018-11-01,2019-10-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,rate_outcome,months_0_11,2020-05-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2017-11-01,2019-10-01,2020-05-01,2021-04-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,rate_outcome,months_12_23,2020-05-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2017-11-01,2019-10-01,2021-05-01,2022-04-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,rate_outcome,months_24_35,2020-05-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2017-11-01,2019-10-01,2022-05-01,2023-04-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,renter_weighted,placebo,2020-05-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2017-11-01,2018-10-01,2018-11-01,2019-10-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,renter_weighted,months_0_11,2020-05-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2017-11-01,2019-10-01,2020-05-01,2021-04-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,renter_weighted,months_12_23,2020-05-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2017-11-01,2019-10-01,2021-05-01,2022-04-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,renter_weighted,months_24_35,2020-05-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2017-11-01,2019-10-01,2022-05-01,2023-04-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,strict_coverage,placebo,2020-05-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2017-11-01,2018-10-01,2018-11-01,2019-10-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,strict_coverage,months_0_11,2020-05-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2017-11-01,2019-10-01,2020-05-01,2021-04-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,strict_coverage,months_12_23,2020-05-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2017-11-01,2019-10-01,2021-05-01,2022-04-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,strict_coverage,months_24_35,2020-05-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2017-11-01,2019-10-01,2022-05-01,2023-04-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,complete_coverage,placebo,2020-05-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2017-11-01,2018-10-01,2018-11-01,2019-10-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,complete_coverage,months_0_11,2020-05-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2017-11-01,2019-10-01,2020-05-01,2021-04-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,complete_coverage,months_12_23,2020-05-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2017-11-01,2019-10-01,2021-05-01,2022-04-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,complete_coverage,months_24_35,2020-05-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2017-11-01,2019-10-01,2022-05-01,2023-04-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,online_first_clean,placebo,2020-05-01,online_first_or_simultaneous,online_first_or_simultaneous,-30,-19,-18,-7,12,12,TRUE,2017-11-01,2018-10-01,2018-11-01,2019-10-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,online_first_clean,months_0_11,2020-05-01,online_first_or_simultaneous,online_first_or_simultaneous,-30,-7,0,11,24,12,FALSE,2017-11-01,2019-10-01,2020-05-01,2021-04-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,online_first_clean,months_12_23,2020-05-01,online_first_or_simultaneous,online_first_or_simultaneous,-30,-7,12,23,24,12,FALSE,2017-11-01,2019-10-01,2021-05-01,2022-04-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CO,online_first_clean,months_24_35,2020-05-01,online_first_or_simultaneous,online_first_or_simultaneous,-30,-7,24,35,24,12,FALSE,2017-11-01,2019-10-01,2022-05-01,2023-04-01,,2019-01-01,2023-11-01,FALSE,insufficient clean-pre calendar coverage
+CT,primary,placebo,2021-10-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2019-04-01,2020-03-01,2020-04-01,2021-03-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,primary,months_0_11,2021-10-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2019-04-01,2021-03-01,2021-10-01,2022-09-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,primary,months_12_23,2021-10-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2019-04-01,2021-03-01,2022-10-01,2023-09-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,primary,months_24_35,2021-10-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2019-04-01,2021-03-01,2023-10-01,2024-09-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,not_yet_controls,placebo,2021-10-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2019-04-01,2020-03-01,2020-04-01,2021-03-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,not_yet_controls,months_0_11,2021-10-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2019-04-01,2021-03-01,2021-10-01,2022-09-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,not_yet_controls,months_12_23,2021-10-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2019-04-01,2021-03-01,2022-10-01,2023-09-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,not_yet_controls,months_24_35,2021-10-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2019-04-01,2021-03-01,2023-10-01,2024-09-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,rate_outcome,placebo,2021-10-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2019-04-01,2020-03-01,2020-04-01,2021-03-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,rate_outcome,months_0_11,2021-10-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2019-04-01,2021-03-01,2021-10-01,2022-09-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,rate_outcome,months_12_23,2021-10-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2019-04-01,2021-03-01,2022-10-01,2023-09-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,rate_outcome,months_24_35,2021-10-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2019-04-01,2021-03-01,2023-10-01,2024-09-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,renter_weighted,placebo,2021-10-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2019-04-01,2020-03-01,2020-04-01,2021-03-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,renter_weighted,months_0_11,2021-10-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2019-04-01,2021-03-01,2021-10-01,2022-09-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,renter_weighted,months_12_23,2021-10-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2019-04-01,2021-03-01,2022-10-01,2023-09-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,renter_weighted,months_24_35,2021-10-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2019-04-01,2021-03-01,2023-10-01,2024-09-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,strict_coverage,placebo,2021-10-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2019-04-01,2020-03-01,2020-04-01,2021-03-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,strict_coverage,months_0_11,2021-10-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2019-04-01,2021-03-01,2021-10-01,2022-09-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,strict_coverage,months_12_23,2021-10-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2019-04-01,2021-03-01,2022-10-01,2023-09-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,strict_coverage,months_24_35,2021-10-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2019-04-01,2021-03-01,2023-10-01,2024-09-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,complete_coverage,placebo,2021-10-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2019-04-01,2020-03-01,2020-04-01,2021-03-01,4,2016-01-01,2025-07-01,TRUE,supported
+CT,complete_coverage,months_0_11,2021-10-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2019-04-01,2021-03-01,2021-10-01,2022-09-01,4,2016-01-01,2025-07-01,TRUE,supported
+CT,complete_coverage,months_12_23,2021-10-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2019-04-01,2021-03-01,2022-10-01,2023-09-01,4,2016-01-01,2025-07-01,TRUE,supported
+CT,complete_coverage,months_24_35,2021-10-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2019-04-01,2021-03-01,2023-10-01,2024-09-01,4,2016-01-01,2025-07-01,TRUE,supported
+CT,online_first_clean,placebo,2021-10-01,online_first_or_simultaneous,online_first_or_simultaneous,-30,-19,-18,-7,12,12,TRUE,2019-04-01,2020-03-01,2020-04-01,2021-03-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,online_first_clean,months_0_11,2021-10-01,online_first_or_simultaneous,online_first_or_simultaneous,-30,-7,0,11,24,12,FALSE,2019-04-01,2021-03-01,2021-10-01,2022-09-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,online_first_clean,months_12_23,2021-10-01,online_first_or_simultaneous,online_first_or_simultaneous,-30,-7,12,23,24,12,FALSE,2019-04-01,2021-03-01,2022-10-01,2023-09-01,8,2016-01-01,2025-07-01,TRUE,supported
+CT,online_first_clean,months_24_35,2021-10-01,online_first_or_simultaneous,online_first_or_simultaneous,-30,-7,24,35,24,12,FALSE,2019-04-01,2021-03-01,2023-10-01,2024-09-01,8,2016-01-01,2025-07-01,TRUE,supported
+IN,primary,placebo,2019-10-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2017-04-01,2018-03-01,2018-04-01,2019-03-01,85,2016-01-01,2025-09-01,TRUE,supported
+IN,primary,months_0_11,2019-10-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2017-04-01,2019-03-01,2019-10-01,2020-09-01,85,2016-01-01,2025-09-01,TRUE,supported
+IN,primary,months_12_23,2019-10-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2017-04-01,2019-03-01,2020-10-01,2021-09-01,86,2016-01-01,2025-09-01,TRUE,supported
+IN,primary,months_24_35,2019-10-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2017-04-01,2019-03-01,2021-10-01,2022-09-01,87,2016-01-01,2025-09-01,TRUE,supported
+IN,not_yet_controls,placebo,2019-10-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2017-04-01,2018-03-01,2018-04-01,2019-03-01,85,2016-01-01,2025-09-01,TRUE,supported
+IN,not_yet_controls,months_0_11,2019-10-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2017-04-01,2019-03-01,2019-10-01,2020-09-01,85,2016-01-01,2025-09-01,TRUE,supported
+IN,not_yet_controls,months_12_23,2019-10-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2017-04-01,2019-03-01,2020-10-01,2021-09-01,86,2016-01-01,2025-09-01,TRUE,supported
+IN,not_yet_controls,months_24_35,2019-10-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2017-04-01,2019-03-01,2021-10-01,2022-09-01,87,2016-01-01,2025-09-01,TRUE,supported
+IN,rate_outcome,placebo,2019-10-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2017-04-01,2018-03-01,2018-04-01,2019-03-01,85,2016-01-01,2025-09-01,TRUE,supported
+IN,rate_outcome,months_0_11,2019-10-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2017-04-01,2019-03-01,2019-10-01,2020-09-01,85,2016-01-01,2025-09-01,TRUE,supported
+IN,rate_outcome,months_12_23,2019-10-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2017-04-01,2019-03-01,2020-10-01,2021-09-01,86,2016-01-01,2025-09-01,TRUE,supported
+IN,rate_outcome,months_24_35,2019-10-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2017-04-01,2019-03-01,2021-10-01,2022-09-01,87,2016-01-01,2025-09-01,TRUE,supported
+IN,renter_weighted,placebo,2019-10-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2017-04-01,2018-03-01,2018-04-01,2019-03-01,85,2016-01-01,2025-09-01,TRUE,supported
+IN,renter_weighted,months_0_11,2019-10-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2017-04-01,2019-03-01,2019-10-01,2020-09-01,85,2016-01-01,2025-09-01,TRUE,supported
+IN,renter_weighted,months_12_23,2019-10-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2017-04-01,2019-03-01,2020-10-01,2021-09-01,86,2016-01-01,2025-09-01,TRUE,supported
+IN,renter_weighted,months_24_35,2019-10-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2017-04-01,2019-03-01,2021-10-01,2022-09-01,87,2016-01-01,2025-09-01,TRUE,supported
+IN,strict_coverage,placebo,2019-10-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2017-04-01,2018-03-01,2018-04-01,2019-03-01,82,2016-01-01,2025-09-01,TRUE,supported
+IN,strict_coverage,months_0_11,2019-10-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2017-04-01,2019-03-01,2019-10-01,2020-09-01,75,2016-01-01,2025-09-01,TRUE,supported
+IN,strict_coverage,months_12_23,2019-10-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2017-04-01,2019-03-01,2020-10-01,2021-09-01,81,2016-01-01,2025-09-01,TRUE,supported
+IN,strict_coverage,months_24_35,2019-10-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2017-04-01,2019-03-01,2021-10-01,2022-09-01,83,2016-01-01,2025-09-01,TRUE,supported
+IN,complete_coverage,placebo,2019-10-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2017-04-01,2018-03-01,2018-04-01,2019-03-01,70,2016-01-01,2025-09-01,TRUE,supported
+IN,complete_coverage,months_0_11,2019-10-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2017-04-01,2019-03-01,2019-10-01,2020-09-01,28,2016-01-01,2025-09-01,TRUE,supported
+IN,complete_coverage,months_12_23,2019-10-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2017-04-01,2019-03-01,2020-10-01,2021-09-01,63,2016-01-01,2025-09-01,TRUE,supported
+IN,complete_coverage,months_24_35,2019-10-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2017-04-01,2019-03-01,2021-10-01,2022-09-01,68,2016-01-01,2025-09-01,TRUE,supported
+NY,primary,placebo,2022-01-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2019-07-01,2020-06-01,2020-07-01,2021-06-01,52,2019-01-01,2025-09-01,TRUE,supported
+NY,primary,months_0_11,2022-01-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2019-07-01,2021-06-01,2022-01-01,2022-12-01,59,2019-01-01,2025-09-01,TRUE,supported
+NY,primary,months_12_23,2022-01-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2019-07-01,2021-06-01,2023-01-01,2023-12-01,59,2019-01-01,2025-09-01,TRUE,supported
+NY,primary,months_24_35,2022-01-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2019-07-01,2021-06-01,2024-01-01,2024-12-01,59,2019-01-01,2025-09-01,TRUE,supported
+NY,not_yet_controls,placebo,2022-01-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2019-07-01,2020-06-01,2020-07-01,2021-06-01,52,2019-01-01,2025-09-01,TRUE,supported
+NY,not_yet_controls,months_0_11,2022-01-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2019-07-01,2021-06-01,2022-01-01,2022-12-01,59,2019-01-01,2025-09-01,TRUE,supported
+NY,not_yet_controls,months_12_23,2022-01-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2019-07-01,2021-06-01,2023-01-01,2023-12-01,59,2019-01-01,2025-09-01,TRUE,supported
+NY,not_yet_controls,months_24_35,2022-01-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2019-07-01,2021-06-01,2024-01-01,2024-12-01,59,2019-01-01,2025-09-01,TRUE,supported
+NY,rate_outcome,placebo,2022-01-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2019-07-01,2020-06-01,2020-07-01,2021-06-01,52,2019-01-01,2025-09-01,TRUE,supported
+NY,rate_outcome,months_0_11,2022-01-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2019-07-01,2021-06-01,2022-01-01,2022-12-01,59,2019-01-01,2025-09-01,TRUE,supported
+NY,rate_outcome,months_12_23,2022-01-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2019-07-01,2021-06-01,2023-01-01,2023-12-01,59,2019-01-01,2025-09-01,TRUE,supported
+NY,rate_outcome,months_24_35,2022-01-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2019-07-01,2021-06-01,2024-01-01,2024-12-01,59,2019-01-01,2025-09-01,TRUE,supported
+NY,renter_weighted,placebo,2022-01-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2019-07-01,2020-06-01,2020-07-01,2021-06-01,52,2019-01-01,2025-09-01,TRUE,supported
+NY,renter_weighted,months_0_11,2022-01-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2019-07-01,2021-06-01,2022-01-01,2022-12-01,59,2019-01-01,2025-09-01,TRUE,supported
+NY,renter_weighted,months_12_23,2022-01-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2019-07-01,2021-06-01,2023-01-01,2023-12-01,59,2019-01-01,2025-09-01,TRUE,supported
+NY,renter_weighted,months_24_35,2022-01-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2019-07-01,2021-06-01,2024-01-01,2024-12-01,59,2019-01-01,2025-09-01,TRUE,supported
+NY,strict_coverage,placebo,2022-01-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2019-07-01,2020-06-01,2020-07-01,2021-06-01,51,2019-01-01,2025-09-01,TRUE,supported
+NY,strict_coverage,months_0_11,2022-01-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2019-07-01,2021-06-01,2022-01-01,2022-12-01,51,2019-01-01,2025-09-01,TRUE,supported
+NY,strict_coverage,months_12_23,2022-01-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2019-07-01,2021-06-01,2023-01-01,2023-12-01,51,2019-01-01,2025-09-01,TRUE,supported
+NY,strict_coverage,months_24_35,2022-01-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2019-07-01,2021-06-01,2024-01-01,2024-12-01,51,2019-01-01,2025-09-01,TRUE,supported
+NY,complete_coverage,placebo,2022-01-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2019-07-01,2020-06-01,2020-07-01,2021-06-01,1,2019-01-01,2025-09-01,TRUE,supported
+NY,complete_coverage,months_0_11,2022-01-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2019-07-01,2021-06-01,2022-01-01,2022-12-01,1,2019-01-01,2025-09-01,TRUE,supported
+NY,complete_coverage,months_12_23,2022-01-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2019-07-01,2021-06-01,2023-01-01,2023-12-01,1,2019-01-01,2025-09-01,TRUE,supported
+NY,complete_coverage,months_24_35,2022-01-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2019-07-01,2021-06-01,2024-01-01,2024-12-01,1,2019-01-01,2025-09-01,TRUE,supported
+PA,primary,placebo,2019-05-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2016-11-01,2017-10-01,2017-11-01,2018-10-01,64,2016-01-01,2025-09-01,TRUE,supported
+PA,primary,months_0_11,2019-05-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2016-11-01,2018-10-01,2019-05-01,2020-04-01,65,2016-01-01,2025-09-01,TRUE,supported
+PA,primary,months_12_23,2019-05-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2016-11-01,2018-10-01,2020-05-01,2021-04-01,65,2016-01-01,2025-09-01,TRUE,supported
+PA,primary,months_24_35,2019-05-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2016-11-01,2018-10-01,2021-05-01,2022-04-01,65,2016-01-01,2025-09-01,TRUE,supported
+PA,not_yet_controls,placebo,2019-05-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2016-11-01,2017-10-01,2017-11-01,2018-10-01,64,2016-01-01,2025-09-01,TRUE,supported
+PA,not_yet_controls,months_0_11,2019-05-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2016-11-01,2018-10-01,2019-05-01,2020-04-01,65,2016-01-01,2025-09-01,TRUE,supported
+PA,not_yet_controls,months_12_23,2019-05-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2016-11-01,2018-10-01,2020-05-01,2021-04-01,65,2016-01-01,2025-09-01,TRUE,supported
+PA,not_yet_controls,months_24_35,2019-05-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2016-11-01,2018-10-01,2021-05-01,2022-04-01,65,2016-01-01,2025-09-01,TRUE,supported
+PA,rate_outcome,placebo,2019-05-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2016-11-01,2017-10-01,2017-11-01,2018-10-01,64,2016-01-01,2025-09-01,TRUE,supported
+PA,rate_outcome,months_0_11,2019-05-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2016-11-01,2018-10-01,2019-05-01,2020-04-01,65,2016-01-01,2025-09-01,TRUE,supported
+PA,rate_outcome,months_12_23,2019-05-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2016-11-01,2018-10-01,2020-05-01,2021-04-01,65,2016-01-01,2025-09-01,TRUE,supported
+PA,rate_outcome,months_24_35,2019-05-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2016-11-01,2018-10-01,2021-05-01,2022-04-01,65,2016-01-01,2025-09-01,TRUE,supported
+PA,renter_weighted,placebo,2019-05-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2016-11-01,2017-10-01,2017-11-01,2018-10-01,64,2016-01-01,2025-09-01,TRUE,supported
+PA,renter_weighted,months_0_11,2019-05-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2016-11-01,2018-10-01,2019-05-01,2020-04-01,65,2016-01-01,2025-09-01,TRUE,supported
+PA,renter_weighted,months_12_23,2019-05-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2016-11-01,2018-10-01,2020-05-01,2021-04-01,65,2016-01-01,2025-09-01,TRUE,supported
+PA,renter_weighted,months_24_35,2019-05-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2016-11-01,2018-10-01,2021-05-01,2022-04-01,65,2016-01-01,2025-09-01,TRUE,supported
+PA,strict_coverage,placebo,2019-05-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2016-11-01,2017-10-01,2017-11-01,2018-10-01,64,2016-01-01,2025-09-01,TRUE,supported
+PA,strict_coverage,months_0_11,2019-05-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2016-11-01,2018-10-01,2019-05-01,2020-04-01,63,2016-01-01,2025-09-01,TRUE,supported
+PA,strict_coverage,months_12_23,2019-05-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2016-11-01,2018-10-01,2020-05-01,2021-04-01,61,2016-01-01,2025-09-01,TRUE,supported
+PA,strict_coverage,months_24_35,2019-05-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2016-11-01,2018-10-01,2021-05-01,2022-04-01,64,2016-01-01,2025-09-01,TRUE,supported
+PA,complete_coverage,placebo,2019-05-01,retail_first,all_online,-30,-19,-18,-7,12,12,TRUE,2016-11-01,2017-10-01,2017-11-01,2018-10-01,60,2016-01-01,2025-09-01,TRUE,supported
+PA,complete_coverage,months_0_11,2019-05-01,retail_first,all_online,-30,-7,0,11,24,12,FALSE,2016-11-01,2018-10-01,2019-05-01,2020-04-01,28,2016-01-01,2025-09-01,TRUE,supported
+PA,complete_coverage,months_12_23,2019-05-01,retail_first,all_online,-30,-7,12,23,24,12,FALSE,2016-11-01,2018-10-01,2020-05-01,2021-04-01,29,2016-01-01,2025-09-01,TRUE,supported
+PA,complete_coverage,months_24_35,2019-05-01,retail_first,all_online,-30,-7,24,35,24,12,FALSE,2016-11-01,2018-10-01,2021-05-01,2022-04-01,59,2016-01-01,2025-09-01,TRUE,supported
+TN,primary,placebo,2020-11-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2018-05-01,2019-04-01,2019-05-01,2020-04-01,36,2016-01-01,2025-09-01,TRUE,supported
+TN,primary,months_0_11,2020-11-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2018-05-01,2020-04-01,2020-11-01,2021-10-01,37,2016-01-01,2025-09-01,TRUE,supported
+TN,primary,months_12_23,2020-11-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2018-05-01,2020-04-01,2021-11-01,2022-10-01,35,2016-01-01,2025-09-01,TRUE,supported
+TN,primary,months_24_35,2020-11-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2018-05-01,2020-04-01,2022-11-01,2023-10-01,36,2016-01-01,2025-09-01,TRUE,supported
+TN,not_yet_controls,placebo,2020-11-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2018-05-01,2019-04-01,2019-05-01,2020-04-01,36,2016-01-01,2025-09-01,TRUE,supported
+TN,not_yet_controls,months_0_11,2020-11-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2018-05-01,2020-04-01,2020-11-01,2021-10-01,37,2016-01-01,2025-09-01,TRUE,supported
+TN,not_yet_controls,months_12_23,2020-11-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2018-05-01,2020-04-01,2021-11-01,2022-10-01,35,2016-01-01,2025-09-01,TRUE,supported
+TN,not_yet_controls,months_24_35,2020-11-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2018-05-01,2020-04-01,2022-11-01,2023-10-01,36,2016-01-01,2025-09-01,TRUE,supported
+TN,rate_outcome,placebo,2020-11-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2018-05-01,2019-04-01,2019-05-01,2020-04-01,36,2016-01-01,2025-09-01,TRUE,supported
+TN,rate_outcome,months_0_11,2020-11-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2018-05-01,2020-04-01,2020-11-01,2021-10-01,37,2016-01-01,2025-09-01,TRUE,supported
+TN,rate_outcome,months_12_23,2020-11-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2018-05-01,2020-04-01,2021-11-01,2022-10-01,35,2016-01-01,2025-09-01,TRUE,supported
+TN,rate_outcome,months_24_35,2020-11-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2018-05-01,2020-04-01,2022-11-01,2023-10-01,36,2016-01-01,2025-09-01,TRUE,supported
+TN,renter_weighted,placebo,2020-11-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2018-05-01,2019-04-01,2019-05-01,2020-04-01,36,2016-01-01,2025-09-01,TRUE,supported
+TN,renter_weighted,months_0_11,2020-11-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2018-05-01,2020-04-01,2020-11-01,2021-10-01,37,2016-01-01,2025-09-01,TRUE,supported
+TN,renter_weighted,months_12_23,2020-11-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2018-05-01,2020-04-01,2021-11-01,2022-10-01,35,2016-01-01,2025-09-01,TRUE,supported
+TN,renter_weighted,months_24_35,2020-11-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2018-05-01,2020-04-01,2022-11-01,2023-10-01,36,2016-01-01,2025-09-01,TRUE,supported
+TN,strict_coverage,placebo,2020-11-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2018-05-01,2019-04-01,2019-05-01,2020-04-01,36,2016-01-01,2025-09-01,TRUE,supported
+TN,strict_coverage,months_0_11,2020-11-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2018-05-01,2020-04-01,2020-11-01,2021-10-01,36,2016-01-01,2025-09-01,TRUE,supported
+TN,strict_coverage,months_12_23,2020-11-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2018-05-01,2020-04-01,2021-11-01,2022-10-01,34,2016-01-01,2025-09-01,TRUE,supported
+TN,strict_coverage,months_24_35,2020-11-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2018-05-01,2020-04-01,2022-11-01,2023-10-01,33,2016-01-01,2025-09-01,TRUE,supported
+TN,complete_coverage,placebo,2020-11-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2018-05-01,2019-04-01,2019-05-01,2020-04-01,19,2016-01-01,2025-09-01,TRUE,supported
+TN,complete_coverage,months_0_11,2020-11-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2018-05-01,2020-04-01,2020-11-01,2021-10-01,17,2016-01-01,2025-09-01,TRUE,supported
+TN,complete_coverage,months_12_23,2020-11-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2018-05-01,2020-04-01,2021-11-01,2022-10-01,18,2016-01-01,2025-09-01,TRUE,supported
+TN,complete_coverage,months_24_35,2020-11-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2018-05-01,2020-04-01,2022-11-01,2023-10-01,16,2016-01-01,2025-09-01,TRUE,supported
+TN,online_first_clean,placebo,2020-11-01,online_first_or_simultaneous,online_first_or_simultaneous,-30,-19,-18,-7,12,12,TRUE,2018-05-01,2019-04-01,2019-05-01,2020-04-01,36,2016-01-01,2025-09-01,TRUE,supported
+TN,online_first_clean,months_0_11,2020-11-01,online_first_or_simultaneous,online_first_or_simultaneous,-30,-7,0,11,24,12,FALSE,2018-05-01,2020-04-01,2020-11-01,2021-10-01,37,2016-01-01,2025-09-01,TRUE,supported
+TN,online_first_clean,months_12_23,2020-11-01,online_first_or_simultaneous,online_first_or_simultaneous,-30,-7,12,23,24,12,FALSE,2018-05-01,2020-04-01,2021-11-01,2022-10-01,35,2016-01-01,2025-09-01,TRUE,supported
+TN,online_first_clean,months_24_35,2020-11-01,online_first_or_simultaneous,online_first_or_simultaneous,-30,-7,24,35,24,12,FALSE,2018-05-01,2020-04-01,2022-11-01,2023-10-01,36,2016-01-01,2025-09-01,TRUE,supported
+VA,primary,placebo,2021-01-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2018-07-01,2019-06-01,2019-07-01,2020-06-01,121,2016-01-01,2025-09-01,TRUE,supported
+VA,primary,months_0_11,2021-01-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2018-07-01,2020-06-01,2021-01-01,2021-12-01,119,2016-01-01,2025-09-01,TRUE,supported
+VA,primary,months_12_23,2021-01-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2018-07-01,2020-06-01,2022-01-01,2022-12-01,121,2016-01-01,2025-09-01,TRUE,supported
+VA,primary,months_24_35,2021-01-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2018-07-01,2020-06-01,2023-01-01,2023-12-01,121,2016-01-01,2025-09-01,TRUE,supported
+VA,not_yet_controls,placebo,2021-01-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2018-07-01,2019-06-01,2019-07-01,2020-06-01,121,2016-01-01,2025-09-01,TRUE,supported
+VA,not_yet_controls,months_0_11,2021-01-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2018-07-01,2020-06-01,2021-01-01,2021-12-01,119,2016-01-01,2025-09-01,TRUE,supported
+VA,not_yet_controls,months_12_23,2021-01-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2018-07-01,2020-06-01,2022-01-01,2022-12-01,121,2016-01-01,2025-09-01,TRUE,supported
+VA,not_yet_controls,months_24_35,2021-01-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2018-07-01,2020-06-01,2023-01-01,2023-12-01,121,2016-01-01,2025-09-01,TRUE,supported
+VA,rate_outcome,placebo,2021-01-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2018-07-01,2019-06-01,2019-07-01,2020-06-01,121,2016-01-01,2025-09-01,TRUE,supported
+VA,rate_outcome,months_0_11,2021-01-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2018-07-01,2020-06-01,2021-01-01,2021-12-01,119,2016-01-01,2025-09-01,TRUE,supported
+VA,rate_outcome,months_12_23,2021-01-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2018-07-01,2020-06-01,2022-01-01,2022-12-01,121,2016-01-01,2025-09-01,TRUE,supported
+VA,rate_outcome,months_24_35,2021-01-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2018-07-01,2020-06-01,2023-01-01,2023-12-01,121,2016-01-01,2025-09-01,TRUE,supported
+VA,renter_weighted,placebo,2021-01-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2018-07-01,2019-06-01,2019-07-01,2020-06-01,121,2016-01-01,2025-09-01,TRUE,supported
+VA,renter_weighted,months_0_11,2021-01-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2018-07-01,2020-06-01,2021-01-01,2021-12-01,119,2016-01-01,2025-09-01,TRUE,supported
+VA,renter_weighted,months_12_23,2021-01-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2018-07-01,2020-06-01,2022-01-01,2022-12-01,121,2016-01-01,2025-09-01,TRUE,supported
+VA,renter_weighted,months_24_35,2021-01-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2018-07-01,2020-06-01,2023-01-01,2023-12-01,121,2016-01-01,2025-09-01,TRUE,supported
+VA,strict_coverage,placebo,2021-01-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2018-07-01,2019-06-01,2019-07-01,2020-06-01,115,2016-01-01,2025-09-01,TRUE,supported
+VA,strict_coverage,months_0_11,2021-01-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2018-07-01,2020-06-01,2021-01-01,2021-12-01,114,2016-01-01,2025-09-01,TRUE,supported
+VA,strict_coverage,months_12_23,2021-01-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2018-07-01,2020-06-01,2022-01-01,2022-12-01,118,2016-01-01,2025-09-01,TRUE,supported
+VA,strict_coverage,months_24_35,2021-01-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2018-07-01,2020-06-01,2023-01-01,2023-12-01,117,2016-01-01,2025-09-01,TRUE,supported
+VA,complete_coverage,placebo,2021-01-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2018-07-01,2019-06-01,2019-07-01,2020-06-01,46,2016-01-01,2025-09-01,TRUE,supported
+VA,complete_coverage,months_0_11,2021-01-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2018-07-01,2020-06-01,2021-01-01,2021-12-01,45,2016-01-01,2025-09-01,TRUE,supported
+VA,complete_coverage,months_12_23,2021-01-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2018-07-01,2020-06-01,2022-01-01,2022-12-01,45,2016-01-01,2025-09-01,TRUE,supported
+VA,complete_coverage,months_24_35,2021-01-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2018-07-01,2020-06-01,2023-01-01,2023-12-01,45,2016-01-01,2025-09-01,TRUE,supported
+VA,online_first_clean,placebo,2021-01-01,online_first_or_simultaneous,online_first_or_simultaneous,-30,-19,-18,-7,12,12,TRUE,2018-07-01,2019-06-01,2019-07-01,2020-06-01,121,2016-01-01,2025-09-01,TRUE,supported
+VA,online_first_clean,months_0_11,2021-01-01,online_first_or_simultaneous,online_first_or_simultaneous,-30,-7,0,11,24,12,FALSE,2018-07-01,2020-06-01,2021-01-01,2021-12-01,119,2016-01-01,2025-09-01,TRUE,supported
+VA,online_first_clean,months_12_23,2021-01-01,online_first_or_simultaneous,online_first_or_simultaneous,-30,-7,12,23,24,12,FALSE,2018-07-01,2020-06-01,2022-01-01,2022-12-01,121,2016-01-01,2025-09-01,TRUE,supported
+VA,online_first_clean,months_24_35,2021-01-01,online_first_or_simultaneous,online_first_or_simultaneous,-30,-7,24,35,24,12,FALSE,2018-07-01,2020-06-01,2023-01-01,2023-12-01,121,2016-01-01,2025-09-01,TRUE,supported
+WV,primary,placebo,2018-08-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2016-02-01,2017-01-01,2017-02-01,2018-01-01,55,2016-01-01,2025-09-01,TRUE,supported
+WV,primary,months_0_11,2018-08-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2016-02-01,2018-01-01,2018-08-01,2019-07-01,55,2016-01-01,2025-09-01,TRUE,supported
+WV,primary,months_12_23,2018-08-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2016-02-01,2018-01-01,2019-08-01,2020-07-01,54,2016-01-01,2025-09-01,TRUE,supported
+WV,primary,months_24_35,2018-08-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2016-02-01,2018-01-01,2020-08-01,2021-07-01,53,2016-01-01,2025-09-01,TRUE,supported
+WV,not_yet_controls,placebo,2018-08-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2016-02-01,2017-01-01,2017-02-01,2018-01-01,55,2016-01-01,2025-09-01,TRUE,supported
+WV,not_yet_controls,months_0_11,2018-08-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2016-02-01,2018-01-01,2018-08-01,2019-07-01,55,2016-01-01,2025-09-01,TRUE,supported
+WV,not_yet_controls,months_12_23,2018-08-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2016-02-01,2018-01-01,2019-08-01,2020-07-01,54,2016-01-01,2025-09-01,TRUE,supported
+WV,not_yet_controls,months_24_35,2018-08-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2016-02-01,2018-01-01,2020-08-01,2021-07-01,53,2016-01-01,2025-09-01,TRUE,supported
+WV,rate_outcome,placebo,2018-08-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2016-02-01,2017-01-01,2017-02-01,2018-01-01,55,2016-01-01,2025-09-01,TRUE,supported
+WV,rate_outcome,months_0_11,2018-08-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2016-02-01,2018-01-01,2018-08-01,2019-07-01,55,2016-01-01,2025-09-01,TRUE,supported
+WV,rate_outcome,months_12_23,2018-08-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2016-02-01,2018-01-01,2019-08-01,2020-07-01,54,2016-01-01,2025-09-01,TRUE,supported
+WV,rate_outcome,months_24_35,2018-08-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2016-02-01,2018-01-01,2020-08-01,2021-07-01,53,2016-01-01,2025-09-01,TRUE,supported
+WV,renter_weighted,placebo,2018-08-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2016-02-01,2017-01-01,2017-02-01,2018-01-01,55,2016-01-01,2025-09-01,TRUE,supported
+WV,renter_weighted,months_0_11,2018-08-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2016-02-01,2018-01-01,2018-08-01,2019-07-01,55,2016-01-01,2025-09-01,TRUE,supported
+WV,renter_weighted,months_12_23,2018-08-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2016-02-01,2018-01-01,2019-08-01,2020-07-01,54,2016-01-01,2025-09-01,TRUE,supported
+WV,renter_weighted,months_24_35,2018-08-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2016-02-01,2018-01-01,2020-08-01,2021-07-01,53,2016-01-01,2025-09-01,TRUE,supported
+WV,strict_coverage,placebo,2018-08-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2016-02-01,2017-01-01,2017-02-01,2018-01-01,50,2016-01-01,2025-09-01,TRUE,supported
+WV,strict_coverage,months_0_11,2018-08-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2016-02-01,2018-01-01,2018-08-01,2019-07-01,52,2016-01-01,2025-09-01,TRUE,supported
+WV,strict_coverage,months_12_23,2018-08-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2016-02-01,2018-01-01,2019-08-01,2020-07-01,49,2016-01-01,2025-09-01,TRUE,supported
+WV,strict_coverage,months_24_35,2018-08-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2016-02-01,2018-01-01,2020-08-01,2021-07-01,47,2016-01-01,2025-09-01,TRUE,supported
+WV,complete_coverage,placebo,2018-08-01,online_first_or_simultaneous,all_online,-30,-19,-18,-7,12,12,TRUE,2016-02-01,2017-01-01,2017-02-01,2018-01-01,37,2016-01-01,2025-09-01,TRUE,supported
+WV,complete_coverage,months_0_11,2018-08-01,online_first_or_simultaneous,all_online,-30,-7,0,11,24,12,FALSE,2016-02-01,2018-01-01,2018-08-01,2019-07-01,36,2016-01-01,2025-09-01,TRUE,supported
+WV,complete_coverage,months_12_23,2018-08-01,online_first_or_simultaneous,all_online,-30,-7,12,23,24,12,FALSE,2016-02-01,2018-01-01,2019-08-01,2020-07-01,14,2016-01-01,2025-09-01,TRUE,supported
+WV,complete_coverage,months_24_35,2018-08-01,online_first_or_simultaneous,all_online,-30,-7,24,35,24,12,FALSE,2016-02-01,2018-01-01,2020-08-01,2021-07-01,31,2016-01-01,2025-09-01,TRUE,supported
+WV,online_first_clean,placebo,2018-08-01,online_first_or_simultaneous,online_first_or_simultaneous,-30,-19,-18,-7,12,12,TRUE,2016-02-01,2017-01-01,2017-02-01,2018-01-01,55,2016-01-01,2025-09-01,TRUE,supported
+WV,online_first_clean,months_0_11,2018-08-01,online_first_or_simultaneous,online_first_or_simultaneous,-30,-7,0,11,24,12,FALSE,2016-02-01,2018-01-01,2018-08-01,2019-07-01,55,2016-01-01,2025-09-01,TRUE,supported
+WV,online_first_clean,months_12_23,2018-08-01,online_first_or_simultaneous,online_first_or_simultaneous,-30,-7,12,23,24,12,FALSE,2016-02-01,2018-01-01,2019-08-01,2020-07-01,54,2016-01-01,2025-09-01,TRUE,supported
+WV,online_first_clean,months_24_35,2018-08-01,online_first_or_simultaneous,online_first_or_simultaneous,-30,-7,24,35,24,12,FALSE,2016-02-01,2018-01-01,2020-08-01,2021-07-01,53,2016-01-01,2025-09-01,TRUE,supported

@@ -1,0 +1,54 @@
+SOURCE_URL: https://www.courts.michigan.gov/publications/statistics-and-reports/caseload-reports/
+FETCH_DATE: 2026-04-15
+ENTITY: MI
+SOURCE_TYPE: primary
+---
+Michigan State Court Administrative Office (SCAO) — Caseload Reports
+
+Michigan's State Court Administrative Office (SCAO) publishes ANNUAL caseload reports organized by county and court. The landing page for 2023 reports:
+  https://www.courts.michigan.gov/publications/statistics-and-reports/caseload-reports/2023-caseload-reports/
+
+SCAO also publishes a public Interactive Court Data Dashboard:
+  https://www.courts.michigan.gov/publications/statistics-and-reports/interactive-court-data-dashboard/
+  - Useful for checking public incoming caseload views and court/county filters.
+  - Treat as a dashboard source, not a machine-readable bulk microdata export.
+
+Report structure:
+  - One report per county (or multi-county district), e.g.:
+    - 2023 Data: Bay County
+    - 2023 Data: Hillsdale County
+    - 2023 Data: Monroe County
+    - 2023 Data: Clinton and Gratiot Counties
+    - 6th Circuit Court of Oakland County: https://www.courts.michigan.gov/49a51a/siteassets/reports/statistics/caseload/2023/oaklandc06.pdf
+  - Format: PDF (annual, per-county/court)
+  - Content: caseload by case type, including Landlord-Tenant / Summary Proceedings filings, dispositions, pending
+  - Geographic unit: District Court (landlord-tenant is DISTRICT court jurisdiction in Michigan) and Circuit Court, organized by county
+  - Coverage: 2016-2023+ confirmed (reports page archives previous years)
+
+Landlord-Tenant context in Michigan:
+  - In Michigan, evictions are "Summary Proceedings" filed in DISTRICT court (83 counties, ~100 district courts, plus multi-jurisdiction municipal courts like 36th District in Detroit).
+  - Statewide: roughly 200,000 landlord-tenant cases filed annually (per SCAO-cited figures); ~40,000 result in court-ordered evictions.
+  - Michigan Judicial Data Warehouse (JDW) contains the underlying microdata that feeds these caseload reports. JDW data is NOT public by default — access requires a data-sharing agreement with SCAO.
+
+Frequency: ANNUAL caseload reports (PDF). Some courts may post monthly or quarterly internal stats but these are not uniformly published.
+
+Research precedent — U. Michigan Poverty Solutions:
+  https://poverty.umich.edu/research-funding-opportunities/data-tools/michigan-evictions/
+  - Used statewide case filing data from SCAO/JDW for 2014-2018 (Goodspeed, Dewar, Schaafsma report).
+  - Data obtained via research agreement with SCAO. Data itself is not posted publicly.
+  - Findings: only 4.8% of MI tenants had attorney representation in LT cases 2014-2018.
+
+Related reference — "Improving Eviction Proceedings in Michigan" report:
+  https://www.courts.michigan.gov/49f7cb/siteassets/reports/special-initiatives/justice-for-all/improving-evictions-in-michigan-report-and-recs.pdf
+  - Jan 2010 through May 2023 coverage used for this analysis; data came from Michigan Judicial Data Warehouse.
+
+Known large-county portals:
+  - Washtenaw County (Ann Arbor): https://www.washtenaw.org/954/Landlord-Tenant-Filings — monthly filing counts posted
+  - Oakland County: https://www.oakgov.com/government/courts/circuit-court/about/caseload-statistics
+  - 36th District Court (Detroit / Wayne): the largest volume LT court in the state
+
+For the Gambling-and-Eviction project:
+  - MI legalized online sports betting January 2021.
+  - SCAO public caseload reports are ANNUAL PDFs — require parsing ~100 county PDFs per year to build a panel.
+  - Monthly data requires either (a) a data-sharing agreement with SCAO for JDW access, or (b) scraping the 36th District and large county portals individually.
+  - MI is NOT in the ETS monthly panel but HAS annual data via the compiled Court Data file (see project CLAUDE.md: `county_court-issued_2000_2025_ben_update_3_19.csv`).

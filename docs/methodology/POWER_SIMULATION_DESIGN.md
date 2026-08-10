@@ -130,6 +130,18 @@ recorded seeds; all have a **null (δ=0) counterpart** used for size.
 A common-date random assignment is implemented **only** inside the BHNS validation module
 (§13), never as a primary design.
 
+> **Addendum (2026-08-10): D1 × S3 is structurally infeasible.** D1 places the *full* real
+> template — under the online definition, 18 cohorts covering ~24 treated states over a 55-month
+> span — but S3 contains only 12 (county) / 14 (state) never-treated states. No placement can
+> supply ~24 pseudo-treated states from a 12–14 state pool; relaxing `min_pre`/`min_post` cannot
+> help. Confirmed empirically: both S3 primary scenarios abort at startup with the
+> `make_pseudo_schedule()` feasibility error (Della run 12114571, tasks 2 and 8), reproduced
+> locally. Contrary to the "Used with S2/S3/S4" note under D1 above, **D1 is usable with S2/S4
+> only; the never-treated-sample comparison is D4's job** (proportional cohort-count scaling).
+> Resolution: S3 removed from the D1 blocks of the cheap config (and pending removal from
+> `power_primary.yml`); the pre-analysis plan reports this infeasibility and cites D4 for the
+> never-treated check, per the same reported-not-silently-altered principle as D2 rescaling.
+
 ## 9. Effect injection
 
 - **M1 Count-based stochastic augmentation (primary).** For treated county-month (i,s,t) with

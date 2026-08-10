@@ -1,0 +1,156 @@
+entity_name: "state"
+entity_id_field: "state_abb"
+
+# Domain primer passed to collection/extraction subagents
+domain_context: |
+  We are searching for state-level administrative court records on EVICTION filings
+  (also called landlord-tenant, summary ejectment, summary process, unlawful detainer,
+  forcible entry and detainer, or FED actions — names vary by state). The goal is to
+  find sources that publish MONTHLY (or finer) counts of eviction case FILINGS by
+  county or court, statewide, for as many years as possible (ideally 2016-present).
+
+  Priority sources in order:
+    1. The state's Administrative Office of the Courts (AOC), Office of Court
+       Administration (OCA), Judicial Council, or State Court Administrator.
+       Look for "caseload statistics", "court statistics", "filing activity",
+       "annual statistical report", or similar.
+    2. Open-data portals run by the judiciary (dashboards, data downloads).
+    3. Bulk case-level data (e.g., NY OCA, TX OCA Monthly Activity Detail).
+    4. County-level portals if no statewide source exists (e.g., Cook County IL).
+    5. Academic/nonprofit compilations (Eviction Lab, LSC) ONLY if they are the
+       sole source — we prefer original government data.
+
+  Do NOT count:
+    - Only-annual reports (note them as evidence but mark finest_frequency as annual).
+    - Only PDF narrative reports with no underlying counts.
+    - Data behind paywalls unless the paywall is a nominal public-records fee.
+    - Commercial scraped datasets (we want the primary source).
+
+  Key distinctions to preserve:
+    - "Filings" vs "judgments" vs "writs of possession" vs "executed evictions" —
+      these are different points in the pipeline. We want FILINGS primarily, but
+      record what the source actually measures.
+    - "Summary process" (housing court) vs "small claims" — in some states evictions
+      go through small claims; capture which.
+    - Statewide vs partial coverage — report which counties/courts are covered.
+
+search_query_template: >
+  {entity} state court administrator eviction filings monthly statistics
+  landlord tenant caseload data download
+
+filter_condition: >
+  Source must be from the state judiciary, state AOC, state open data portal,
+  or a county court's official site. Academic datasets (Eviction Lab) count only
+  as secondary evidence about where the data comes from.
+
+source_priority:
+  - State Administrative Office of the Courts / OCA / Judicial Branch official site
+  - State open data portal (.gov)
+  - County court or clerk official sites (for county-level only)
+  - Academic compilations (Eviction Lab, LSC, Princeton ETS) — context only
+
+attributes:
+  eviction_data_available:
+    type: enum
+    values: [yes_public, yes_restricted, no_public_data, unknown]
+    description: >
+      Whether any eviction filing counts are publicly accessible from official
+      state/county court sources. "yes_restricted" means available via FOIA
+      or purchase only.
+    evidence_required: true
+
+  finest_frequency_available:
+    type: enum
+    values: [case_level, daily, weekly, monthly, quarterly, annual, none, unknown]
+    description: >
+      Finest time granularity at which filings are reported in any publicly
+      accessible form. case_level includes bulk dockets that can be aggregated
+      to any frequency.
+    evidence_required: true
+
+  geographic_level:
+    type: enum
+    values: [case_level, county, court, district, state, metro_only, mixed, unknown]
+    description: >
+      Geographic unit at which filing counts are reported. case_level = bulk
+      case data with location fields. "metro_only" = e.g., only NYC or Chicago.
+    evidence_required: true
+
+  statewide_coverage:
+    type: enum
+    values: [all_counties, most_counties, partial, single_jurisdiction, unknown]
+    description: >
+      Whether the source covers all courts in the state or only a subset.
+
+  coverage_start_year:
+    type: numeric
+    description: Earliest year with published data (integer, or null if unknown).
+    validation:
+      min: 1990
+      max: 2026
+
+  coverage_end_year:
+    type: numeric
+    description: Most recent year with published data.
+    validation:
+      min: 1990
+      max: 2026
+
+  source_name:
+    type: text
+    description: >
+      Short name for the source (e.g., "New Jersey Courts Statistical Reports",
+      "OCA Monthly Activity Detail", "Illinois AOIC Annual Report").
+
+  source_url:
+    type: text
+    description: URL of the best landing page for the data.
+    evidence_required: true
+
+  access_method:
+    type: enum
+    values: [bulk_download, api, dashboard_only, scrape_required, foia_request, purchase, email_request, none]
+    description: How the data is actually retrieved.
+    evidence_required: true
+
+  data_format:
+    type: text
+    description: File format(s) available — CSV, XLSX, PDF, JSON, HTML tables, etc.
+
+  what_is_measured:
+    type: enum
+    values: [filings, judgments, writs, executed_evictions, mixed, unknown]
+    description: >
+      Which point in the eviction pipeline the counts represent. We prefer filings.
+    evidence_required: true
+
+  coverage_relative_to_ets:
+    type: text
+    description: >
+      Given ETS coverage for this state (provided in additional_context), does
+      this source fill gaps, duplicate, or extend? Free text, one sentence.
+
+  known_caveats:
+    type: text
+    description: >
+      Anything that would complicate use of this data: sealed cases, sheriff-only
+      filings, self-represented filers excluded, commercial-only tenants, changes
+      in reporting over time, COVID moratoria effects, etc.
+
+  estimated_effort_to_acquire:
+    type: enum
+    values: [trivial, easy, moderate, hard, infeasible]
+    description: >
+      Analyst's estimate of how much work to acquire and clean the data to a
+      state-month panel. trivial = single CSV download; infeasible = not usable.
+
+  notes:
+    type: text
+    description: Anything else relevant (e.g., related scraping project, FOIA contact).
+
+gold_sample:
+  sample_fraction: 0.0   # skip gold sample for scouting task
+  error_threshold: 0.20
+
+output_format:
+  directory_per_run: true

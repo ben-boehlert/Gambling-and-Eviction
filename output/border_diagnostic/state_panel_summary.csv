@@ -1,0 +1,2 @@
+panel_label,n_units,n_states,n_months,n_obs,n_treated_units,n_treated_states,share_post_treat
+state_twfe_baseline,37,37,142,2963,23,23,0.2912588592642592

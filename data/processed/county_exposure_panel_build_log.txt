@@ -1,0 +1,76 @@
+=== STEP 1: county population-weighted centroids ===
+CenPop2020 county rows downloaded: 3221
+Counties before CONUS+DC restriction: 3221
+Counties dropped (AK/HI/territories): 113
+Counties kept (CONUS + DC): 3108
+=== STEP 2: state boundaries (tigris cb=TRUE, 500k) ===
+States downloaded (raw): 56
+States kept (CONUS + DC): 49
+=== STEP 3: distance matrix (county centroid -> every OTHER state boundary) ===
+Distance matrix rows (county x other-state): 149184
+Expected (n_counties x 48): 149184
+Counties with exactly 48 distance entries: 3108 / 3108
+Wrote distance matrix: /Users/bb1806/Documents/GitHub Doc/Gambling-and-Eviction/data/processed/county_state_border_distance_miles.csv
+=== STEP 4: legalization dates (online_start_date) ===
+DC present in legalization dates CSV: TRUE
+States in legalization CSV total: 33
+States in legalization CSV with online_start_date set: 24
+Unmatched states (should be 0): 0
+States with a non-missing online_start_date (ever legal, online): 24
+Online-legal states and dates:
+  NJ: 2018-08-01
+  WV: 2018-08-01
+  PA: 2019-05-01
+  IA: 2019-08-01
+  RI: 2019-09-01
+  IN: 2019-10-01
+  OR: 2019-10-01
+  NH: 2019-12-01
+  CO: 2020-05-01
+  DC: 2020-05-01
+  IL: 2020-06-01
+  TN: 2020-11-01
+  MI: 2021-01-01
+  VA: 2021-01-01
+  AZ: 2021-09-01
+  WY: 2021-09-01
+  CT: 2021-10-01
+  NY: 2022-01-01
+  LA: 2022-01-01
+  AR: 2022-03-01
+  KS: 2022-09-01
+  MD: 2022-11-01
+  OH: 2023-01-01
+  MA: 2023-03-01
+=== STEP 5: building monthly county x month panel ===
+Months in panel: 120 ( 2016-01-01 to 2025-12-01 )
+Panel rows built: 372960
+Final panel rows: 372960
+=== ASSERTIONS ===
+PASS: key uniqueness + row count = 372960 = n_counties ( 3108 ) x 120
+Monotonicity violations (dist should be weakly decreasing): 0
+PASS: S15 <= S60 in every row
+PASS: S60 * own_legal = 0 in every row
+PASS: immunity assumption holds for 392 counties with Q60 < G
+=== SPOT CHECKS ===
+Jackson County MO (29095) distance to Kansas: 8.72 mi
+PASS: Jackson County MO -> KS < 15 mi
+New York County NY (36061) distance to New Jersey: 1.5 mi
+PASS: New York County NY -> NJ < 10 mi
+Catoosa County GA (13047) distance to Tennessee: 4 mi
+PASS: Catoosa County GA -> TN < 15 mi
+Georgia never legalizes online sports betting: TRUE
+Catoosa County S60 in TN's launch month ( 2020-11-01 ): 1
+PASS: Catoosa County GA S60 = 1 in TN's legalization month
+Lowndes County GA (13185) distance to Tennessee: 292.42 mi
+PASS: Lowndes County GA -> TN > 60 mi
+Wrote panel: /Users/bb1806/Documents/GitHub Doc/Gambling-and-Eviction/data/processed/county_exposure_panel.csv
+=== EXPOSURE PATH SUMMARY (60mi definition) ===
+# A tibble: 4 × 2
+  path                  n_counties
+  <chr>                      <int>
+1 never_exposed               1099
+2 direct_only                  949
+3 spillover_only               668
+4 spillover_then_direct        392
+Runtime (seconds): 34.7

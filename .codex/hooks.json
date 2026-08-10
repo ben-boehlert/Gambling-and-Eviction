@@ -1,0 +1,51 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/bb1806/Documents/GitHub Doc/Gambling-and-Eviction/.codex/hooks/protect-files.sh'",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "'/Users/bb1806/Documents/GitHub Doc/Gambling-and-Eviction/.codex/hooks/post-edit-lint.sh'",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 '/Users/bb1806/Documents/GitHub Doc/Gambling-and-Eviction/.codex/hooks/pre-compact.py'",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 '/Users/bb1806/Documents/GitHub Doc/Gambling-and-Eviction/.codex/hooks/post-compact-restore.py'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

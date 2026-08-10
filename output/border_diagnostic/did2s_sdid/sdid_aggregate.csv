@@ -1,0 +1,3 @@
+spec,n_cohorts,att,se,ci_low_95,ci_high_95,pct_effect
+sdid_inv_var_weighted_all,0,NA,Inf,NA,NA,NA
+sdid_inv_var_weighted_no_NH,0,NA,Inf,NA,NA,NA

@@ -1,13 +1,13 @@
 # Pre-trends Diagnostics Output
 
-Generated: 2026-02-13 01:57:32.411658
+Generated: 2026-02-13 12:37:23.852959
 
 ## Configuration
 - Panel: `data/raw/state_month_panel_with_treatment.csv`
 - Excluded states: ME
 - Date range: 2016-01-01 to 2024-12-31
-- Dropped window: 2020-03-01 to 2021-07-31
-- Coverage threshold: 91
+- Dropped window: 2020-03-01 to 2022-03-31
+- Coverage threshold: 83
 - Balance common months: TRUE
 - Outcome: log1p_filings_count
 - Control group: notyettreated, est_method: reg
@@ -18,7 +18,7 @@ Generated: 2026-02-13 01:57:32.411658
 ## Panel Summary
 - 24 states (14 treated, 10 never-treated)
 - 13 treatment cohorts
-- 91 months, 2184 observations
+- 83 months, 1992 observations
 
 ## Headline CS Inference Method
 **ANALYTIC**
@@ -26,20 +26,20 @@ Generated: 2026-02-13 01:57:32.411658
 ## CS-DiD Pretrends (Analytic)
 - Pre-periods tested: 12
 - Joint test (Holm): min_p = 1, reject = FALSE
-- Overall ATT: -0.225 (SE = 0.1466)
+- Overall ATT: -0.2355 (SE = 0.1062)
 
 ## CS-DiD Pretrends (Bootstrap)
 - Pre-periods tested: 12
 - Joint test (Holm): min_p = 1, reject = FALSE
-- Overall ATT: -0.225 (SE = 0.146)
+- Overall ATT: -0.2355 (SE = 0.1135)
 - Bootstrap iterations: 199
 
 ## TWFE / Sun-Abraham Pretrends
-- Joint Wald F = 6639730695.609, p = 0, reject = TRUE
+- Joint test (Holm): min_p = 0.3625, reject = FALSE
 
 ## Inference Notes
 - CS p-values: pointwise t-test with df = n_states - 1, Holm step-down for joint test
-- SunAb p-values: cluster-robust SEs (state level), Wald F-test for joint pre-trend
+- SunAb p-values: pointwise t-test with df = n_states - 1, Holm step-down for joint test
 - CS p-values are NOT computed via TWFE Wald test (explicitly avoided)
 
 ## How to Run

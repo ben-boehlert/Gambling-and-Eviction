@@ -1,0 +1,3 @@
+spec,interactor,main_att,main_se,interaction,interaction_se,interaction_p,n_obs,main_pct,ci_low_95,ci_high_95
+Low-population counties (below median renter pop),low_pop_subset,0.09960330881880301,0.05507596668501547,NA,NA,NA,430,10.473259346423358,-0.008345585883827306,0.20755220352143333
+High-population counties (above median renter pop),high_pop_subset,0.181965550939967,0.0766967220539649,NA,NA,NA,429,19.95728690102925,0.0316399757141958,0.3322911261657382

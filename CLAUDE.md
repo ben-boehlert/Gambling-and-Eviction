@@ -106,7 +106,57 @@ SELF_TEST=TRUE N_CORES=4 bash scripts/run_pretrends_statepanel.sh
 Rscript analysis/diagnostics/validate_csdid_dynamic_sim.R
 ```
 
-## Key Methodological Notes
+## Blinded Power-Simulation Framework (Pre-Analysis Plan)
+
+Blinded (untreated-data-only) calibration + power simulation supporting the Arnold Ventures
+pre-analysis plan. Code: `R/power/` (9 modules). Configs: `config/power_*.yml`. Methodology:
+`docs/methodology/POWER_SIMULATION_{DESIGN,BLINDNESS_PROTOCOL,CODE_AUDIT}.md`. Cluster package:
+`della_power_upload/`, rebuilt by `scripts/make_della_power_upload.sh`; runs on Princeton Della at
+`/scratch/gpfs/DESMOND/ben/eviction_gambling/della_power_upload/` (see `scripts/della_power/README.txt`
+for upload/run/monitor commands).
+
+**Purpose in the PAP** (decided 2026-08-07/08-10): estimator and aggregation-level selection is
+pre-registered as a *decision rule*, not a named estimator — (1) size gate: any estimator × level
+cell whose δ=0 rejection is materially off nominal is disqualified; (2) MDE among survivors picks
+the headline spec. This converts the post-hoc-looking did2s choice (CS/SunAb are miscalibrated on
+this design; see calibration tables above) into a blinded, pre-committed selection. AV guidance
+(`AV_Pre-Analysis_Plan_Guidance_202507.pdf`): QED checklist, ≤6 pages, MDEs in real-world terms.
+
+**Run ladder** (validate cheap before spending on CS — `att_gt` is the cost driver, ~2,750 fits
+per county scenario):
+
+| Run | Config | Scenarios | Estimators | Cost | Status |
+|-----|--------|-----------|-----------|------|--------|
+| smoke | `power_smoke.yml` | 2 (county+state headline) | twfe, did2s; 50 reps × 4 δ | ~1h county, <1 min state | run 12220717, 2026-08-10 |
+| cheap | `power_cheap.yml` | 8 (4 county, 4 state) | twfe, did2s; 500 reps × 11 δ | ~28–30h county tasks | ready |
+| primary | `power_primary.yml` | 11 (S3 blocks infeasible → effectively 9) | + cs (250 reps) | 50–63h per county task | partial (see below) |
+| sensitivity | `power_sensitivity.yml` | 26 (one axis at a time) | varies | state-level baseline | not started |
+
+Key mechanics:
+- `seed_rep = base_seed + 10007*rep + 101*scenario` with `base_seed = 20260723` shared across all
+  configs → a later CS-only run sees the identical simulated panels rep-for-rep (paired comparisons
+  across runs).
+- Scenario ids are content hashes of the scenario's own settings → resubmitting skips completed
+  partials; editing one config block never invalidates another's partial. Config edits that change
+  the scenario COUNT require updating `--array` in the matching `run_*.slurm`.
+- `est_anticipation` is a CS-only knob (`att_gt` argument; `R/power/run_estimators.R`) — pointless
+  in CS-free runs.
+
+**S3 × D1 infeasibility (diagnosed 2026-08-10).** D1 (cohort-preserving reassignment) places the
+*full* real online template — 18 cohorts, ~24 treated states, 55-month span — but S3 (never-treated
+sample) has only 12 (county) / 14 (state) states. Structurally infeasible; no `min_pre`/`min_post`
+relaxation helps. The two S3 primary tasks fail in ~10 s at startup. Resolution: S3 dropped from D1
+blocks (done in `power_cheap.yml`; pending in `power_primary.yml`); the never-treated comparison
+belongs to design D4, which scales cohort counts proportionally (sensitivity `alt_designs`; consider
+promoting a D4 block to primary). The PAP should report this infeasibility explicitly.
+
+**First primary run (Della job 12114571, submitted 2026-08-08).** 4 state scenarios completed
+(6–13h each); 2 S3 tasks failed instantly (above); 5 county tasks needed 50–63h each and hit the
+48h wall — all work lost because **the runner has no batch-level checkpointing**
+(`run_scenario_grid.R` writes the partial CSV only after all 20 batches; the per-batch log lines
+are progress display only). Pacing facts: county twfe+did2s ≈ 1.5h per 25-rep batch (11 δ);
+CS batches ≈ 4–5h. Before resubmitting the CS arm: add per-batch checkpoint/resume and raise
+`--time` (county+CS needs ~72h; verify Della QOS max).
 
 - Pre-COVID period (2016-2020) has better parallel trends than the full sample
 - Idaho is excluded from annual analyses due to data quality issues
@@ -273,6 +323,9 @@ The result is a **bound**, not a precise null:
 - [ ] Run CS calibration on the annual panel to test whether multi-state cohorts fix the het.-robust estimator problem
 - [ ] Consider sourcing monthly court data directly from state court systems (NJ Courts, Michigan SCAO, Iowa Judicial Branch) for states with online gambling
 - [ ] Run Goodman-Bacon (2021) decomposition on TWFE to quantify negative-weight concern
+- [ ] Add per-batch checkpoint/resume to `R/power/run_scenario_grid.R` and raise `--time` before resubmitting the CS arm of the power sims (county+CS needs ~50–63h vs the 48h limit; a timeout currently loses the whole scenario)
+- [ ] Drop S3 from `power_primary.yml` D1 blocks (structurally infeasible — see Blinded Power-Simulation Framework section) and decide whether to promote a D4 never-treated block into primary
+- [ ] Draft the Arnold pre-analysis plan: port design sections from `Arnold Housing Loss Gambling - Application.docx`; rewrite estimator-selection rule (calibration-gate decision rule, not "CS if different"), power section (blinded framework + MDE in filings-per-year terms + heterogeneous-DGP MDE), and key modeling decisions (COVID window, log(1+y), treatment date defs, balance rules, state exclusions)
 
 ## Bundled R Packages (`did/`, `DRDID-master/`, `fastglm-master/`)
 

@@ -1,0 +1,2 @@
+first_stage_coef,first_stage_se,first_stage_p,first_stage_F,adj_r_squared,interpretation
+8.451587189374978,1.229571485191943,4.811773476928005e-8,2285.996472565379,0.7851644333619615,Legalization increases log(1+handle_per_1k) by 8.452 (SE=1.23)

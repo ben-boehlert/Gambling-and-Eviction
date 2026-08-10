@@ -1,0 +1,4 @@
+spec,main_att,main_se,interaction,interaction_se,interaction_p,n_obs
+log1p(filings) — current headline (DENOMINATOR-PRONE),0.1332962582632292,0.05765913900967425,NA,NA,NA,859
+filings_per_1k LEVELS (denominator-effect-free),0.3070605827394596,0.16569835127542287,NA,NA,NA,859
+log1p(filings_per_1k) — rate in logs,0.0942709403975768,0.04322919556732548,NA,NA,NA,859

@@ -1,0 +1,73 @@
+SOURCE_URL: https://www.mass.gov/info-details/civil-court-reports-and-dashboards
+FETCH_DATE: 2026-04-15
+ENTITY: MA
+SOURCE_TYPE: primary
+---
+Massachusetts Civil Court Reports and Dashboards (Trial Court / Department of
+Research and Planning)
+
+The Massachusetts Trial Court publishes residential summary process (eviction)
+statistics via two mutually reinforcing products:
+
+1) Ch. 239 s. 15 Monthly Report (statutorily mandated, published monthly)
+   URL pattern: https://www.mass.gov/doc/ch-239-s-15-monthly-report-{month-YYYY}/download
+   Example: https://www.mass.gov/doc/ch-239-s-15-monthly-report-november-2025/download
+
+   PDF with 9 pages of tables:
+     Page 1: Summary process cases FILED by court department (Boston Municipal,
+             District Court, Housing Court) by MONTH
+     Page 2: Default judgments by summary process action / type
+     Page 3: Executions for possession orders granted
+     Page 4: Continuances due to pending emergency rental assistance applications
+     Page 5: Stays due to pending applications
+     Page 6: Average length of continuances and stays
+     Page 7: Stays requested/granted/denied per Ch. 239 s. 9 and 10
+     Page 8: Pre-trial mediation participation and outcomes
+     Page 9: On-site legal representation and court diversion
+
+   Coverage: January 2024 - present (new reporting regime triggered by Ch. 239
+     s. 15 amendments). Each month's report shows full history since Jan 2024.
+   Granularity: Court DEPARTMENT (3 departments), not county, on most pages.
+
+2) Tableau Public Dashboards (author: drap4687 = Dept of Research and Planning)
+   URL: https://public.tableau.com/app/profile/drap4687
+   Key dashboards:
+   - "Massachusetts Trial Court, Summary Process"
+     https://public.tableau.com/app/profile/drap4687/viz/MassachusettsTrialCourtSummaryProcess/SummaryProcess
+   - "Summary Process Executions Issued"
+     https://public.tableau.com/app/profile/drap4687/viz/MassachusettsTrialCourtSummaryProcessExecutionsIssued/ExecutionsIssd_byWeekMonth
+   - "Charges Dashboard" (criminal — not relevant)
+
+   Per mass.gov description: "residential summary process cases filed and
+   executions issued in calendar years 2020 to 2025, aggregated by YEAR, MONTH,
+   and COUNTY, including cases from the Boston Municipal, District, and Housing
+   Courts." Updated WEEKLY. All data sourced from MassCourts (Trial Court case
+   management system).
+
+   Download: click download icon, choose "crosstab", select Excel (.xlsx) or CSV.
+
+3) Fiscal Year Statistics: Trial Court Statistics for FY 2002-2023 (annual totals
+   by Trial Court Department, case type, county)
+   Example: https://www.mass.gov/lists/trial-court-statistics-for-fiscal-year-2023
+
+Summary data visible in Nov 2025 PDF:
+  Filings by month, Jan 2024-Oct 2025 (22 months). District Court dominates
+  (~2,500-3,700/month), Housing Court second (~400-570/month), Boston Municipal
+  smallest (~30-70/month).
+
+Coverage years for monthly breakouts:
+  - Ch. 239 monthly reports: Jan 2024 - present (court department only, no county)
+  - Tableau dashboard: CY 2020 - 2025 (county-level, monthly), updated weekly
+  - Earlier: FY stats by case type 2002-2023 (annual totals only)
+
+Geographic structure: MA evictions flow through three court departments
+  overlapping in jurisdiction — District Court (most counties), Housing Court
+  (covers most of the state through regional divisions), and Boston Municipal
+  Court (Suffolk/Boston). A given eviction may be heard in any of these depending
+  on venue choice. County-level aggregation available via Tableau dashboards.
+
+Related:
+  - https://www.mass.gov/court-data-metrics-reports (top-level)
+  - https://www.mass.gov/info-details/evictions (citizen info)
+  - https://masslandlords.net/policy/eviction-data/ (third-party compilation,
+    mirrors the state data with historical context)

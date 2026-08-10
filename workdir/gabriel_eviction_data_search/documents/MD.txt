@@ -1,0 +1,61 @@
+SOURCE_URL: https://opendata.maryland.gov/Housing/District-Court-of-Maryland-Eviction-Case-Data/mvqb-b4hf
+FETCH_DATE: 2026-04-15
+ENTITY: MD
+SOURCE_TYPE: primary
+---
+District Court of Maryland Eviction Case Data (Maryland Open Data Portal, Socrata)
+
+Official state judiciary dataset published on the Maryland Open Data Portal under
+the Housing category. Required by 2022 MD law; District Court began collecting the
+statutorily mandated fields on 2023-01-01, public dashboard launched May 2023.
+
+Dataset metadata (as of 2026-04-15):
+  Title: District Court of Maryland Eviction Case Data
+  Host: opendata.maryland.gov (Socrata)
+  Dataset ID: mvqb-b4hf
+  Rows: 662,562
+  Updated: most recent record 2026-01-31
+  Temporal coverage: January 2023 - February 2026
+  Category: Housing
+  Fields (15): Event Date, Event Type, Event Comment, County, Location, Tenant City,
+    Tenant State, Tenant ZIP, Case Type, Case Number, Evicted Date, + year fields.
+
+Event Type distribution (approx):
+  Petition filing: 381,809
+  Warrant cancellation: 190,575
+  Actual evictions (warrant executed): 58,231
+
+Case Type breakdown:
+  Failure to Pay Rent (FPR): 638,629 (dominant)
+  Other: Tenant Holding Over, Breach of Lease, Wrongful Detainer, Grantor in Possession
+
+Geographic granularity: County (all 23 counties + Baltimore City). Baltimore County
+  + Baltimore City together account for 360,634 cases. Location field also lists
+  specific District Court locations.
+
+Access: Socrata API (JSON, CSV, XML), direct CSV download, OData, visualization UI.
+  Bulk CSV download one click from dataset page. No rate limits for CSV export.
+
+Critical caveat from MD Courts: "The data will not match the monthly eviction totals
+  that are seen on the District Court of Maryland Landlord/Tenant Case Activity
+  Report. That data is collected manually by all jurisdictions, as of the end of
+  each month. Because the data provided in the spreadsheet relies on data entry,
+  the clerks may not have all data entered into the case management system when
+  the report is run."
+
+Secondary source: District Court of Maryland Landlord/Tenant Case Activity Report
+  — monthly, manually compiled by each jurisdiction, hosted via Maryland Courts
+  website. Predates 2023 in some form; use as a longer-history cross-reference.
+
+Pre-2023 data: Not in the Socrata dataset. For 2016-2022 coverage one must fall
+  back to (a) the monthly L/T Case Activity Report PDFs from the Maryland Judiciary
+  annual Statistical Abstracts (mdcourts.gov/publications/annualreports), or (b)
+  the Maryland Judiciary Data Dashboard (https://www.mdcourts.gov/dashboard/about
+  — notes that total dispositions for landlord-tenant cases became available FY25+
+  due to phased MDEC rollout).
+
+Additional resources:
+  - https://www.mdcourts.gov/dashboard/about (MD Judiciary Data Dashboard)
+  - https://www.mdcourts.gov/district/about (District Court data notes)
+  - https://www.mdcourts.gov/publications/annualreports (Annual Statistical Abstracts)
+  - https://catalog.data.gov/dataset/district-court-of-maryland-eviction-case-data

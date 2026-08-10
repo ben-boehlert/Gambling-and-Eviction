@@ -4,6 +4,10 @@
 
 Research replication package analyzing the causal effect of sports gambling legalization on eviction rates using staggered difference-in-differences (DiD) methods. This is an economics/econometrics project written primarily in R.
 
+## Terminology Note (Data Search)
+
+When searching for or evaluating eviction data sources (state AOC/court dashboards, LSC filings, county court systems), **"landlord/tenant filings" and other near-synonyms (e.g., "landlord-tenant cases," "L&T," "forcible entry and detainer," "unlawful detainer," "summary process") are acceptable stand-ins for "eviction."** Many state court systems file evictions under these case-type labels rather than the word "eviction" itself. Do not discard a source or dashboard as irrelevant just because it doesn't use the literal word "eviction" — check whether the case type is a landlord/tenant or possession action first.
+
 ## Key Entry Points
 
 - `README.md` — repo overview and structure
@@ -136,6 +140,25 @@ Rscript analysis/diagnostics/validate_csdid_dynamic_sim.R
 - **No effect** on credit card delinquency
 - Effects appear ~2 years post-legalization, concentrated among subprime borrowers
 - Key difference from our project: they use individual-level credit data; we use aggregate state-level housing outcomes
+
+### Gambling Market Maturation (Handle Quintile Timing)
+
+Analysis of how quickly state gambling markets reach their peak monthly Handle (33 states, June 2018–Oct 2025). Measures months from a state's first Handle data to first reaching each quintile of that state's peak month.
+
+| Quintile | Mean (mo) | Median (mo) | SD   | Min | Max |
+| -------- | --------- | ----------- | ---- | --- | --- |
+| 20%      | 4.8       | 1.9         | 8.5  | 0   | 38  |
+| 40%      | 10.3      | 8.0         | 12.1 | 0   | 48  |
+| 60%      | 16.9      | 14.0        | 14.9 | 0   | 52  |
+| 80%      | 29.3      | 30.0        | 17.5 | 0   | 65  |
+| 100%     | 46.3      | 46.0        | 19.6 | 0   | 78  |
+
+- Most states reach 20% of peak within 2 months (median), though retail-first states like Arkansas take ~38 months
+- 80% of peak takes ~2.5 years on average (median 30 months)
+- Peak reached at ~3.8 years on average, ranging 0–78 months
+- States launching with online immediately (Ohio, North Carolina, Kansas) hit high quintiles in month 1; retail-first states (Arkansas, Oregon) take years
+- Relevant for gambling intensity heterogeneity: post-treatment handle maturation varies widely, so first-year handle may not capture steady-state intensity
+- Script: `analysis/exploratory/quintile_timing_analysis.R`
 
 ## Known Issues and Limitations
 

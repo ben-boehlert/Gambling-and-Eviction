@@ -1,0 +1,2 @@
+panel_label,n_units,n_states,n_months,n_obs,n_treated_units,n_treated_states,share_post_treat
+border_county_twfe,316,26,92,21709,216,17,0.34879543046662675

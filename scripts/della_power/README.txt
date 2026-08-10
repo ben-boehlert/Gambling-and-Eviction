@@ -39,21 +39,43 @@ UPLOAD (from your laptop)
      (Open OnDemand; VPN required off campus). Files -> upload a zip of this
      folder, then Clusters -> Della Shell Access to unzip and sbatch.
 
-RUN (on Della, in order)
+RUN (on Della — the LADDER: each rung validates the next before you pay for it)
   1. bash setup.sh              # once, LOGIN node — installs CRAN packages
   2. bash run_validation.sh     # login node, ~5 min — tests + BHNS validation
-  3. bash list_scenarios.sh config/power_primary.yml
-                                # confirm the scenario count matches the
-                                # --array range in run_primary.slurm
-  4. sbatch run_primary.slurm   # ARRAY: 11 tasks x 8 cores, <24h each
-  5. sbatch --dependency=afterok:<ARRAY_JOB_ID> run_aggregate.slurm
-                                # writes the run-level summaries (see below)
+  3. sbatch run_smoke.slurm     # SMOKE: 2 tasks (county+state headline),
+                                # twfe+did2s, 50 reps x 4 deltas — ~1h county,
+                                # <1 min state. Proves array->partials->aggregate.
+     bash run_aggregate.sh smoke
+  4. sbatch run_cheap.slurm     # CHEAP: 8 tasks, twfe+did2s, 500 reps x 11
+                                # deltas — county ~28-30h, state a few hours.
+     sbatch --dependency=afterok:<ID> run_aggregate.slurm cheap
+  5. sbatch run_primary.slurm   # FULL (adds CS): county tasks need 50-63h —
+                                # DO NOT submit until --time is raised and
+                                # batch checkpointing exists (see WARNINGS).
+     sbatch --dependency=afterok:<ID> run_aggregate.slurm
   6. sbatch run_sensitivity.slurm                     # ARRAY: 26 tasks
      sbatch --dependency=afterok:<ID> run_aggregate.slurm sensitivity
 
+  Before any sbatch: bash list_scenarios.sh config/power_<run>.yml and check
+  the printed count matches that script's --array range.
+
   Each scenario is one array task. This replaced a single 32-core/72h job
-  that timed out: the tasks are independent, fit the 24h short QOS, queue
-  separately, and a failure costs one scenario instead of the whole run.
+  that timed out: the tasks are independent, queue separately, and a failure
+  costs one scenario instead of the whole run.
+
+WARNINGS (learned from primary run 12114571, 2026-08-08)
+  - NO BATCH CHECKPOINTING: run_scenario_grid writes a scenario's partial
+    only after ALL batches finish. A walltime/node death loses the whole
+    scenario (up to ~48h). The per-batch log lines are display only.
+  - COUNTY + CS NEEDS 50-63h: more than the 48h limit run_primary.slurm
+    shipped with. All 5 county tasks of run 12114571 timed out at the wall.
+    Fix --time (and ideally add checkpointing) before resubmitting CS.
+  - S3 x D1 IS STRUCTURALLY INFEASIBLE: D1 places the full real template
+    (18 cohorts, ~24 states); S3 has 12-14 never-treated states. Those tasks
+    die in ~10 s. Use design D4 for the never-treated comparison instead.
+  - Same base_seed across power_smoke/cheap/primary.yml is DELIBERATE:
+    seed_rep depends only on (base_seed, rep, scenario), so runs share
+    simulated panels rep-for-rep and estimator comparisons stay paired.
 
 WHY THE SEPARATE AGGREGATE STEP
   Array tasks write ONLY their own partial
@@ -63,8 +85,8 @@ WHY THE SEPARATE AGGREGATE STEP
   scenario whose partial is missing, so it doubles as a completeness check.
 
   Two ways to run it:
-    sbatch run_aggregate.slurm [primary|sensitivity]   # always safe
-    bash run_aggregate.sh      [primary|sensitivity]   # login node
+    sbatch run_aggregate.slurm [primary|sensitivity|cheap|smoke]  # always safe
+    bash run_aggregate.sh      [primary|sensitivity|cheap|smoke]  # login node
 
   The login-node version first verifies EVERY partial is complete and refuses
   to proceed otherwise — aggregating with a gap would recompute that scenario
@@ -101,13 +123,16 @@ CONTENTS
   setup.sh                one-time CRAN install (login node)
   run_validation.sh       tests + BHNS validation (login node)
   list_scenarios.sh       expanded scenario table + the correct --array range
-  run_primary.slurm       array job, one task per primary scenario
+  run_smoke.slurm         array job, 2-scenario smoke test (twfe+did2s, ~1h)
+  run_cheap.slurm         array job, 8-scenario cheap pilot (twfe+did2s, no CS)
+  run_primary.slurm       array job, one task per primary scenario (adds CS)
   run_sensitivity.slurm   array job, one task per sensitivity scenario
   run_aggregate.slurm     post-array pass that writes the run-level summaries
   run_aggregate.sh        same, on the login node; refuses if a partial is
                           incomplete (would recompute it there)
   R/power/                the 9 framework modules
-  config/                 power_validation / power_primary / power_sensitivity.yml
+  config/                 power_validation / power_smoke / power_cheap /
+                          power_primary / power_sensitivity.yml
   tests/                  testthat suite (run via tests/run_tests.R)
   utils/                  eviction_treatment_schedule.R (shared loader)
   data/raw/               the ONLY three files the blinded loader may read

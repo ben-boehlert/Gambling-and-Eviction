@@ -1,0 +1,3 @@
+rule,treated_states,treated_states_with_post2,median_post_years,median_post2plus_years,treated_states_with_post2_drop2020_2021,median_post_years_drop2020_2021,median_post2plus_years_drop2020_2021
+calendar_year,23,23,5,3,23,4,3
+first_full_year,23,22,5,3,22,4,3

@@ -1,0 +1,11 @@
+metric,value
+border_counties_total,318
+border_counties_in_treated_states,216
+border_counties_in_never_treated_states,102
+states_represented_in_border_panel,27
+treated_states_in_border_panel,17
+never_treated_states_in_border_panel,10
+cross_state_pairs_both_in_ets,612
+pairs_treated_xor_never,360
+pairs_both_treated_different_dates,232
+treated_states_with_at_least_one_never_treated_neighbor,13

@@ -1,0 +1,2 @@
+spec,att,se,ci_low_95,ci_high_95,biters,inference
+cs_did_county_bootstrap,0.044796141560697146,0.17337091890105588,-0.29501085948537237,0.3846031426067667,999,multiplier_bootstrap

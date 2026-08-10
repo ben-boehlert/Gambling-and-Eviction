@@ -1,0 +1,67 @@
+SOURCE_URL: https://www.newamerica.org/future-land-housing/briefs/dc-eviction-filings-june-through-october-2025/
+FETCH_DATE: 2026-04-15
+ENTITY: DC
+SOURCE_TYPE: primary
+---
+DC Superior Court — Landlord-Tenant (eviction) filings data
+
+BOTTOM LINE: DC does NOT publish bulk eviction filing data. This is confirmed by a recent (2025) New America brief that investigated DC eviction data availability and found:
+
+  "Bulk data on eviction filings and eviction judgments is not accessible in DC, and the
+   Office of the Tenant Advocate's monthly data only includes aggregate numbers."
+
+The New America brief built an automated scraper (with January Advisors) to collect individual LT case records from the DC Courts public portal at:
+  https://portal-dc.tylertech.cloud/Portal
+This is DC's Tyler-Odyssey public-access portal. Bulk export is not offered; individual dockets must be pulled case-by-case via the portal.
+
+Access options for researchers:
+
+1. DC Courts public case search portal (Odyssey / Tyler Tech):
+   - https://portal-dc.tylertech.cloud/Portal
+   - Per-case docket lookup; no bulk export.
+   - Access is read-only and anonymous (no account required for most data).
+   - Landlord-Tenant cases are a named case type.
+
+2. DC Courts legacy eAccess portal:
+   https://eaccess.dccourts.gov/eaccess/home.page
+
+3. DC Courts Annual Reports (aggregate year-end summaries only):
+   https://www.dccourts.gov/about/organizational-performance/annual-reports
+   - 2016–2023 annual reports exist; no 2024 report as of search date.
+   - Contain annual LT filing totals at the court (DC-wide) level.
+   - PDF narrative reports; no monthly breakdown; not machine-readable.
+
+4. Formal data request to DC Courts (Office of Research):
+   - Required for non-public microdata.
+   - Form A (Public): for non-government researchers.
+   - Form B (Non-Public): for DC/federal government entities.
+   - Historical precedent: academics have obtained LT microdata via this channel (DCist 2020 piece used such data).
+
+5. Office of the Tenant Advocate (OTA) — Scheduled Evictions:
+   https://ota.dc.gov/page/scheduled-evictions
+   - Monthly aggregate counts of *completed/scheduled* evictions (not filings).
+   - Different concept from filings — captures writ execution, not case initiation.
+
+6. Landlord-Tenant Clerk's Office contact:
+   - Phone: (202) 879-4879
+   - Email: landlordandtenantdocket@dcsc.gov
+
+Historical context (from searches):
+  - Filings fell from ~48,000 (2003) to ~31,000 (2017).
+  - DC has a single Superior Court; geographic unit is effectively DC-wide (no sub-city breakdown in published statistics).
+
+Notable precedents:
+  - Eviction Lab has DC data in the ETS / national eviction database (via scraping and/or data request).
+  - Urban Institute ("DC's Eviction Filings Are Down"): presumably scraped or data-requested source.
+  - New America / January Advisors (2025): custom scraper on Tyler portal.
+
+Frequency of any PUBLIC data:
+  - Annual (DC Courts Annual Reports)
+  - Monthly (OTA Scheduled Evictions, but "scheduled" != "filed")
+  - Daily/real-time (per-case lookup only, no bulk)
+
+For the Gambling-and-Eviction project:
+  - DC legalized online sports betting May 2020 (GambetDC / later FanDuel partnership 2024).
+  - DC is NOT in the ETS monthly panel.
+  - Getting DC into a monthly panel would require (a) scraping the Tyler portal (political/legal risk; ToS review needed), (b) formal data request to DC Courts Office of Research, or (c) coordinating with Eviction Lab to acquire their DC data.
+  - DC is a SINGLE observation (one jurisdiction) so the value-add for a 24-state panel is marginal; better used for case-study / descriptive context.

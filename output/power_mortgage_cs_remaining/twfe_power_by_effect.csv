@@ -1,0 +1,9 @@
+estimator,effect_size,effect_add,effect_pct_of_mean,n_sims,n_ok,n_fail,alpha,power,mean_att,sd_att,mean_se,se_over_sdatt,median_p,elapsed_sec
+TWFE,0.02,0.02,2.2,0,0,0,0.05,NA,NA,NA,NA,NA,NA,0
+TWFE,0.03,0.03,3.3,0,0,0,0.05,NA,NA,NA,NA,NA,NA,0
+TWFE,0.04,0.04,4.4,0,0,0,0.05,NA,NA,NA,NA,NA,NA,0
+TWFE,0.05,0.05,5.5,0,0,0,0.05,NA,NA,NA,NA,NA,NA,0
+TWFE,0.075,0.075,8.3,0,0,0,0.05,NA,NA,NA,NA,NA,NA,0
+TWFE,0.1,0.1,11,0,0,0,0.05,NA,NA,NA,NA,NA,NA,0
+TWFE,0.15,0.15,16.6,0,0,0,0.05,NA,NA,NA,NA,NA,NA,0
+TWFE,0.2,0.2,22.1,0,0,0,0.05,NA,NA,NA,NA,NA,NA,0

@@ -1,0 +1,2 @@
+panel_label,n_units,n_states,n_months,n_obs,n_treated_units,n_treated_states,share_post_treat
+all_county_twfe,1368,31,92,89047,858,19,0.32304288746392357

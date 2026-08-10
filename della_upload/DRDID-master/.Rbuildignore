@@ -1,0 +1,15 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^doc$
+^Meta$
+^codecov\.yml$
+^\.github$
+^\.travis\.yml$
+^data-raw$
+^LICENSE\.md$
+.gitignore
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^CRAN-SUBMISSION$
+^cran-comments\.md$

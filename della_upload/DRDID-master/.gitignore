@@ -1,0 +1,10 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+docs
+.DS_Store
+src/RcppExports.o
+src/matrix_mult.o
+src/sanity_checks.o
+src/DRDID.so

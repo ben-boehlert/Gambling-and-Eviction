@@ -1,0 +1,34 @@
+state,first_start,online_start,retail_start,first_start_date,online_start_date,retail_start_date,has_online,has_retail,online_only,retail_only,both
+Delaware,Jun 2018,,Jun 2018,2018-06-01,,2018-06-01,False,True,False,True,False
+New Jersey,Jun 2018,Aug 2018,Jun 2018,2018-06-01,2018-08-01,2018-06-01,True,True,False,False,True
+Mississippi,Aug 2018,,Aug 2018,2018-08-01,,2018-08-01,False,True,False,True,False
+West Virginia,Aug 2018,Aug 2018,Aug 2018,2018-08-01,2018-08-01,2018-08-01,True,True,False,False,True
+New Mexico,Oct 2018,,Oct 2018,2018-10-01,,2018-10-01,False,True,False,True,False
+Pennsylvania,Nov 2018,May 2019,Nov 2018,2018-11-01,2019-05-01,2018-11-01,True,True,False,False,True
+Rhode Island,Nov 2018,Sep 2019,Nov 2018,2018-11-01,2019-09-01,2018-11-01,True,True,False,False,True
+Arkansas,Jul 2019,Mar 2022,Jul 2019,2019-07-01,2022-03-01,2019-07-01,True,True,False,False,True
+New York,Jul 2019,Jan 2022,Jul 2019,2019-07-01,2022-01-01,2019-07-01,True,True,False,False,True
+Iowa,Aug 2019,Aug 2019,Aug 2019,2019-08-01,2019-08-01,2019-08-01,True,True,False,False,True
+Indiana,Sep 2019,Oct 2019,Sep 2019,2019-09-01,2019-10-01,2019-09-01,True,True,False,False,True
+Oregon,Oct 2019,Oct 2019,,2019-10-01,2019-10-01,,True,False,True,False,False
+New Hampshire,Dec 2019,Dec 2019,Aug 2020,2019-12-01,2019-12-01,2020-08-01,True,True,False,False,True
+Illinois,Mar 2020,Jun 2020,Mar 2020,2020-03-01,2020-06-01,2020-03-01,True,True,False,False,True
+Michigan,Mar 2020,Jan 2021,Mar 2020,2020-03-01,2021-01-01,2020-03-01,True,True,False,False,True
+Montana,Mar 2020,,Mar 2020,2020-03-01,,2020-03-01,False,True,False,True,False
+Colorado,May 2020,May 2020,May 2020,2020-05-01,2020-05-01,2020-05-01,True,True,False,False,True
+District of Columbia,May 2020,May 2020,Jul 2020,2020-05-01,2020-05-01,2020-07-01,True,True,False,False,True
+Tennessee,Nov 2020,Nov 2020,,2020-11-01,2020-11-01,,True,False,True,False,False
+Virginia,Jan 2021,Jan 2021,,2021-01-01,2021-01-01,,True,False,True,False,False
+North Carolina,Mar 2021,,Mar 2021,2021-03-01,,2021-03-01,False,True,False,True,False
+North Dakota,Jun 2021,,Jun 2021,2021-06-01,,2021-06-01,False,True,False,True,False
+Arizona,Sep 2021,Sep 2021,Sep 2021,2021-09-01,2021-09-01,2021-09-01,True,True,False,False,True
+South Dakota,Sep 2021,,Sep 2021,2021-09-01,,2021-09-01,False,True,False,True,False
+Washington,Sep 2021,,Sep 2021,2021-09-01,,2021-09-01,False,True,False,True,False
+Wyoming,Sep 2021,Sep 2021,,2021-09-01,2021-09-01,,True,False,True,False,False
+Connecticut,Oct 2021,Oct 2021,Oct 2021,2021-10-01,2021-10-01,2021-10-01,True,True,False,False,True
+Louisiana,Nov 2021,Jan 2022,Nov 2021,2021-11-01,2022-01-01,2021-11-01,True,True,False,False,True
+Wisconsin,Nov 2021,,Nov 2021,2021-11-01,,2021-11-01,False,True,False,True,False
+Maryland,Dec 2021,Nov 2022,Dec 2021,2021-12-01,2022-11-01,2021-12-01,True,True,False,False,True
+Kansas,Sep 2022,Sep 2022,Sep 2022,2022-09-01,2022-09-01,2022-09-01,True,True,False,False,True
+Massachusetts,Jan 2023,Mar 2023,Jan 2023,2023-01-01,2023-03-01,2023-01-01,True,True,False,False,True
+Ohio,Jan 2023,Jan 2023,Jan 2023,2023-01-01,2023-01-01,2023-01-01,True,True,False,False,True

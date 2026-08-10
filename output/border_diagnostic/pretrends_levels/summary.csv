@@ -1,0 +1,3 @@
+scale,estimator,n_pre_coefs,n_sig_pre,mean_pre,mean_abs_pre,max_abs_pre
+LEVELS (filings per 1k renters),TWFE_i,11,1,-0.03777267901153415,0.22188049770396676,0.4188790288142221
+LOGS (log1p filings),TWFE_i,11,2,-0.0017436236667669153,0.03184067934862323,0.07316487272651687

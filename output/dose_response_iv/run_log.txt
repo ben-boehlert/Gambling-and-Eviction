@@ -1,0 +1,73 @@
+[2026-02-16 18:30:58] === Dose-response IV analysis === 
+[2026-02-16 18:30:58] PANEL_FILE: data/raw/state_month_panel_with_treatment.csv 
+[2026-02-16 18:30:58] HANDLE_FILE: data/raw/lsr_sports_betting_handle_revenue_by_state_month.csv 
+[2026-02-16 18:30:58] EXCLUDE_STATES: ME 
+[2026-02-16 18:30:58] MIN_DATE: 2016-01-01  MAX_DATE: 2024-12-31 
+[2026-02-16 18:30:58] DROP_START: 2020-03-01  DROP_END: 2022-03-31 
+[2026-02-16 18:30:58] OUTCOME: log1p_filings_count  RATE_EPS: 0.01 
+[2026-02-16 18:30:58] ALPHA: 0.05 
+[2026-02-16 18:30:58] LOO: TRUE  SUBPERIOD: TRUE 
+[2026-02-16 18:30:58] OUT_DIR: output/dose_response_iv 
+[2026-02-16 18:30:58] Loading eviction panel... 
+[2026-02-16 18:30:59] Dropped months in [2020-03-01, 2022-03-31]: removed 900 rows 
+[2026-02-16 18:30:59] Loading handle data... 
+[2026-02-16 18:30:59] Handle data: 1984 state-months, 34 states 
+[2026-02-16 18:30:59] WARNING: 3 treated states have no handle data: ND, NM, WI 
+[2026-02-16 18:30:59] These states will have handle=0 post-treatment. They are excluded from IV analysis. 
+[2026-02-16 18:30:59] Note: 11 states with handle data not in eviction panel: DC, IA, IL, MD, ME, MI, NE, NJ, OR, SD, WY 
+[2026-02-16 18:30:59] Panel: 37 states (23 treated, 14 never-treated), 83 months, 2533 obs 
+[2026-02-16 18:30:59] States with handle data: 23 
+[2026-02-16 18:30:59] Post-treatment handle: mean=616804.1 per 1k, median=367852.5, max=4830697.9 (18 states) 
+[2026-02-16 18:30:59] Generating descriptive plots... 
+[2026-02-16 18:31:04] Running main specifications... 
+[2026-02-16 18:31:04]   Spec 1: Binary TWFE... 
+[2026-02-16 18:31:04]   Spec 2: OLS continuous handle... 
+[2026-02-16 18:31:04]   Spec 3: IV/2SLS (main)... 
+[2026-02-16 18:31:04]   Spec 4: IV with revenue... 
+[2026-02-16 18:31:04]   Spec 5: First stage... 
+[2026-02-16 18:31:04]   Spec 7: OLS + state trends... 
+[2026-02-16 18:31:04]   Spec 8: IV + state trends... 
+[2026-02-16 18:31:04] Specifications summary: 
+[2026-02-16 18:31:04]   1. Binary TWFE (reduced form): coef=-0.0655, SE=0.13, p=0.6172 
+[2026-02-16 18:31:04]   2. OLS continuous handle: coef=-0.0037, SE=0.0116, p=0.7521 
+[2026-02-16 18:31:04]   3. IV/2SLS (main): coef=-0.0078, SE=0.0154, p=0.6174, F=2286 
+[2026-02-16 18:31:04]   4. IV revenue: coef=-0.0096, SE=0.0187, p=0.6121, F=2260.5 
+[2026-02-16 18:31:04]   5. First stage (handle): coef=8.4516, SE=1.2296, p=0 * 
+[2026-02-16 18:31:04]   7. OLS + state trends: coef=0.0145, SE=0.0077, p=0.0684 
+[2026-02-16 18:31:04]   8. IV + state trends: coef=0.0143, SE=0.009, p=0.1217, F=2732.1 
+[2026-02-16 18:31:04] First-stage diagnostics... 
+[2026-02-16 18:31:04]   First stage: coef=8.4516, SE=1.2296, F=2286 
+[2026-02-16 18:31:04] Wald decomposition... 
+[2026-02-16 18:31:04]   Wald ratio: -0.0078 (delta SE=0.0154) 
+[2026-02-16 18:31:04]   IV from feols: -0.0078 
+[2026-02-16 18:31:04]   Difference: 0 
+[2026-02-16 18:31:04] Running event studies... 
+[2026-02-16 18:31:04]   Reduced-form event study... 
+[2026-02-16 18:31:06]   First-stage event study... 
+[2026-02-16 18:31:07] Generating OLS vs IV comparison plot... 
+[2026-02-16 18:31:08] Running leave-one-out sensitivity (IV)... 
+[2026-02-16 18:31:11]   LOO IV range: [-0.0131, -9e-04] 
+[2026-02-16 18:31:11]   Sign changes: 0/37 
+[2026-02-16 18:31:11] Running sub-period analysis (>= 2022-04-01)... 
+[2026-02-16 18:31:11]   Sub-period panel: 36 states (22 with post-treatment obs), 1039 obs 
+[2026-02-16 18:31:11]   Sub: Binary TWFE: coef=0.2605, SE=0.134, p=0.0599 
+[2026-02-16 18:31:11]   Sub: OLS continuous: coef=0.02, SE=0.008, p=0.017 
+[2026-02-16 18:31:11]   Sub: IV/2SLS: coef=0.0281, SE=0.0128, p=0.0355, F=426.3 
+[2026-02-16 18:31:11] Assembling README... 
+[2026-02-16 18:31:11] === Done === 
+[2026-02-16 18:31:11] Output directory: output/dose_response_iv 
+[2026-02-16 18:31:11]   - event_study_first_stage.csv 
+[2026-02-16 18:31:11]   - event_study_reduced_form.csv 
+[2026-02-16 18:31:11]   - first_stage_detail.csv 
+[2026-02-16 18:31:11]   - first_stage_event_study.png 
+[2026-02-16 18:31:11]   - handle_distribution.png 
+[2026-02-16 18:31:11]   - loo_sensitivity_plot.png 
+[2026-02-16 18:31:11]   - loo_sensitivity.csv 
+[2026-02-16 18:31:11]   - ols_vs_iv_comparison.png 
+[2026-02-16 18:31:11]   - panel_summary.csv 
+[2026-02-16 18:31:11]   - README.md 
+[2026-02-16 18:31:11]   - reduced_form_event_study.png 
+[2026-02-16 18:31:11]   - run_log.txt 
+[2026-02-16 18:31:11]   - specifications_table.csv 
+[2026-02-16 18:31:11]   - subperiod_results.csv 
+[2026-02-16 18:31:11]   - wald_decomposition.csv 

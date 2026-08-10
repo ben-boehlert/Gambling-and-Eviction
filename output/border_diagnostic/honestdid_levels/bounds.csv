@@ -1,0 +1,9 @@
+lb,ub,Mbar,Delta,method
+-0.37408646615710284,0.07958980220211245,NA,Original (parallel trends assumed),original_no_bound
+-0.36840847062535476,0.07182806659991181,0,DeltaRM,relative_magnitudes
+-2.0876480002103435,1.8420423531267733,0.25,DeltaRM,relative_magnitudes
+-2.314717372042323,2.314717372042323,0.5,DeltaRM,relative_magnitudes
+-2.314717372042323,2.314717372042323,0.75,DeltaRM,relative_magnitudes
+-2.314717372042323,2.314717372042323,1,DeltaRM,relative_magnitudes
+-2.314717372042323,2.314717372042323,1.5,DeltaRM,relative_magnitudes
+-2.314717372042323,2.314717372042323,2,DeltaRM,relative_magnitudes

@@ -1,0 +1,17 @@
+ETS county-month rows: 116535
+ETS unique counties: 1384
+ETS states: 32
+Total adjacency edges: 18578
+Cross-state edges where BOTH counties in ETS: 612
+Border counties (in ETS, with cross-state ETS neighbor): 318
+Treated states (any date): 23 / 38
+Pairs with treatment discontinuity (xor or different dates): 592
+  of which treated_xor: 360
+  of which both-treated different dates: 232
+Wrote pairs: /Users/bb1806/Documents/GitHub Doc/Gambling-and-Eviction/data/processed/border_county_pairs.csv
+Border county-month rows: 28282
+Border counties retained: 318
+Border states represented: 27
+Border counties in treated states: 216
+Border counties in never-treated states: 102
+Wrote panel: /Users/bb1806/Documents/GitHub Doc/Gambling-and-Eviction/data/processed/county_month_border_panel.csv

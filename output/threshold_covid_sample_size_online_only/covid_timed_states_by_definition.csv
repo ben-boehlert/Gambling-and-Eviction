@@ -1,0 +1,13 @@
+definition,donut_m,n_dropped_states,dropped_states
+legal_online,6,10,"AZ,CO,CT,IN,LA,NH,NY,RI,TN,VA"
+legal_online,12,12,"AR,AZ,CO,CT,IN,LA,NH,NY,PA,RI,TN,VA"
+peak20_online,6,10,"AZ,CO,CT,IN,NH,NY,PA,RI,TN,VA"
+peak20_online,12,11,"AZ,CO,CT,IN,LA,NH,NY,PA,RI,TN,VA"
+peak40_online,6,10,"AZ,CO,CT,IN,NH,NY,PA,RI,TN,VA"
+peak40_online,12,11,"AZ,CO,CT,IN,LA,NH,NY,PA,RI,TN,VA"
+peak50_online,6,10,"AZ,CO,CT,IN,NH,NY,PA,RI,TN,VA"
+peak50_online,12,11,"AZ,CO,CT,IN,LA,NH,NY,PA,RI,TN,VA"
+peak60_online,6,10,"AZ,CO,CT,IN,NH,NY,PA,RI,TN,VA"
+peak60_online,12,10,"AZ,CO,CT,IN,NH,NY,PA,RI,TN,VA"
+peak80_online,6,5,"CO,IN,NH,PA,RI"
+peak80_online,12,5,"CO,IN,NH,PA,RI"
