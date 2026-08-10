@@ -13,10 +13,10 @@ Counties with exactly 48 distance entries: 3108 / 3108
 Wrote distance matrix: /Users/bb1806/Documents/GitHub Doc/Gambling-and-Eviction/data/processed/county_state_border_distance_miles.csv
 === STEP 4: legalization dates (online_start_date) ===
 DC present in legalization dates CSV: TRUE
-States in legalization CSV total: 33
-States in legalization CSV with online_start_date set: 24
+States in legalization CSV total: 38
+States in legalization CSV with online_start_date set: 31
 Unmatched states (should be 0): 0
-States with a non-missing online_start_date (ever legal, online): 24
+States with a non-missing online_start_date (ever legal, online): 31
 Online-legal states and dates:
   NJ: 2018-08-01
   WV: 2018-08-01
@@ -42,6 +42,13 @@ Online-legal states and dates:
   MD: 2022-11-01
   OH: 2023-01-01
   MA: 2023-03-01
+  KY: 2023-09-01
+  ME: 2023-11-01
+  FL: 2023-12-01
+  DE: 2024-01-01
+  VT: 2024-01-01
+  NC: 2024-03-01
+  MO: 2025-12-01
 === STEP 5: building monthly county x month panel ===
 Months in panel: 120 ( 2016-01-01 to 2025-12-01 )
 Panel rows built: 372960
@@ -51,7 +58,7 @@ PASS: key uniqueness + row count = 372960 = n_counties ( 3108 ) x 120
 Monotonicity violations (dist should be weakly decreasing): 0
 PASS: S15 <= S60 in every row
 PASS: S60 * own_legal = 0 in every row
-PASS: immunity assumption holds for 392 counties with Q60 < G
+PASS: immunity assumption holds for 681 counties with Q60 < G
 === SPOT CHECKS ===
 Jackson County MO (29095) distance to Kansas: 8.72 mi
 PASS: Jackson County MO -> KS < 15 mi
@@ -69,8 +76,8 @@ Wrote panel: /Users/bb1806/Documents/GitHub Doc/Gambling-and-Eviction/data/proce
 # A tibble: 4 × 2
   path                  n_counties
   <chr>                      <int>
-1 never_exposed               1099
-2 direct_only                  949
-3 spillover_only               668
-4 spillover_then_direct        392
-Runtime (seconds): 34.7
+1 direct_only                 1095
+2 never_exposed                875
+3 spillover_then_direct        681
+4 spillover_only               457
+Runtime (seconds): 30.1

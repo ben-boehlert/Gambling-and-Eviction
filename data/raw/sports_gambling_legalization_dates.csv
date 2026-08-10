@@ -1,5 +1,5 @@
 state,first_start,online_start,retail_start,first_start_date,online_start_date,retail_start_date,has_online,has_retail,online_only,retail_only,both
-Delaware,Jun 2018,,Jun 2018,2018-06-01,,2018-06-01,False,True,False,True,False
+Delaware,Jun 2018,Jan 2024,Jun 2018,2018-06-01,2024-01-01,2018-06-01,True,True,False,False,True
 New Jersey,Jun 2018,Aug 2018,Jun 2018,2018-06-01,2018-08-01,2018-06-01,True,True,False,False,True
 Mississippi,Aug 2018,,Aug 2018,2018-08-01,,2018-08-01,False,True,False,True,False
 West Virginia,Aug 2018,Aug 2018,Aug 2018,2018-08-01,2018-08-01,2018-08-01,True,True,False,False,True
@@ -19,7 +19,7 @@ Colorado,May 2020,May 2020,May 2020,2020-05-01,2020-05-01,2020-05-01,True,True,F
 District of Columbia,May 2020,May 2020,Jul 2020,2020-05-01,2020-05-01,2020-07-01,True,True,False,False,True
 Tennessee,Nov 2020,Nov 2020,,2020-11-01,2020-11-01,,True,False,True,False,False
 Virginia,Jan 2021,Jan 2021,,2021-01-01,2021-01-01,,True,False,True,False,False
-North Carolina,Mar 2021,,Mar 2021,2021-03-01,,2021-03-01,False,True,False,True,False
+North Carolina,Mar 2021,Mar 2024,Mar 2021,2021-03-01,2024-03-01,2021-03-01,True,True,False,False,True
 North Dakota,Jun 2021,,Jun 2021,2021-06-01,,2021-06-01,False,True,False,True,False
 Arizona,Sep 2021,Sep 2021,Sep 2021,2021-09-01,2021-09-01,2021-09-01,True,True,False,False,True
 South Dakota,Sep 2021,,Sep 2021,2021-09-01,,2021-09-01,False,True,False,True,False
@@ -32,3 +32,8 @@ Maryland,Dec 2021,Nov 2022,Dec 2021,2021-12-01,2022-11-01,2021-12-01,True,True,F
 Kansas,Sep 2022,Sep 2022,Sep 2022,2022-09-01,2022-09-01,2022-09-01,True,True,False,False,True
 Massachusetts,Jan 2023,Mar 2023,Jan 2023,2023-01-01,2023-03-01,2023-01-01,True,True,False,False,True
 Ohio,Jan 2023,Jan 2023,Jan 2023,2023-01-01,2023-01-01,2023-01-01,True,True,False,False,True
+Kentucky,Sep 2023,Sep 2023,Sep 2023,2023-09-01,2023-09-01,2023-09-01,True,True,False,False,True
+Maine,Nov 2023,Nov 2023,,2023-11-01,2023-11-01,,True,False,True,False,False
+Florida,Dec 2023,Dec 2023,Dec 2023,2023-12-01,2023-12-01,2023-12-01,True,True,False,False,True
+Vermont,Jan 2024,Jan 2024,,2024-01-01,2024-01-01,,True,False,True,False,False
+Missouri,Dec 2025,Dec 2025,Dec 2025,2025-12-01,2025-12-01,2025-12-01,True,True,False,False,True

@@ -61,23 +61,27 @@ PASS: 100% of (AK/HI-dropped) ETS county-months matched an exposure row.
 PASS: fips x month key unique and non-missing ( 115450 rows )
 PASS: 100% ETS-to-exposure match rate confirmed (AK/HI explicitly excluded and documented).
 === CROSS-CHECK: treat_start/ever_treated vs exposure G ===
-States with treat_start/G disagreement: 9 / 30
-# A tibble: 9 × 7
-  state_abb treat_start ever_treated G          ever_treated_exposure
-  <chr>     <date>      <lgl>        <date>     <lgl>                
-1 AR        2019-07-01  TRUE         2022-03-01 TRUE                 
-2 DE        2018-06-01  TRUE         NA         FALSE                
-3 IN        2019-09-01  TRUE         2019-10-01 TRUE                 
-4 MS        2018-08-01  TRUE         NA         FALSE                
-5 MT        2020-03-01  TRUE         NA         FALSE                
-6 NC        2021-03-01  TRUE         NA         FALSE                
-7 ND        2021-06-01  TRUE         NA         FALSE                
-8 NY        2019-07-01  TRUE         2022-01-01 TRUE                 
-9 PA        2018-11-01  TRUE         2019-05-01 TRUE                 
+States with treat_start/G disagreement: 13 / 30
+# A tibble: 13 × 7
+   state_abb treat_start ever_treated G          ever_treated_exposure
+   <chr>     <date>      <lgl>        <date>     <lgl>                
+ 1 AR        2019-07-01  TRUE         2022-03-01 TRUE                 
+ 2 DE        2018-06-01  TRUE         2024-01-01 TRUE                 
+ 3 FL        NA          FALSE        2023-12-01 TRUE                 
+ 4 IN        2019-09-01  TRUE         2019-10-01 TRUE                 
+ 5 KY        NA          FALSE        2023-09-01 TRUE                 
+ 6 ME        NA          FALSE        2023-11-01 TRUE                 
+ 7 MS        2018-08-01  TRUE         NA         FALSE                
+ 8 MT        2020-03-01  TRUE         NA         FALSE                
+ 9 NC        2021-03-01  TRUE         2024-03-01 TRUE                 
+10 ND        2021-06-01  TRUE         NA         FALSE                
+11 NY        2019-07-01  TRUE         2022-01-01 TRUE                 
+12 PA        2018-11-01  TRUE         2019-05-01 TRUE                 
+13 VT        NA          FALSE        2024-01-01 TRUE                 
 # ℹ 2 more variables: ever_treated_agree <lgl>, date_agree <lgl>
 PASS: no disagreement case has treat_start == G with mismatched ever_treated (i.e., all disagreement traces to the documented treat_start (first-legal-any-form) vs. G (online-only) definitional difference, not a join bug).
 PASS: S60 * own_legal = 0 in every merged row (structural invariant inherited from the exposure panel).
-INFO (not hard-failed, see note above): S60 * treated(ETS/border-definition) violations = 3436 rows / 115450 ( 2.976 % ) -- this IS the contamination number requested in the deliverable, driven by treat_start != G, not a bug.
+INFO (not hard-failed, see note above): S60 * treated(ETS/border-definition) violations = 3373 rows / 115450 ( 2.922 % ) -- this IS the contamination number requested in the deliverable, driven by treat_start != G, not a bug.
 Wrote panel: /Users/bb1806/Documents/GitHub Doc/Gambling-and-Eviction/data/processed/county_month_ets_exposure_panel.csv
 === (a) FINAL PANEL DIMENSIONS ===
 Counties: 1352
@@ -90,51 +94,51 @@ Exposure path (60mi):
 # A tibble: 4 × 2
   path                  n_counties
   <chr>                      <int>
-1 direct_only                  423
-2 never_exposed                411
-3 spillover_only               342
-4 spillover_then_direct        176
+1 direct_only                  448
+2 never_exposed                361
+3 spillover_then_direct        312
+4 spillover_only               231
 Exposure path (15mi):
 # A tibble: 4 × 2
   path                  n_counties
   <chr>                      <int>
-1 never_exposed                636
-2 direct_only                  553
-3 spillover_only               117
-4 spillover_then_direct         46
+1 direct_only                  653
+2 never_exposed                530
+3 spillover_then_direct        107
+4 spillover_only                62
 === (c) CONTAMINATION NUMBER ===
-Among county-months with treated == FALSE (current-design controls): 75455 rows; share with S60 == 1: 20.38 %
+Among county-months with treated == FALSE (current-design controls): 75455 rows; share with S60 == 1: 17.1 %
 Never-treated-state ('clean control') county pool: 562 counties
-  of which ever S60 == 1 (spillover-exposed clean-pool counties): 267
-  of which never S60 == 1 (truly unexposed): 295
+  of which ever S60 == 1 (spillover-exposed clean-pool counties): 292
+  of which never S60 == 1 (truly unexposed): 270
 === (d) SPILLOVER-ONLY AND NEVER-EXPOSED COUNTY COUNTS (60mi) ===
-Spillover-only counties (60mi): 342
+Spillover-only counties (60mi): 231
   Top states:
 # A tibble: 10 × 2
    state_abb     n
    <chr>     <int>
- 1 KY          113
- 2 NC           62
- 3 WI           37
- 4 OK           33
+ 1 NC           62
+ 2 WI           37
+ 3 OK           33
+ 4 SC           25
  5 MN           23
  6 ID           22
  7 UT           18
- 8 VT           14
- 9 MT            9
-10 ME            6
-Never-exposed counties (60mi, donut clean controls): 411
+ 8 MT            9
+ 9 MS            1
+10 TX            1
+Never-exposed counties (60mi, donut clean controls): 361
   Top states:
 # A tibble: 10 × 2
    state_abb     n
    <chr>     <int>
  1 MN           64
  2 ND           52
- 3 SC           46
- 4 OK           44
- 5 FL           42
- 6 NC           38
- 7 WI           35
- 8 MT           26
- 9 ID           21
+ 3 OK           44
+ 4 NC           38
+ 5 WI           35
+ 6 FL           34
+ 7 MT           26
+ 8 ID           21
+ 9 SC           21
 10 TX           12
