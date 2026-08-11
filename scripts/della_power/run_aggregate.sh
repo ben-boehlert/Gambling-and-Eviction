@@ -28,7 +28,8 @@ case "$RUN" in
   sensitivity) CONFIG="config/power_sensitivity.yml" ;;
   cheap)       CONFIG="config/power_cheap.yml" ;;
   smoke)       CONFIG="config/power_smoke.yml" ;;
-  *) echo "run_aggregate.sh: unknown run '$RUN' (want primary|sensitivity|cheap|smoke)" >&2
+  addon1)      CONFIG="config/power_addon1.yml" ;;
+  *) echo "run_aggregate.sh: unknown run '$RUN' (want primary|sensitivity|cheap|smoke|addon1)" >&2
      exit 1 ;;
 esac
 

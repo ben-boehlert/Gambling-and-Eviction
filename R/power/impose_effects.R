@@ -57,7 +57,15 @@ suppressPackageStartupMessages({
   dur     <- as.integer(.ie_param(params, "dur", 12L))
   antic   <- as.integer(.ie_param(params, "antic", 3L))
   sigma   <- as.numeric(.ie_param(params, "sigma", 0.4))
-  tau     <- as.numeric(.ie_param(params, "tau", 12L))
+  # tau (intensity_ramp): HANDLE-CALIBRATED (2026-08-11). The LSR handle
+  # quintile-timing analysis (analysis/exploratory/quintile_timing_analysis.R;
+  # CLAUDE.md "Gambling Market Maturation") gives median 30 months from launch
+  # to 80% of peak monthly handle: 1 - exp(-30/tau) = 0.8  =>  tau = 30/ln(5)
+  # ≈ 18.6. This replaces the arbitrary 12-month default so the maturation
+  # shape tracks observed market ramp-up rather than a guess. NOTE: shape
+  # params are not part of the scenario content hash — change them only when
+  # no partial for a scenario using this shape exists.
+  tau     <- as.numeric(.ie_param(params, "tau", 30 / log(5)))
 
   switch(
     shape,
