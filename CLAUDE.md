@@ -151,12 +151,53 @@ belongs to design D4, which scales cohort counts proportionally (sensitivity `al
 promoting a D4 block to primary). The PAP should report this infeasibility explicitly.
 
 **First primary run (Della job 12114571, submitted 2026-08-08).** 4 state scenarios completed
-(6–13h each); 2 S3 tasks failed instantly (above); 5 county tasks needed 50–63h each and hit the
-48h wall — all work lost because **the runner has no batch-level checkpointing**
-(`run_scenario_grid.R` writes the partial CSV only after all 20 batches; the per-batch log lines
+(6–13h each); 2 S3 tasks failed instantly (above); 5 county tasks were **OOM-killed at ~42h**
+(exit 0:125, `sacct` state OUT_OF_MEMORY — NOT walltime): the runner accumulates every batch in
+RAM and writes the partial CSV only after all 20 batches, so CS's 13–19k-row batches climbed into
+the 16G ceiling and **all work was lost** (no batch-level checkpointing; the per-batch log lines
 are progress display only). Pacing facts: county twfe+did2s ≈ 1.5h per 25-rep batch (11 δ);
-CS batches ≈ 4–5h. Before resubmitting the CS arm: add per-batch checkpoint/resume and raise
-`--time` (county+CS needs ~72h; verify Della QOS max).
+CS batches ≈ 4–5h; county+CS needs ~50–63h total. Before resubmitting the CS arm: add per-batch
+checkpoint/resume (fixes both the OOM and the loss-on-death), raise `--time` to ~72h, and raise
+`--mem`.
+
+**2026-08-10 evening findings (smoke-ladder debugging — read before touching the framework):**
+- **`fwildclusterboot` is ARCHIVED from CRAN.** Della's setup silently skipped it → every wild
+  row of the first smoke run failed. Fixed: `setup.sh` now installs from the s3alfisc r-universe
+  repo and hard-fails if absent.
+- **boottest memory bomb, fixed.** `boottest()` without `fe = "id"` dummy-expands ~1,200 county
+  FEs → ~1.8 GB peak per worker → 8×16G OOM in 2 min (job 12223288). `run_estimators.R` now
+  passes `fe = "id"`: ~0.6 GB, 5× faster, identical p-value.
+- **D1 on county/S2 is deterministically infeasible under the current code+data** (verified
+  50/50 rep failures with the runner's exact seed path, reproduced identically on laptop and
+  Della). The national 24-state template into the ~29-state county-S2 pool with per-state
+  coverage windows does not place.
+- **REPRODUCIBILITY "ANOMALY" — RESOLVED (2026-08-10 ~23:45).** The mid-day feasibility flip
+  was caused by commit `2be0bd0` (16:16, a CONCURRENT session's deliberate data repair):
+  `sports_gambling_legalization_dates.csv` had frozen ~early 2023 and was repaired to add
+  online dates for DE, NC, KY, ME, FL, VT, MO (verified vs regulators/LSR). The online
+  template grew ~24 → ~31 states, tipping national-D1 placement into infeasibility. Runs
+  before the repair reached Della (old CSV) succeeded; runs after the 19:15 rsync failed; all
+  local checks compared against a HEAD that had already moved. No nondeterminism ever existed.
+  **Lesson: when deterministic code changes behavior, check `git log` (including concurrent
+  sessions' commits) before anything else.** Pre-repair smoke partial (old schedule + harsher
+  national template — the source of the spurious "did2s 31% Type I" reading) preserved at
+  `output_blinded_power/smoke_prewildfix/` on Della; old CSV in `data/raw/deprecated/`.
+- **Schedule repair ripple (IMPORTANT, beyond the sims):** ME, VT, KY, FL are **no longer
+  never-treated controls** (online Nov 2023 / Jan 2024 / Sep 2023 / Dec 2023; MO Dec 2025 is
+  post-panel). The pretrends headline results above ("26 states, 12 treated, 14 never-treated,
+  ME included as control") predate the repair and are STALE — re-run the pretrends pipeline
+  with the repaired schedule. FL's voided 2021 online launch (West Flagler) needs a PAP flag.
+- **Panel-restricted template — IMPLEMENTED (2026-08-10 ~22:30), first results good.**
+  `template: panel` config axis (D1 places treated-states-in-panel; 17 county cohort states
+  under the repaired schedule); per-rep schedule infeasibility now yields failure rows instead
+  of aborting the scenario. National-template ids unchanged (conditionally hashed). Smoke on
+  the corrected design: **county did2s 4.1% Type I / SE-SD 0.96; county TWFE-wild 4.0%; state
+  did2s 23-29% Type I (disqualified); TWFE analytic ~10% county (wild fixes it)**. Local Mac
+  reproduces Della's analytic numbers bit-for-bit (wild differs 1-2 reps: bootstrap RNG layer;
+  did2s convergence 48 vs 49/50: BLAS). Full 500-rep state cheap results (local): did2s
+  disqualified; TWFE-wild calibrated but MDE > 20% under the count_nb DGP — far above the
+  application's old "5% state MDE" claim; county (Della job 12248328, ~Tue) is the headline.
+  Mac is ~6x faster per rep than a Della node — use local runs for smoke-scale work.
 
 - Pre-COVID period (2016-2020) has better parallel trends than the full sample
 - Idaho is excluded from annual analyses due to data quality issues

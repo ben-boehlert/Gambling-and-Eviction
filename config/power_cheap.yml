@@ -41,6 +41,9 @@ control_group: notyettreated
 
 est_anticipation: 0
 
+# Panel-restricted cohort template — see power_smoke.yml note (2026-08-10).
+template:   panel
+
 effect_grid:  [0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.10, 0.15, 0.20]
 
 estimators:   [twfe, did2s]

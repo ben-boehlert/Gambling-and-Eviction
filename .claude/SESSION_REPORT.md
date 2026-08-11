@@ -606,3 +606,40 @@ After the 17 analytical tasks were complete, three additional pieces of work to 
 **Status:**
 - Done: smoke state cell verified end-to-end; cheap run built, tested, packaged, uploaded (rsync via della9 after della8 refused pre-auth).
 - Pending: smoke county partial (~16:20) → `bash run_aggregate.sh smoke` → sanity-check `oc_summary.csv` → `sbatch run_cheap.slurm`; per-batch checkpointing + `--time` raise before the CS arm; S3 removal in `power_primary.yml`; D4 promotion decision; PAP draft.
+
+## 2026-08-10 21:30 — Smoke-ladder debugging: OOM root causes, archived package, D1 infeasibility, reproducibility anomaly
+
+**Operations:**
+- Smoke run 12220717: state cell completed (29 s), county cell completed (66 min) — but every wild-bootstrap row failed: **`fwildclusterboot` is archived from CRAN** and Della's setup silently skipped it. Fixed `scripts/della_power/setup.sh` (s3alfisc r-universe repo first + hard-fail check); installed on Della (16:36, added only its own deps — dplyr/lubridate untouched, verified via library mtimes).
+- `sacct` revealed the 5 primary county tasks (12114571) died **OUT_OF_MEMORY at ~42h**, not walltime — in-RAM batch accumulation against 16G. Batch checkpointing is therefore a correctness fix, not a convenience.
+- Smoke rerun 12223288: county task **OOM-killed in 2 min** — `boottest()` without `fe` dummy-expands ~1,200 county FEs (~1.8 GB/worker × 8 ≈ 16G). Local measurement: no-fe 1.84 GB/5.2 s vs `fe="id"` 0.60 GB/1.0 s, identical p (0.3433). Fixed `R/power/run_estimators.R` (boottest `fe = "id"`); bumped smoke/cheap `--mem` to 32G; tests green; rebuilt + rsynced upload.
+- Smoke rerun 12242118: county task now fails instantly — **D1 infeasible**. Built an exact seed-path repro (scenario hash S3e1321ff2d, offset 4551, reps 1–50): **50/50 schedule failures, identical on laptop and on Della**, with md5-verified identical data/config/schedule code and unchanged core R library.
+- Forensics on the 15:12 success (12220717_1, 50/50 feasible schedules): inputs overwritten by the later rsync, /scratch unsnapshotted → **cause unrecoverable; logged as an unresolved reproducibility anomaly**. Its OC numbers (did2s 26–31% Type I, county-TWFE power) demoted to unreliable. Old partial preserved in `output_blinded_power/smoke_prewildfix/` on Della.
+- Documented everything in CLAUDE.md ("2026-08-10 evening findings" block).
+
+**Decisions:**
+- **Cheap run NOT launched.** No 30h run on a design that is knife-edge/infeasible and whose one success is unreproducible.
+- Redesign direction (to confirm with Matt): D1 places the **panel-restricted template** (~12 cohorts among panel states) instead of the national 24-state template — fixes feasibility and design realism together; implement as a config axis so content hashes change cleanly.
+- Per-rep schedule infeasibility should yield a failure row, not abort the scenario (one bad draw must not kill a 30h task).
+- Ladder verdict: smoke testing caught an archived package, a memory bomb, a fragile design, and an irreproducibility for ~$2 of compute — process validated even though the night ended without a cheap launch.
+
+**Commits:**
+- (none — all changes uncommitted on `nh-data-repair`)
+
+**Status:**
+- Done: wild-bootstrap memory fix (validated locally), setup.sh r-universe fix, 32G mem bumps, OOM postmortem, D1 infeasibility proven and documented.
+- Pending (ordered, before any relaunch): panel-restricted D1 template as config axis → per-rep infeasibility → failure rows → batch checkpointing → re-run smoke → cheap → CS arm (72h/`--mem` raised). Plus: S3 removal in `power_primary.yml`, PAP draft, Matt meeting decisions (see Google Doc agenda).
+
+## 2026-08-10 23:55 — Anomaly RESOLVED; panel-template results; state cheap complete; commits
+
+**Resolution:** the day's reproducibility anomaly was commit `2be0bd0` (16:16, concurrent county-exposure session): legalization-dates CSV repaired (adds online dates DE/NC/KY/ME/FL/VT/MO — file had frozen ~early 2023). Template grew ~24→~31 states → national-D1 infeasibility. Old-CSV runs succeeded; post-rsync runs failed; local HEAD comparisons were against the already-moved HEAD. No nondeterminism. The same commit also swept this session's in-progress files into tracking (checkpoint commit `fa10f9b`, 16:10).
+
+**Ripple:** ME/VT/KY/FL no longer never-treated (MO post-panel) → pretrends headline results in CLAUDE.md are STALE; re-run pipeline. FL 2021 voided launch needs PAP flag.
+
+**Results (corrected panel template, repaired schedule):**
+- Smoke county: did2s 4.1% Type I / SE-SD 0.96; TWFE-wild 4.0%; TWFE analytic 10%. Earlier "did2s 31%" reading was an artifact of the old national template (5 control clusters).
+- Cross-machine: Mac reproduces Della analytic numbers exactly; wild ±1-2 reps (bootstrap RNG); did2s 48 vs 49/50 converged (BLAS).
+- State cheap, 500 reps (LOCAL, ~40 min — Mac ~6x faster/rep than Della): did2s 23-29% Type I (disqualified); TWFE-wild 1-2% Type I, SE/SD 1.07-1.14, but MDE-80 > 20% under count_nb DGP (application's old "5% state MDE" not supported). Deterministic benchmark shows similar power → intrinsic state-panel noise.
+- Della cheap launched (job 12248328): 8 scenarios, county ~Tue.
+
+**Status:** county 500-rep results = PAP headline MDE, pending. Commits below pin the framework state.

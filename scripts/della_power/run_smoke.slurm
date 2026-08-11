@@ -4,7 +4,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=16G
+#SBATCH --mem=32G
 #SBATCH --time=05:59:00
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=bb1806@princeton.edu

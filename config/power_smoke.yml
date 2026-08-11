@@ -32,6 +32,12 @@ control_group: notyettreated
 
 est_anticipation: 0
 
+# Panel-restricted cohort template (2026-08-10): D1 places the treated states
+# PRESENT IN THE PANEL (~12 singleton cohorts), not the national 24-state
+# template, which is deterministically unplaceable in the ~29-state county
+# pool and does not match the estimated design anyway.
+template:   panel
+
 # Null for size, plus small/mid/large effects for a monotonicity sanity check.
 effect_grid:  [0, 0.02, 0.05, 0.10]
 
