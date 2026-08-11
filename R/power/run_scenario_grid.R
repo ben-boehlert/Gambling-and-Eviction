@@ -615,7 +615,15 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
     max_reps <- max(est_reps)
     n_expected <- sum(est_reps) * length(sc$effect_grid)
     partial <- file.path(partials_dir, paste0(sc$scenario_id, ".csv"))
+    # Batch checkpoint sidecar (2026-08-11): lists rep ids whose rows are
+    # fully appended to the partial. Appended AFTER each batch's CSV append
+    # succeeds, so a crash can tear at most the trailing (unlisted) batch.
+    # Motivation: crashes (OOM on Della job 12114571; macOS lazyLoadDBfetch
+    # bus errors) were losing entire multi-hour scenarios because the partial
+    # was only written at scenario END.
+    ckpt <- paste0(partial, ".done_reps")
 
+    done_reps <- integer(0)
     if (resume && file.exists(partial)) {
       done <- tryCatch(
         readr::read_csv(partial, show_col_types = FALSE, progress = FALSE),
@@ -626,8 +634,28 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
             n_expected) {
         cat(sprintf("[%s] %s: partial complete (%d rows) — skipping (resume)\n",
                     .ts(), sc$scenario_id, nrow(done)))
+        if (file.exists(ckpt)) unlink(ckpt)
         next
       }
+      if (!is.null(done) && file.exists(ckpt)) {
+        # Batch-level resume: keep only reps recorded as fully written
+        # (drops any torn trailing batch), rewrite the partial clean, and
+        # compute the remaining reps below.
+        done_reps <- sort(unique(as.integer(readLines(ckpt))))
+        done <- done[done$rep %in% done_reps, , drop = FALSE]
+        readr::write_csv(done, partial)
+        cat(sprintf(
+          "[%s] %s: resuming from checkpoint — %d of %d reps already done\n",
+          .ts(), sc$scenario_id, length(done_reps), max_reps))
+      } else {
+        # Incomplete partial with no checkpoint sidecar (pre-checkpoint
+        # scheme, or unreadable): start the scenario clean to avoid
+        # duplicate rows from appends.
+        unlink(partial)
+        if (file.exists(ckpt)) unlink(ckpt)
+      }
+    } else if (file.exists(partial)) {
+      unlink(partial); if (file.exists(ckpt)) unlink(ckpt)
     }
 
     cat(sprintf(
@@ -733,18 +761,23 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
       bind_rows(out)
     }
 
-    batches <- split(seq_len(max_reps),
-                     ceiling(seq_len(max_reps) / batch_size))
-    sc_rows <- vector("list", length(batches))
+    reps_todo <- setdiff(seq_len(max_reps), done_reps)
+    batches <- if (length(reps_todo)) {
+      split(reps_todo, ceiling(seq_along(reps_todo) / batch_size))
+    } else list()
     for (bi in seq_along(batches)) {
-      sc_rows[[bi]] <- map_reps(batches[[bi]], run_one_rep)
+      rows_bi <- map_reps(batches[[bi]], run_one_rep)
+      # Append this batch, THEN record its reps in the sidecar — a crash
+      # between the two leaves a torn batch that resume drops and redoes.
+      readr::write_csv(rows_bi, partial, append = file.exists(partial))
+      write(batches[[bi]], ckpt, ncolumns = 1L, append = TRUE)
       cat(sprintf("[%s]   %s batch %d/%d (reps %d-%d): %d rows\n",
                   .ts(), sc$scenario_id, bi, length(batches),
                   min(batches[[bi]]), max(batches[[bi]]),
-                  nrow(sc_rows[[bi]])))
+                  nrow(rows_bi)))
     }
-    sc_res <- bind_rows(sc_rows)
-    readr::write_csv(sc_res, partial)
+    sc_res <- readr::read_csv(partial, show_col_types = FALSE, progress = FALSE)
+    if (file.exists(ckpt)) unlink(ckpt)
     cat(sprintf("[%s] %s END (%d rows -> %s)\n",
                 .ts(), sc$scenario_id, nrow(sc_res), basename(partial)))
   }
