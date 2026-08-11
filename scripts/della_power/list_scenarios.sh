@@ -50,7 +50,7 @@ Rscript --vanilla -e '
   cfg  <- read_power_config(Sys.getenv("LS_CONFIG"))
   grid <- expand_scenario_grid(cfg)
   cols <- c("scenario_index", "name", "level", "sample", "covid", "design",
-            "mechanism", "shape", "outcome", "est_anticipation")
+            "mechanism", "shape", "outcome", "est_anticipation", "template")
   print(as.data.frame(grid[, cols]), row.names = FALSE)
   cat("\nscenario ids (partial filenames):\n")
   cat(paste0("  ", grid$scenario_index, "  ", grid$scenario_id, collapse = "\n"),

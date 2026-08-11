@@ -141,7 +141,10 @@ power_rep_seed <- function(base_seed, rep, scenario_offset) {
   # Loader-side anticipation-exclusion window A (protocol §4).
   loader_anticipation = "loader_anticipation",
   control_group = "control_group",
-  quarterly = "quarterly"
+  quarterly = "quarterly",
+  # Cohort-template source for pseudo-schedules (make_pseudo_schedule §8):
+  # "national" (full real schedule) or "panel" (restricted to panel states).
+  template = "template", templates = "template"
 )
 
 .scenario_slug <- function(g) {
@@ -149,7 +152,8 @@ power_rep_seed <- function(base_seed, rep, scenario_offset) {
              g$shape, g$outcome, paste0("a", g$est_anticipation), sep = "-")
   s <- paste0(s,
               ifelse(g$quarterly, "-q", ""),
-              ifelse(g$control_group == "nevertreated", "-nt", ""))
+              ifelse(g$control_group == "nevertreated", "-nt", ""),
+              ifelse(g$template == "panel", "-tpanel", ""))
   tolower(gsub("[^A-Za-z0-9_-]", "", s))
 }
 
@@ -203,6 +207,11 @@ power_rep_seed <- function(base_seed, rep, scenario_offset) {
     control_group       = g$control_group[i],
     quarterly           = as.logical(g$quarterly[i]),
     estimators          = sort(as.character(unlist(g$estimators[[i]]))),
+    # `template` is hashed CONDITIONALLY (only when != "national") rather than
+    # via a v-bump: template = "national" is bit-identical to pre-axis
+    # behavior, so existing national partials (e.g. the completed primary
+    # state scenarios) must keep their ids; panel-template scenarios get
+    # distinct ids. Do NOT change this to unconditional without a v-bump.
     effect_grid         = sort(as.numeric(unlist(g$effect_grid[[i]]))),
     n_reps              = as.integer(g$n_reps[i]),
     estimator_reps      = .canon_est_reps(g$estimator_reps[[i]]),
@@ -210,6 +219,9 @@ power_rep_seed <- function(base_seed, rep, scenario_offset) {
     min_post            = as.integer(g$min_post[i]),
     base_seed           = as.integer(base_seed)
   )
+  if (!identical(as.character(g$template[i]), "national")) {
+    id$template <- as.character(g$template[i])
+  }
   paste(paste0(names(id), ":", vapply(id, .canon_atom, character(1))),
         collapse = "|")
 }
@@ -263,7 +275,8 @@ expand_scenario_grid <- function(cfg) {
     est_anticipation    = cfg$est_anticipation %||% 0L,
     loader_anticipation = cfg$anticipation_months %||% 6L,
     control_group       = cfg$control_group %||% "notyettreated",
-    quarterly           = cfg$quarterly %||% FALSE
+    quarterly           = cfg$quarterly %||% FALSE,
+    template            = cfg$template %||% "national"
   )
 
   blocks <- cfg$scenarios
@@ -651,11 +664,52 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
       # identical streams either way (furrr restores RNG state afterwards).
       suppressWarnings(RNGkind("Mersenne-Twister", "Inversion", "Rejection"))
       seed_rep <- power_rep_seed(cfg$base_seed, rep, sc$scenario_seed_offset)
-      sched <- make_pseudo_schedule(
-        design = sc$design, panel = panel, real_schedule = real_schedule,
-        treat_def = sc$treat_def, min_pre = sc$min_pre,
-        min_post = sc$min_post, seed = seed_rep
-      )
+      annotate_row <- function(res, delta) {
+        res$scenario_id      <- sc$scenario_id
+        res$scenario_index   <- sc$scenario_index
+        res$name             <- sc$name
+        res$level            <- sc$level
+        res$sample           <- sc$sample
+        res$covid            <- sc$covid
+        res$treat_def        <- sc$treat_def
+        res$design           <- sc$design
+        res$mechanism        <- sc$mechanism
+        res$shape            <- sc$shape
+        res$outcome          <- sc$outcome
+        res$est_anticipation <- sc$est_anticipation
+        res$loader_anticipation <- sc$loader_anticipation
+        res$control_group    <- sc$control_group
+        res$quarterly        <- sc$quarterly
+        res$template         <- sc$template
+        res$rep              <- rep
+        res$delta            <- delta
+        res$seed_rep         <- seed_rep
+        res
+      }
+      # A rep whose pseudo-schedule cannot be placed yields failure rows for
+      # every expected estimator x delta combo instead of aborting the whole
+      # scenario (2026-08-10: one infeasible draw must not kill a 30h task;
+      # the partial stays complete so resume/aggregate still work).
+      sched <- tryCatch(
+        make_pseudo_schedule(
+          design = sc$design, panel = panel, real_schedule = real_schedule,
+          treat_def = sc$treat_def, min_pre = sc$min_pre,
+          min_post = sc$min_post, seed = seed_rep, template = sc$template
+        ),
+        error = function(e) e)
+      if (inherits(sched, "condition")) {
+        msg <- paste0("schedule generation failed: ", conditionMessage(sched))
+        out <- list()
+        for (delta in sc$effect_grid) {
+          for (est in sc$estimators) {
+            if (rep > est_reps[[est]]) next
+            res <- .estimator_failure_row(est, msg)
+            res$truth <- NA_real_
+            out[[length(out) + 1L]] <- annotate_row(res, delta)
+          }
+        }
+        return(bind_rows(out))
+      }
       out <- list()
       for (delta in sc$effect_grid) {
         sim <- fns$impose(panel, sched, mechanism = sc$mechanism,
@@ -673,25 +727,7 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
                                                        conditionMessage(e))
           )
           res <- .attach_truth(res, truths)
-          res$scenario_id      <- sc$scenario_id
-          res$scenario_index   <- sc$scenario_index
-          res$name             <- sc$name
-          res$level            <- sc$level
-          res$sample           <- sc$sample
-          res$covid            <- sc$covid
-          res$treat_def        <- sc$treat_def
-          res$design           <- sc$design
-          res$mechanism        <- sc$mechanism
-          res$shape            <- sc$shape
-          res$outcome          <- sc$outcome
-          res$est_anticipation <- sc$est_anticipation
-          res$loader_anticipation <- sc$loader_anticipation
-          res$control_group    <- sc$control_group
-          res$quarterly        <- sc$quarterly
-          res$rep              <- rep
-          res$delta            <- delta
-          res$seed_rep         <- seed_rep
-          out[[length(out) + 1L]] <- res
+          out[[length(out) + 1L]] <- annotate_row(res, delta)
         }
       }
       bind_rows(out)

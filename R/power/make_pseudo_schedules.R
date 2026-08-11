@@ -129,18 +129,29 @@ if (!exists("eviction_state_name_to_abb", mode = "function")) {
 #' @param min_pre Minimum untreated months required before a pseudo date.
 #' @param min_post Minimum months required at/after a pseudo date.
 #' @param seed RNG seed (set once at top; same seed -> identical output).
+#' @param template "national" (default): the cohort template is extracted from
+#'   the FULL real schedule (online: 18 cohorts, ~24 states). "panel": the
+#'   template is restricted to treated states PRESENT IN THE PANEL first —
+#'   the design the real estimation actually identifies. Motivation
+#'   (2026-08-10): the county panel holds ~29 usable states, so the national
+#'   24-state template is deterministically unplaceable there (see
+#'   POWER_SIMULATION_DESIGN.md §8 addenda); the panel template (~12 singleton
+#'   cohorts) both fits and matches the real design's cohort structure.
 #' @param never_treated Optional character vector of never-treated states (D4).
 #'   Defaults to \code{attr(panel, "never_treated")} or a derivation from
 #'   \code{real_schedule}.
 #' @return Tibble(state_abb, pseudo_g[Date, first-of-month]) with attributes:
-#'   design, seed, treat_def, min_pre, min_post, cohort_structure_target,
-#'   cohort_structure_achieved, rescale_factor, feasibility.
+#'   design, seed, treat_def, min_pre, min_post, template,
+#'   cohort_structure_target, cohort_structure_achieved, rescale_factor,
+#'   feasibility.
 #' @export
 make_pseudo_schedule <- function(design = c("D1", "D2", "D3", "D4"),
                                  panel, real_schedule, treat_def,
                                  min_pre = 12L, min_post = 6L, seed,
+                                 template = c("national", "panel"),
                                  never_treated = NULL) {
-  design <- match.arg(design)
+  design   <- match.arg(design)
+  template <- match.arg(template)
   if (missing(seed)) stop("`seed` is required for reproducibility.", call. = FALSE)
   set.seed(seed)
   min_pre  <- as.integer(min_pre)
@@ -157,6 +168,13 @@ make_pseudo_schedule <- function(design = c("D1", "D2", "D3", "D4"),
 
   # Real cohort structure.
   sched   <- .extract_cohorts_states(real_schedule, treat_def)
+  if (template == "panel") {
+    sched <- sched %>% filter(.data$state_abb %in% cov$state_abb)
+    if (nrow(sched) == 0L) {
+      stop("Panel-restricted template is empty: no panel state has a ",
+           "treatment date under treat_def = ", treat_def, ".", call. = FALSE)
+    }
+  }
   cohorts <- sched %>% count(.data$g, name = "n_states") %>% arrange(.data$g)
   K <- nrow(cohorts)
   if (K == 0L) {
@@ -288,6 +306,7 @@ make_pseudo_schedule <- function(design = c("D1", "D2", "D3", "D4"),
   attr(out, "treat_def")                 <- treat_def
   attr(out, "min_pre")                   <- min_pre
   attr(out, "min_post")                  <- min_post
+  attr(out, "template")                  <- template
   attr(out, "cohort_structure_target")   <- cohorts
   attr(out, "cohort_structure_achieved") <-
     out %>% count(.data$pseudo_g, name = "n_states") %>% arrange(.data$pseudo_g)

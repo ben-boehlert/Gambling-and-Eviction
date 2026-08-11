@@ -375,10 +375,15 @@ run_estimator <- function(panel_sim,
       error = function(e) fit)
   }
   t1 <- Sys.time()
+  # `fe = "id"` absorbs the unit fixed effect instead of dummy-expanding it.
+  # Without it, boottest() materializes a dense n x n_units design matrix:
+  # ~1.8 GB peak per county-panel call, which OOM-killed 8-worker/16G array
+  # tasks (Della job 12223288, 2026-08-10). With absorption: ~0.6 GB peak,
+  # 5x faster, numerically identical p-value.
   wb <- tryCatch(
     suppressMessages(suppressWarnings(
       fwildclusterboot::boottest(fit_wb, param = "post", clustid = ~state_abb,
-                                 B = 999L, type = "rademacher"))),
+                                 B = 999L, type = "rademacher", fe = "id"))),
     error = function(e) structure(NA, err = conditionMessage(e)))
   rt1 <- as.numeric(difftime(Sys.time(), t1, "secs"))
 
