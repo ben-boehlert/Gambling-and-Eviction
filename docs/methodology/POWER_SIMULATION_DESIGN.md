@@ -68,7 +68,7 @@ Retail-only is not simulated separately (subsumed by T1 vs T2 contrast).
 
 | ID | Estimator | Implementation | Inference |
 |---|---|---|---|
-| E1 | Callaway–Sant'Anna | `did::att_gt` (CRAN 2.3.0), `est_method="reg"`, `xformla=~1`, `allow_unbalanced_panel=TRUE`, `faster_mode=TRUE`, `clustervars=<state>`, `base_period="varying"` (universal as sensitivity), `anticipation ∈ {0, 6}` | (a) analytic SE + t(df = n_clusters − 1); (b) multiplier bootstrap (biters=199): both the genuine bootstrap p-value/critical value **and** the legacy t-on-bootstrap-SE are recorded separately (audit F2) |
+| E1 | Callaway–Sant'Anna | `did::att_gt` (CRAN 2.3.0), `est_method="reg"`, `xformla=~1`, `allow_unbalanced_panel=TRUE`, `faster_mode=TRUE`, `clustervars=<state>`, `base_period="varying"` (universal as sensitivity), `anticipation ∈ {0, 6}` | (a) analytic SE + t(df = n_clusters − 1); (b) multiplier bootstrap (biters=199): both the genuine bootstrap p-value/critical value **and** the legacy t-on-bootstrap-SE are recorded separately (audit F2); (c) **CV3 cluster jackknife** (`spec$cs_jack`, default OFF) |
 | E2 | TWFE | `fixest::feols(y ~ post | id + t)`, cluster = state | (a) cluster-robust t; (b) wild cluster bootstrap (`fwildclusterboot`, Rademacher weights, WCR) |
 | E3 | Gardner two-stage | `did2s::did2s`, first stage `~0 | id + t`, cluster = state | cluster-robust t(df = n_clusters − 1) |
 | E4 (diagnostic only) | Sun–Abraham | `fixest::sunab` | cluster-robust t |
@@ -79,6 +79,28 @@ to document its calibration, given the audit's history of singleton-cohort probl
 ="reg"` avoids the DRDID/fastglm segfault path entirely, so the patched local packages are not
 required (audit F4); if any scenario switches to "dr"/"ipw", `patches/att_gt_safe.R` +
 `reg_did_rc_safe.R` must be sourced.
+
+**E1 inference arm (c), CV3 cluster jackknife** (added 2026-08-11). Karim, Nielsen, MacKinnon &
+Webb (2026) show CS's analytic and multiplier-bootstrap SEs both over-reject badly with few
+clusters / few treated clusters, and that the two are near-identical to each other (the multiplier
+bootstrap never re-estimates the model, so it adds no finite-sample correction). Their CV3
+jackknife — re-run the whole CSDID procedure with each cluster deleted, eq. (20) — is well
+calibrated in their Monte Carlo once enough clusters are treated. Implementation notes:
+
+- `spec$cs_jack = TRUE` enables the arm; **default OFF** because it costs H+1 `att_gt` fits
+  (≈25–27× on our panels). Production configs are unaffected unless they opt in.
+- We do **not** call the authors' `didjack` package: its internal `did::aggte()` omits
+  `na.rm = TRUE`, so on any design with non-identifiable (g,t) cells — ours has 30–43% — it errors
+  on the *first* replicate. `R/power/run_estimators.R:.re_cs_cv3()` recomputes eq. (20) directly
+  with `na.rm = TRUE`, matching the analytic arm's estimand, and is pinned to `didjack` to 1e-8
+  on a fully-identified panel by `tests/testthat/test-cs-cv3.R`.
+- Failed delete-one replicates are counted and surfaced (`note: cv3 used k/H replicates`), never
+  silently dropped — omitting influential clusters would bias CV3 downward.
+- **Open question this arm exists to answer:** KNMW's simulations always place multiple states per
+  cohort. Our cohorts are singletons, so deleting a treated state removes that cohort's ATT(g,t)
+  terms and the delete-one estimates vary partly through aggregation *composition* rather than
+  sampling noise (their §4 caveat). Calibration under that regime is measured by
+  `analysis/diagnostics/cs_cv3_calibration_state.R`, not assumed.
 
 ## 6. Outcome transformations
 
@@ -281,6 +303,108 @@ Existing code reused by sourcing (not copying where possible):
 `utils/eviction_treatment_schedule.R`; residual-pool + AR(1) error models (ported from
 `cs_calibration_unified.R` with attribution comments); Type-S/M metric logic
 (`power_simulation_cs.R`); batching pattern (`power_simulation_twfe_...fixed.R`).
+
+### 16a. CS execution flags (`cs_safe_patches`, `cs_faster_mode`)
+
+Two run-level config keys govern whether the CS arm can execute at all. Both default to
+the framework's historical behavior, and both are hashed into the scenario id **only when
+set away from that default AND only for scenarios whose `estimators` include `cs`** — so
+enabling either one never moves the id of a twfe/did2s scenario and never orphans a
+completed partial. Tests: `tests/testthat/test-cs-safe-patches.R` (golden ids, hash
+gating, installer contract).
+
+| Key | Default | Effect when changed |
+|---|---|---|
+| `cs_safe_patches` | `FALSE` | `TRUE` installs `patches/reg_did_rc_safe.R` over `DRDID:::reg_did_rc` **and** over the copy in `did`'s imports frame |
+| `cs_faster_mode` | `TRUE` | `FALSE` passes `faster_mode = FALSE` to `did::att_gt()` |
+
+**`cs_safe_patches` — why it exists.** `att_gt(est_method = "reg", allow_unbalanced_panel
+= TRUE)` reaches `DRDID:::reg_did_rc()`, which calls `fastglm()` on each (g,t) cell's
+design matrix. On a non-identifiable cell that matrix has zero rows and fastglm's C++
+`colMax_dense()` **aborts the R process**. It is not an R condition, so no `tryCatch`
+catches it; under furrr the worker dies ("MultisessionFuture interrupted") and the whole
+scenario is lost. Measured 2026-08-17: ~1 rep in 4 on the D1 state design.
+
+Installing the guard requires replacing **two** bindings. `did/NAMESPACE` has
+`importFrom(DRDID, reg_did_rc)` and R copies that binding *by value* when `did` loads;
+under `faster_mode = TRUE`, `compute.att_gt2()` calls `reg_did_rc()` unqualified and so
+resolves through `did`'s imports frame. Patching only the DRDID namespace leaves the hot
+path on the original unless `did` happens to load afterwards — verified 2026-08-17, and
+the naive install reported success while being inert. `install_cs_safe_patches()`
+therefore asserts on the binding `did` will actually call and returns FALSE otherwise.
+
+**`cs_faster_mode` — why it exists.** With the historical default `TRUE`, CS failed on
+**100%** of probed rep × delta cells on the D1 state design, with did's own message:
+"singular matrix due to not enough control units. Try changing faster_mode=FALSE." TWFE
+and did2s converged on 100% of the identical reps. `analysis/diagnostics/cs_cv3_calibration_state.R:64-66`
+records the same failure on 2026-08-11 and works around it locally; the framework was
+never updated, so every CS run in the blinded framework to date used a path that does not
+estimate on this design. `FALSE` is also *faster* here (24–40 s vs 57–101 s per fit).
+
+**Open caveat (not yet resolved).** The two modes return materially different ATTs on
+identical data (rep 1: −0.033 under FALSE vs +0.557 under TRUE, with different SEs).
+`faster_mode` is documented as a computational shortcut, so this discrepancy should not
+exist and is unexplained. Until it is, CS point estimates from this framework should be
+treated as provisional, and any CS result reported in the PAP must state which mode
+produced it.
+
+### 16b. Shift mode (`shift_mode`, `shift_calibration_reps`)
+
+Every estimator in this framework is linear in the outcome, so a replication's δ=0 fit plus a
+loading reproduces its entire effect grid. Shift mode exploits that: reps
+`1..shift_calibration_reps` run the full grid; the rest estimate only at δ=0 and emit
+placeholder rows carrying the real `truth`; at scenario end a through-origin loading `L̂` is
+fitted **per (estimator, inference, estimand, δ)** from the calibration pairs and the
+placeholders are filled (`att = att0 + L̂·truth`, `se = se0`, p/CI recomputed per arm).
+Validated 2026-08-17 (`analysis/diagnostics/validate_shift_sufficiency.R`,
+`output/shift_validation_cs/`). Defaults to OFF; hashed into the scenario id when ON.
+
+**Compute:** fits per rep go from `G` to `1 + (G−1)·1{calibration}` — at `G = 11`, `f = 0.1`
+that is 18.2% of the fits, a **5.5× saving on estimator wall-clock**. `impose_effect()` still
+runs `G` times per rep (needed for `.compute_truths()`), so the saving is estimation-only —
+which is the whole cost for CS, where `att_gt` dominates.
+
+**The loading must be fitted per δ, not pooled.** It is not δ-invariant under `count_nb`:
+CS/analytic on ramp runs 1.433 at δ=0.02 → 1.207 at δ=0.10, while deterministic injection
+gives exactly 1.000 at every δ (so the drift is the injection mechanism, not estimator
+nonlinearity). A through-origin fit is truth²-weighted, so on the primary grid δ=0.15 and
+δ=0.20 carry ~71% of the weight — a pooled `L̂` is pinned where the loading is lowest and
+then applied at the small-δ MDE crossing where it is highest, biasing the MDE upward. Per-δ
+fitting removes the extrapolation at negligible cost: added noise is ~0.3% relative against
+a 6–20% bias removed.
+
+**Precision by arm at δ>0** (the δ=0 size gate is unaffected — always fully estimated, full
+n, every arm, every α, so estimator disqualification cannot be corrupted):
+
+| Arm | δ>0 precision |
+|---|---|
+| `cs/analytic`, `cs/boot_t`, `twfe/analytic`, `did2s/analytic` | Full n |
+| `twfe/wild`, `lpdid/wild` | Full n **at α = 0.05 only**; NA at other α (see below) |
+| `cs/boot`, `cs/jack` | Calibration reps only — never synthesized |
+
+Wild rows have no reconstructable p, so rejection falls back to CI membership, which is exact
+because a wild-cluster-restricted CI is translation-equivariant under a location shift of the
+outcome. Stored CIs exist at exactly one level (`run_estimators.R`'s `.re_spec()` α), so the
+fallback returns NA at any other α rather than a wrong answer. `cs/boot` and `cs/jack` p-values
+come from a bootstrap/jackknife distribution that is not stored, so those arms are left as
+failure rows tagged `shift_not_reconstructable`; if either is a candidate cell under §15's
+decision rule it needs brute-force reps.
+
+**Reporting caveat.** Under shift mode every estimate-based operating characteristic at δ>0 —
+`bias`, `rmse`, `coverage`, `sd_att`, `exaggeration_ratio`, `believable_share` — is partly
+model-generated, since `att` on a synthesized row is a prediction rather than an estimate.
+`n_reject_used` against `n_converged` is the diagnostic for how much. Type-M and believability
+in particular should be read as describing the shift model, not the estimator.
+
+**Post-run check.** Read `<partial>.shift_loading.csv` and confirm `n_calib_pairs` equals
+`shift_calibration_reps` in every cell and that `L̂(δ)` varies smoothly in δ. A cell with
+missing pairs or an outlier loading at the grid point bracketing the crossing is the one
+remaining way a per-δ loading can move the MDE.
+
+**INV-17 exemption.** `run_one_rep()`'s result container grows by `append` inside the rep loop.
+The container holds at most `G × |estimators|` elements (≤33 on the primary grid) inside a loop
+whose body runs `att_gt`; the growth is unmeasurable against a CS fit, and pre-allocating would
+touch the byte-identical flag-off path for no gain.
 
 ## 17. Required tests (testthat)
 

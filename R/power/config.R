@@ -103,6 +103,37 @@ read_power_config <- function(path = NULL) {
     covid_drop          = c("2020-03-01", "2021-07-31"),
     panel_floor         = "2016-01-01",
     base_seed           = 20260723L,
+    # CS segfault guard, OFF by default so existing runs stay bit-identical.
+    # TRUE installs patches/reg_did_rc_safe.R over DRDID:::reg_did_rc, which
+    # returns a structured NA for empty design matrices instead of aborting
+    # the R process. Without it, did::att_gt() -> run_DRDID() segfaults on
+    # roughly 1 rep in 4 of this design (2026-08-17), killing the worker and
+    # the whole scenario; the abort is C-level, so no tryCatch can catch it.
+    # Hashed into the scenario id ONLY when TRUE (see .scenario_identity_string)
+    # so patched and unpatched partials can never be silently mixed.
+    cs_safe_patches     = FALSE,
+    # `faster_mode` argument to did::att_gt(). TRUE preserves the framework's
+    # historical default. On the D1 state design TRUE fails outright --
+    # att_gt() returns "singular matrix due to not enough control units. Try
+    # changing faster_mode=FALSE" on 100% of probed reps (2026-08-17), the same
+    # failure a prior session hit on 2026-08-11 and worked around locally in
+    # analysis/diagnostics/cs_cv3_calibration_state.R without ever updating the
+    # framework. FALSE is the slower path; measure before budgeting cluster
+    # time. Hashed into the scenario id only when non-default AND the scenario
+    # runs CS (see .scenario_identity_string).
+    cs_faster_mode      = TRUE,
+    # Shift-mode shortcut (validated 2026-08-17: analysis/diagnostics/
+    # validate_shift_sufficiency.R — every estimator here is linear in the
+    # outcome, so a rep's delta=0 fit plus a fitted loading L_hat reproduces
+    # the whole effect grid to <=0.003 power points under count_nb).
+    # OFF by default so an existing run's behavior is bit-for-bit unchanged.
+    # See run_scenario_grid.R's calibration-subset implementation.
+    shift_mode              = FALSE,
+    # NULL = compute per-scenario as max(10L, ceiling(0.1 * n_reps)) in
+    # expand_scenario_grid() (each block may have its own n_reps). An
+    # explicit value here pins the SAME calibration count for every scenario
+    # in the run instead.
+    shift_calibration_reps  = NULL,
     county_panel        = paths$county_panel,
     state_panel         = paths$state_panel,
     schedule            = paths$schedule,
@@ -128,6 +159,25 @@ read_power_config <- function(path = NULL) {
   }
   cfg$anticipation_months <- as.integer(cfg$anticipation_months)
   cfg$base_seed           <- as.integer(cfg$base_seed)
+
+  cfg$cs_safe_patches <- isTRUE(as.logical(cfg$cs_safe_patches))
+  # NULL/NA must fall back to the documented default (TRUE), not to FALSE, so a
+  # config that omits the key keeps historical behavior.
+  cfg$cs_faster_mode <- if (is.null(cfg$cs_faster_mode) ||
+                            is.na(as.logical(cfg$cs_faster_mode))) {
+    TRUE
+  } else as.logical(cfg$cs_faster_mode)
+
+  cfg$shift_mode <- isTRUE(as.logical(cfg$shift_mode %||% FALSE))
+  # Left NULL when unset — the per-scenario 10%-of-n_reps default is computed
+  # in expand_scenario_grid() (needs each block's own n_reps, not just the
+  # top-level default). An explicit value here is a fixed override applied
+  # to every scenario in the run.
+  cfg$shift_calibration_reps <- if (is.null(cfg$shift_calibration_reps)) {
+    NULL
+  } else {
+    as.integer(cfg$shift_calibration_reps)
+  }
 
   # Resolve data paths against the repo root so the loader is wd-independent.
   cfg$county_panel <- .power_abspath(cfg$county_panel, root)

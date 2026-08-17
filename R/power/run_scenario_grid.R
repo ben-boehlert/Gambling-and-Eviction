@@ -222,6 +222,44 @@ power_rep_seed <- function(base_seed, rep, scenario_offset) {
   if (!identical(as.character(g$template[i]), "national")) {
     id$template <- as.character(g$template[i])
   }
+  # `cs_safe_patches` is hashed CONDITIONALLY, on the same principle as
+  # `template` above: FALSE reproduces pre-flag behavior bit-for-bit, so every
+  # existing partial must keep its id. TRUE changes what CS returns on cells
+  # that previously aborted the process (structured NA instead of a crash), so
+  # those runs must land in their own scenario ids and can never be pooled
+  # with unpatched partials by the resume/aggregate path.
+  #
+  # ...but ONLY for scenarios that actually run CS. The guard replaces a DRDID
+  # internal reachable solely through did::att_gt(), so a twfe/did2s block is
+  # provably unaffected by it. Hashing the flag there would move those ids the
+  # moment the flag is switched on in power_primary.yml, silently orphaning the
+  # completed county twfe/did2s partials (~28-30h) and making `resume` re-run
+  # work the guard cannot change.
+  if (isTRUE(g$cs_safe_patches[i]) &&
+      "cs" %in% as.character(unlist(g$estimators[[i]]))) {
+    id$cs_safe_patches <- TRUE
+  }
+  # Same treatment for cs_faster_mode: hashed only when it departs from the
+  # historical default (TRUE) and only for scenarios that run CS. It is a
+  # direct att_gt() argument, so it changes the CS estimate itself -- results
+  # computed under the two settings must never share a partial.
+  if (!isTRUE(g$cs_faster_mode[i]) &&
+      "cs" %in% as.character(unlist(g$estimators[[i]]))) {
+    id$cs_faster_mode <- FALSE
+  }
+  # `shift_mode` is hashed CONDITIONALLY, same principle as `template` /
+  # `cs_safe_patches` above: FALSE reproduces pre-flag behavior bit-for-bit,
+  # so every existing partial must keep its id. TRUE changes what a
+  # non-calibration rep computes (delta=0 fully estimated; delta>0 shifted
+  # from that rep's own delta=0 fit instead of independently estimated), so
+  # those runs must land in their own scenario ids. Unlike cs_safe_patches /
+  # cs_faster_mode, this is NOT gated on estimator: shift mode changes the
+  # rep loop for EVERY estimator in the scenario, not one estimator's
+  # internals.
+  if (isTRUE(g$shift_mode[i])) {
+    id$shift_mode <- TRUE
+    id$shift_calibration_reps <- as.integer(g$shift_calibration_reps[i])
+  }
   paste(paste0(names(id), ":", vapply(id, .canon_atom, character(1))),
         collapse = "|")
 }
@@ -304,6 +342,14 @@ expand_scenario_grid <- function(cfg) {
                             nrow(g))
     g$min_pre  <- as.integer(blk$min_pre %||% cfg$min_pre %||% 12L)
     g$min_post <- as.integer(blk$min_post %||% cfg$min_post %||% 6L)
+    # Run-level only (no per-block override): the guard is a property of the
+    # R process, installed once per worker, so it cannot vary scenario to
+    # scenario within a run.
+    g$cs_safe_patches <- isTRUE(cfg$cs_safe_patches)
+    # Per-fit att_gt() argument, so a block MAY override it. `%||%` keeps an
+    # explicit FALSE (only NULL falls through to the run-level value).
+    g$cs_faster_mode <- isTRUE(blk$cs_faster_mode %||% cfg$cs_faster_mode %||%
+                                 TRUE)
     rows[[b]] <- g
   }
 
@@ -311,7 +357,19 @@ expand_scenario_grid <- function(cfg) {
     mutate(
       est_anticipation    = as.integer(.data$est_anticipation),
       loader_anticipation = as.integer(.data$loader_anticipation),
-      quarterly           = as.logical(.data$quarterly)
+      quarterly           = as.logical(.data$quarterly),
+      # Run-level only (no per-block override), same rationale as
+      # cs_safe_patches: shift mode changes the rep-loop MECHANICS
+      # uniformly across every scenario in a run, not something that varies
+      # scenario to scenario. shift_calibration_reps defaults to 10% of
+      # EACH scenario's own n_reps (min 10, design doc shift-mode addendum)
+      # unless the config pins one value for every scenario in the run.
+      shift_mode = isTRUE(cfg$shift_mode),
+      shift_calibration_reps = if (!is.null(cfg$shift_calibration_reps)) {
+        as.integer(cfg$shift_calibration_reps)
+      } else {
+        as.integer(pmax(10L, ceiling(0.1 * .data$n_reps)))
+      }
     )
   # scenario_index is the deterministic position in the expanded grid. It is
   # used ONLY to address scenarios for dispatch (e.g. a SLURM array task id).
@@ -465,6 +523,357 @@ expand_scenario_grid <- function(cfg) {
 }
 
 # ---------------------------------------------------------------------------
+# Shift-mode synthesis
+#
+# Validated 2026-08-17 (analysis/diagnostics/validate_shift_sufficiency.R,
+# output/shift_validation{,_cs}/): every estimator in this framework is
+# (to a tight tolerance) linear in the outcome, so a rep's delta=0 fit plus
+# a fitted loading L_hat reproduces the whole effect grid. Deterministic
+# injection: discrepancy EXACTLY 0 (L_hat == 1 to floating precision).
+# count_nb mechanism: CS analytic mean discrepancy <= 0.003 power points,
+# L_hat in [1.07, 1.23] (NOT 1 -- a deterministic-injection loading would
+# miss this real-mechanism factor, which is exactly why L_hat is fit on the
+# CALIBRATION reps' real data rather than assumed).
+#
+# CALIBRATION-SUBSET DESIGN: run_one_rep() (below) runs the full delta grid
+# for reps 1..shift_calibration_reps and, for every other rep, runs the
+# estimator ONLY at delta = 0, emitting error_msg == "shift_pending"
+# placeholder rows (same schema, NA estimates) at delta > 0. This function
+# is called ONCE per scenario, after every rep has been computed, and fills
+# those placeholders in place on the scenario's partial CSV.
+# ---------------------------------------------------------------------------
+
+# Explicit types for a scenario partial's known columns (the run_estimator()
+# / annotate_row() schema plus truth/rep/delta/seed_rep). Guards every
+# read_csv() of a partial against readr's type-guessing going wrong when the
+# ~1000-row sample readr uses to infer a column's type happens to be all
+# failure rows for that scenario -- observed, not hypothetical: D1 on
+# county/S2 failed 50/50 reps (2026-08-10), which would leave att/se/p/ci_lo/
+# ci_hi guessed as logical (all-NA) and every downstream numeric comparison
+# silently vacuous. Unlisted columns fall back to col_guess() so this does
+# not need updating when annotate_row() gains a new scenario-metadata column.
+.PARTIAL_COL_TYPES <- readr::cols(
+  estimator = readr::col_character(), inference = readr::col_character(),
+  estimand = readr::col_character(), event_time = readr::col_double(),
+  att = readr::col_double(), se = readr::col_double(), p = readr::col_double(),
+  ci_lo = readr::col_double(), ci_hi = readr::col_double(),
+  n_treated_clusters = readr::col_integer(),
+  n_control_clusters = readr::col_integer(),
+  converged = readr::col_logical(), error_msg = readr::col_character(),
+  runtime_s = readr::col_double(), truth = readr::col_double(),
+  rep = readr::col_integer(), delta = readr::col_double(),
+  seed_rep = readr::col_double(),
+  .default = readr::col_guess()
+)
+
+# Inference arms whose p/CI can be honestly reconstructed from the columns
+# already stored in a per-rep row (mirrors validate_shift_sufficiency.R's
+# TSTAT_INFERENCE / CI_SHIFT_INFERENCE dispatch, unified into one set since
+# both get the SAME shifted CI here -- see .shift_synthesize_partial()).
+# CS's "boot" (genuine multiplier-bootstrap p, did:::mboot on a fresh draw)
+# and "jack" (CV3 delete-one-cluster jackknife, df = reps - 1) are NOT in
+# this set: neither quantity is a function of (att0, se0, ci_lo0, ci_hi0),
+# so they can never be synthesized from a shift.
+.SHIFT_RECONSTRUCTABLE_INFERENCE <- c("analytic", "boot_t", "wild")
+
+# Two-sided t p-value. Deliberately NOT a call to run_estimators.R's
+# .re_tp() -- run_scenario_grid.R must not assume that module has been
+# sourced (test hooks can supply impose_fn/estimator_fn mocks and skip it
+# entirely; see .ensure_sim_functions()). Identical formula, kept
+# self-contained here.
+#' @keywords internal
+.shift_tp <- function(att, se, df) {
+  ifelse(is.finite(att) & is.finite(se) & se > 0 & df > 0,
+        2 * stats::pt(-abs(att / se), df = df), NA_real_)
+}
+
+#' Synthesize shift-mode placeholder rows on a scenario's partial (in place)
+#'
+#' Fits a through-origin loading L_hat per (estimator, inference, estimand,
+#' delta) -- PER DELTA, not pooled across the grid. The loading is NOT
+#' delta-invariant under a stochastic mechanism: measured on
+#' output/shift_validation_cs/loading_by_delta.csv (2026-08-1x), CS/analytic
+#' under count_nb ranges 1.4328 (delta=0.02, ramp) down to 1.2065
+#' (delta=0.10, ramp), a 16% drift; the deterministic mechanism is exactly
+#' 1.000 at every delta, confirming the drift is a MECHANISM artifact (Poisson/
+#' NB count augmentation is not exactly linear in delta on the log1p scale),
+#' not estimator nonlinearity. A single pooled L_hat is a truth^2-weighted
+#' slope across the whole grid -- on a grid with large deltas present, it is
+#' dominated by exactly the range where the loading is smallest, then applied
+#' at the small-delta MDE crossing where the loading is largest, biasing
+#' synthesized power down and the MDE up. Fitting per delta removes this at
+#' zero statistical cost: calibration reps run the FULL grid by construction,
+#' so there are shift_calibration_reps calibration pairs at EVERY delta, not
+#' just the ones near the MDE.
+#'
+#' For a fixed (estimator, inference, estimand, delta), L_hat is pooled over
+#' every row with THAT delta AND converged == TRUE (which, by construction,
+#' are exactly the calibration reps' real estimates at that delta -- a
+#' "shift_pending" row is never converged, and a previously-filled row is
+#' excluded explicitly, see IDEMPOTENCE below) paired against THAT ROW'S OWN
+#' rep's delta = 0 baseline (same estimator/inference/estimand/event_time):
+#'
+#'   L_hat(delta) = sum_{calib reps at this delta} (att - att0) * truth
+#'                  / sum_{calib reps at this delta} truth^2
+#'
+#' truth is identical across calibration reps at a fixed delta under
+#' "step"/constant shapes (varies under "ramp"/"delayed" by event time within
+#' a rep, not across reps), so this is very close to a plain mean of the
+#' observed shift divided by truth at that delta; the truth^2-weighted form
+#' is used for consistency with the single-delta identity and with
+#' analysis/diagnostics/validate_shift_sufficiency.R's per-delta diagnostic
+#' (loading_by_delta.csv).
+#'
+#' Every row still tagged error_msg == "shift_pending" is then filled from
+#' its own rep's delta = 0 baseline, using THAT ROW'S delta to look up
+#' L_hat(delta):
+#'
+#'   att = att0 + L_hat(delta) * truth;  se = se0
+#'   ci_lo = ci_lo0 + L_hat(delta) * truth;  ci_hi = ci_hi0 + L_hat(delta) * truth
+#'
+#' For analytic/boot_t, this CI shift is algebraically IDENTICAL to
+#' recomputing att -/+ z * se with run_estimators.R's own z
+#' (= qt(1 - alpha/2, df)): since ci_hi0 == att0 + z * se0 by construction,
+#' ci_hi0 + shift == (att0 + shift) + z * se0. For "wild", that identity does
+#' NOT hold -- run_estimators.R stores an INVERTED, generally ASYMMETRIC
+#' bootstrap CI for the wild arm (fwildclusterboot::boottest() +
+#' stats::confint()), and the wild row's `se` column is the ANALYTIC fixest
+#' SE, not a quantity satisfying ci_hi0 == att0 + z*se0. The wild CI shift is
+#' correct anyway, for a DIFFERENT and more general reason: any confidence
+#' interval for a location parameter is translation-equivariant under a
+#' constant shift of the outcome -- shifting y by a constant delta shifts
+#' EVERY quantile of the induced test-statistic distribution, and hence the
+#' whole (possibly asymmetric) inverted CI, by exactly that constant,
+#' regardless of the CI's shape. Confirmed to floating precision by
+#' validate_shift_sufficiency.R's self-check 1 on both the symmetric
+#' (analytic/boot_t) and asymmetric (wild) arms.
+#'
+#' p is recomputed via a two-sided t-test at df = max(1L, n_treated0 +
+#' n_control0 - 1) for analytic/boot_t (matching run_estimators.R's
+#' .re_tp() exactly), EXCEPT for "wild": a wild row's p is a genuine
+#' fwildclusterboot bootstrap p-value from a fresh draw, which is not a
+#' function of (att0, se0) and so cannot be honestly recomputed by a shift
+#' -- it stays NA_real_, matching validate_shift_sufficiency.R's
+#' CI_SHIFT_INFERENCE convention. Downstream, summarize_operating_
+#' characteristics.R's .reject_flag() falls back to CI-membership rejection
+#' when p is NA but the CI is finite, so a synthesized wild row's power
+#' contribution is NOT silently dropped (as it would be under a bare
+#' `p <= alpha`) -- see that function's docstring for the translation-
+#' equivariance argument that makes the fallback valid.
+#'
+#' "boot" / "jack" (and any other non-whitelisted inference string) rows are
+#' left with error_msg = "shift_not_reconstructable" and are never touched
+#' otherwise. Rows whose own delta = 0 baseline did not converge, or whose
+#' (estimator, inference, estimand, delta) cell has no fittable L_hat (no
+#' calibration pairs at that delta, or truth is identically 0), get a
+#' specific unfilled reason instead.
+#'
+#' IDEMPOTENCE / RE-SYNTHESIS SAFETY: a successfully filled row is tagged
+#' error_msg = "shift_filled" (NOT NA) precisely so it can be EXCLUDED from
+#' the calibration pool on any subsequent call -- a filled row satisfies
+#' `delta > 0 & converged` exactly like a genuine calibration row, so without
+#' this exclusion a second synthesis pass (e.g. after a partial resume) would
+#' refit L_hat partly on rows that already have the FIRST pass's L_hat baked
+#' into their att, contaminating the estimate. This function therefore only
+#' ever operates on rows with error_msg EXACTLY equal to "shift_pending";
+#' every other row (already filled, already marked unreconstructable/
+#' unusable, or a genuine estimator row -- error_msg NA) is untouched, so
+#' re-running this on an already-synthesized partial is a true no-op.
+#'
+#' ATOMICITY: writes to a `.tmp` sibling and `file.rename()`s it into place
+#' (atomic on POSIX filesystems) rather than truncating partial_path
+#' in-place -- a scenario's partial can represent 50-63h of compute (Della
+#' job 12114571 lost exactly this way to an OOM mid-write), so a crash
+#' between opening the file and finishing the write must never leave a
+#' truncated or empty partial on disk. A loading sidecar
+#' (`<partial>.shift_loading.csv`) is written alongside it, recording the
+#' fitted L_hat(delta) per (estimator, inference, estimand, delta) -- the
+#' provenance a SLURM array (subset) task needs, since it returns before
+#' run_metadata.json is written (mirrors the cs_safe_patches sidecar).
+#'
+#' @param partial_path Path to the scenario's partial CSV (read + atomically
+#'   rewritten; a no-op when there is nothing to synthesize).
+#' @return Invisibly, a list: n_filled, n_unfilled, unfilled_by_reason
+#'   (named integer vector), loading (tibble: estimator, inference,
+#'   estimand, delta, l_hat, n_calib_pairs), changed (FALSE when there were
+#'   no "shift_pending" rows at all -- the common case on every subsequent
+#'   call).
+#' @keywords internal
+.shift_synthesize_partial <- function(partial_path) {
+  d <- readr::read_csv(partial_path, col_types = .PARTIAL_COL_TYPES,
+                       show_col_types = FALSE, progress = FALSE)
+  d$converged  <- !is.na(d$converged) & as.logical(d$converged)
+  d$error_msg  <- as.character(d$error_msg)
+  d$event_time <- as.numeric(d$event_time)
+  d$.rid       <- seq_len(nrow(d))
+  n0 <- nrow(d)
+
+  is_pending <- !is.na(d$error_msg) & d$error_msg == "shift_pending"
+  if (!any(is_pending)) {
+    return(invisible(list(n_filled = 0L, n_unfilled = 0L,
+                          unfilled_by_reason = integer(0), loading = NULL,
+                          changed = FALSE)))
+  }
+
+  base_keys <- c("estimator", "inference", "estimand", "event_time", "rep")
+  baseline <- d %>%
+    dplyr::filter(.data$delta == 0) %>%
+    dplyr::distinct(dplyr::across(dplyr::all_of(base_keys)),
+                    .keep_all = TRUE) %>%
+    dplyr::select(dplyr::all_of(base_keys), att0 = "att", se0 = "se",
+                  ci_lo0 = "ci_lo", ci_hi0 = "ci_hi",
+                  converged0 = "converged",
+                  n_treated_clusters0 = "n_treated_clusters",
+                  n_control_clusters0 = "n_control_clusters")
+
+  # Calibration pairs: real (converged) delta>0 rows, EXPLICITLY EXCLUDING
+  # any row already tagged "shift_filled" by a prior synthesis pass (see
+  # IDEMPOTENCE above), joined to their own rep's delta=0 baseline. Keyed on
+  # `error_msg != "shift_filled"` rather than `is.na(error_msg)` on purpose:
+  # a converged row can legitimately carry an informational (non-NA)
+  # error_msg note that is NOT a synthesis artifact (today: .re_cs_cv3's
+  # "note: cv3 used X/Y replicates" on a converged "jack" row) -- excluding
+  # those from calibration too would be silently over-broad, and while jack
+  # is not itself a reconstructable inference arm today (so no live bug),
+  # keying on the specific tag makes the intent explicit for any future
+  # note-emitting arm. NA-truth guard mirrors validate_shift_sufficiency.R
+  # FIX 4 (defensive; truth should never be NA here since impose_effect()
+  # always runs, even for shift_pending rows).
+  calib <- d %>%
+    dplyr::filter(.data$delta > 0, .data$converged,
+                 is.na(.data$error_msg) | .data$error_msg != "shift_filled",
+                 !is.na(.data$truth)) %>%
+    dplyr::inner_join(baseline, by = base_keys, na_matches = "na") %>%
+    dplyr::filter(!is.na(.data$converged0), .data$converged0,
+                 is.finite(.data$att0), is.finite(.data$se0))
+
+  # BLOCKER 1 fix: L_hat fit PER DELTA (not pooled across the grid) -- see
+  # docstring. `delta` here is the calibration row's OWN delta (> 0); the
+  # join key below includes it so a pending row is matched to the loading
+  # fitted at ITS OWN delta.
+  loading <- calib %>%
+    dplyr::group_by(.data$estimator, .data$inference, .data$estimand,
+                    .data$delta) %>%
+    dplyr::summarise(
+      l_hat = if (sum(.data$truth^2, na.rm = TRUE) > 0) {
+        sum((.data$att - .data$att0) * .data$truth, na.rm = TRUE) /
+          sum(.data$truth^2, na.rm = TRUE)
+      } else NA_real_,
+      n_calib_pairs = dplyr::n(),
+      .groups = "drop"
+    )
+
+  pend <- d %>%
+    dplyr::filter(.data$.rid %in% d$.rid[is_pending]) %>%
+    dplyr::left_join(baseline, by = base_keys, na_matches = "na") %>%
+    dplyr::left_join(loading,
+                     by = c("estimator", "inference", "estimand", "delta")) %>%
+    dplyr::mutate(
+      reconstructable = .data$inference %in% .SHIFT_RECONSTRUCTABLE_INFERENCE,
+      baseline_ok = !is.na(.data$converged0) & .data$converged0 &
+        is.finite(.data$att0) & is.finite(.data$se0) & .data$se0 > 0 &
+        is.finite(.data$ci_lo0) & is.finite(.data$ci_hi0) &
+        !is.na(.data$n_treated_clusters0) & !is.na(.data$n_control_clusters0),
+      truth_ok = !is.na(.data$truth),
+      lhat_ok  = !is.na(.data$l_hat),
+      fillable = .data$reconstructable & .data$baseline_ok &
+        .data$truth_ok & .data$lhat_ok,
+      fail_reason = dplyr::case_when(
+        !.data$reconstructable ~ "shift_not_reconstructable",
+        !.data$baseline_ok     ~ "shift_baseline_unusable",
+        !.data$truth_ok        ~ "shift_truth_unavailable",
+        !.data$lhat_ok         ~ "shift_l_hat_unavailable",
+        TRUE                   ~ NA_character_
+      ),
+      df_bl     = pmax(1L, .data$n_treated_clusters0 +
+                         .data$n_control_clusters0 - 1L),
+      shift     = .data$l_hat * .data$truth,
+      att_new   = .data$att0 + .data$shift,
+      se_new    = .data$se0,
+      ci_lo_new = .data$ci_lo0 + .data$shift,
+      ci_hi_new = .data$ci_hi0 + .data$shift,
+      p_new     = dplyr::if_else(
+        .data$inference == "wild", NA_real_,
+        .shift_tp(.data$att_new, .data$se_new, .data$df_bl))
+    )
+
+  fill_idx   <- pend$.rid[pend$fillable]
+  unfill_idx <- pend$.rid[!pend$fillable]
+
+  d$att[fill_idx]       <- pend$att_new[pend$fillable]
+  d$se[fill_idx]        <- pend$se_new[pend$fillable]
+  d$p[fill_idx]         <- pend$p_new[pend$fillable]
+  d$ci_lo[fill_idx]     <- pend$ci_lo_new[pend$fillable]
+  d$ci_hi[fill_idx]     <- pend$ci_hi_new[pend$fillable]
+  d$converged[fill_idx] <- TRUE
+  # "shift_filled", not NA -- see IDEMPOTENCE above; this is the tag that
+  # keeps a re-synthesis pass from refitting L_hat on rows this pass filled.
+  d$error_msg[fill_idx] <- "shift_filled"
+  d$error_msg[unfill_idx] <- pend$fail_reason[!pend$fillable]
+
+  # Post-fill invariants: BLOCKER 3's atomic write is pointless if what we
+  # write is already wrong. Row count must be exactly preserved (this
+  # function only ever mutates cell values, never adds/removes rows), and
+  # no row may still read "shift_pending" -- every pending row above was
+  # routed to either a fill or one of the fail_reason tags.
+  stopifnot(
+    "row count changed during synthesis" = nrow(d) == n0,
+    "shift_pending rows remain after synthesis" =
+      !any(!is.na(d$error_msg) & d$error_msg == "shift_pending")
+  )
+
+  d$.rid <- NULL
+
+  # Atomic write: stream to a .tmp sibling, then rename into place
+  # (POSIX rename() is atomic) -- see ATOMICITY above. A crash mid-write
+  # leaves only the .tmp file corrupted; partial_path itself is untouched
+  # until the rename succeeds. on.exit() removes a lingering .tmp on ANY
+  # exit path from here on (normal return, error, or a failed rename that
+  # already threw below) so a full-size .tmp is never orphaned beside a
+  # multi-GB partial.
+  tmp_path <- paste0(partial_path, ".tmp")
+  on.exit(if (file.exists(tmp_path)) unlink(tmp_path), add = TRUE)
+  readr::write_csv(d, tmp_path)
+
+  # Loading sidecar written BEFORE the rename, not after: if the process
+  # dies between the two, a partial that already reflects the fill (because
+  # the rename below succeeded) must never be left with no synthesis
+  # provenance at all -- and a partial that does NOT yet reflect the fill
+  # (rename not yet reached) simply gets a sidecar one step ahead of it,
+  # which is harmless (the NEXT synthesis call, finding no "shift_pending"
+  # rows, is a no-op that regenerates nothing -- but the sidecar already
+  # correctly describes the fill that a completed rename would produce).
+  # The alternative order (sidecar after rename) has a real gap: a death
+  # between the two leaves a synthesized partial (no pending rows, so a
+  # later call short-circuits at `if (!any(is_pending)) return(...)`
+  # BEFORE ever recomputing `loading`) whose provenance sidecar is silently
+  # never regenerated.
+  readr::write_csv(loading, paste0(partial_path, ".shift_loading.csv"))
+
+  # file.rename() returns FALSE (with a warning) rather than throwing on
+  # failure -- e.g. cross-filesystem rename, permissions, disk full on a
+  # journaled write of the rename itself. An unchecked FALSE here would let
+  # this function report n_filled > 0 and the caller log success while
+  # partial_path on disk is STILL the pre-synthesis (or, worse, a mid-
+  # previous-write) version -- silent data loss on a scenario that can
+  # represent 50-63h of compute. Fail loud instead.
+  stopifnot(
+    "atomic rename of the synthesized partial failed" =
+      file.rename(tmp_path, partial_path)
+  )
+
+  reason_tbl <- pend %>% dplyr::filter(!.data$fillable) %>%
+    dplyr::count(.data$fail_reason)
+  unfilled_by_reason <- stats::setNames(reason_tbl$n, reason_tbl$fail_reason)
+
+  invisible(list(
+    n_filled = length(fill_idx), n_unfilled = length(unfill_idx),
+    unfilled_by_reason = unfilled_by_reason, loading = loading,
+    changed = TRUE
+  ))
+}
+
+# ---------------------------------------------------------------------------
 # Main runner
 # ---------------------------------------------------------------------------
 
@@ -527,6 +936,24 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
   if (!is.null(n_reps_override)) {
     grid$n_reps <- as.integer(n_reps_override)
     grid$estimator_reps <- rep(list(NULL), nrow(grid))
+    # shift_calibration_reps does NOT automatically track n_reps once it has
+    # been baked into the grid -- without this, a smoke override (small
+    # n_reps_override) leaves a shift_mode scenario's calibration count at
+    # whatever it was computed against the ORIGINAL (large) n_reps, e.g. 10
+    # after an override to n_reps_override = 3: every rep becomes a
+    # "calibration" rep (rep <= 10 is always true) and synthesis is silently
+    # never exercised, defeating the purpose of a shift-mode smoke test.
+    # Recompute via the SAME per-scenario default formula
+    # (expand_scenario_grid()'s max(10L, ceiling(0.1*n_reps))) against the
+    # NEW n_reps, then clamp into the valid [2, n_reps - 1] band (an
+    # explicit run-level pin is intentionally NOT preserved across an
+    # override -- it was sized for the original n_reps too).
+    if (any(grid$shift_mode)) {
+      resc <- as.integer(pmax(10L, ceiling(0.1 * grid$n_reps)))
+      resc <- pmin(pmax(resc, 2L), grid$n_reps - 1L)
+      grid$shift_calibration_reps <- ifelse(grid$shift_mode, resc,
+                                            grid$shift_calibration_reps)
+    }
     # n_reps is hashed, so the ids must follow the override — otherwise a
     # 3-rep smoke run would write to the same partial as a 500-rep run.
     grid <- .assign_scenario_ids(grid, cfg$base_seed)
@@ -578,6 +1005,26 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
   real_schedule <- guarded_read_csv(cfg$schedule)
   alpha_vec <- as.numeric(unlist(cfg$alpha %||% c(0.10, 0.05, 0.01)))
 
+  # Install the CS segfault guard in the parent too: serial runs (workers = 1)
+  # never enter the furrr path, and the parent evaluates estimators directly.
+  if (isTRUE(cfg$cs_safe_patches)) {
+    ok <- install_cs_safe_patches(TRUE, root = cfg$repo_root %||% power_repo_root())
+    cat(sprintf("[%s] cs_safe_patches: reg_did_rc guard %s\n", .ts(),
+                if (ok) "ACTIVE on did's call path"
+                else "NOT ACTIVE (see warning above)"))
+    # Only fatal when this grid actually runs CS. A twfe/did2s-only array task
+    # is unaffected by the guard and must not be blocked by, say, a node
+    # without DRDID installed.
+    grid_has_cs <- any(vapply(grid$estimators,
+                              function(e) "cs" %in% as.character(unlist(e)),
+                              logical(1)))
+    if (!ok && grid_has_cs) {
+      stop("cs_safe_patches: TRUE but the guard is not active on did's call ",
+           "path; refusing to run a CS grid that will abort mid-scenario.",
+           call. = FALSE)
+    }
+  }
+
   cat(sprintf("[%s] run_scenario_grid: %d of %d scenario(s), workers = %d, run = %s\n",
               .ts(), nrow(grid), n_all, workers, run_name))
   if (subset_run) {
@@ -614,6 +1061,33 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
                                       sc$estimator_reps)
     max_reps <- max(est_reps)
     n_expected <- sum(est_reps) * length(sc$effect_grid)
+    if (isTRUE(sc$shift_mode)) {
+      if (!any(sc$effect_grid == 0)) {
+        stop("run_scenario_grid: shift_mode requires 0 in the effect_grid ",
+             "(scenario ", sc$scenario_id, ") -- the delta=0 fit is the ",
+             "shift baseline for every rep.", call. = FALSE)
+      }
+      # shift_calibration_reps < 2 pays for every delta=0 fit and yields NA
+      # loadings for every (estimator, inference, estimand, delta) group (a
+      # through-origin slope needs at least 2 points to be anything but
+      # exact-fit-through-one-point noise) -- reject rather than silently
+      # producing an all-unfilled partial. >= max_reps means EVERY rep is a
+      # calibration rep, i.e. shift mode provides zero compute savings for
+      # this scenario -- also almost certainly a misconfiguration.
+      if (sc$shift_calibration_reps < 2L) {
+        stop("run_scenario_grid: shift_calibration_reps must be >= 2 ",
+             "(scenario ", sc$scenario_id, ", got ",
+             sc$shift_calibration_reps, ") -- a through-origin loading ",
+             "needs at least 2 calibration pairs per delta.", call. = FALSE)
+      }
+      if (sc$shift_calibration_reps >= max_reps) {
+        stop("run_scenario_grid: shift_calibration_reps must be < the ",
+             "scenario's max rep count (scenario ", sc$scenario_id, ", got ",
+             sc$shift_calibration_reps, " >= ", max_reps, ") -- every rep ",
+             "would be a calibration rep, so shift mode saves nothing.",
+             call. = FALSE)
+      }
+    }
     partial <- file.path(partials_dir, paste0(sc$scenario_id, ".csv"))
     # Batch checkpoint sidecar (2026-08-11): lists rep ids whose rows are
     # fully appended to the partial. Appended AFTER each batch's CSV append
@@ -623,21 +1097,58 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
     # was only written at scenario END.
     ckpt <- paste0(partial, ".done_reps")
 
+    # Provenance sidecar for the CS guard. Deliberately NOT a column on the
+    # result rows: adding one would change the flag-OFF results schema and
+    # break append-on-resume against the partials already on disk. Subset
+    # (SLURM array) runs return before run_metadata.json is written, so
+    # without this the only on-disk record that the guard was active is an
+    # opaque hash prefix -- for a flag that changes what CS returns on the
+    # cells that would otherwise have killed the process.
+    if (isTRUE(sc$cs_safe_patches)) {
+      writeLines(
+        c("cs_safe_patches: TRUE",
+          paste0("patch: patches/reg_did_rc_safe.R over DRDID:::reg_did_rc",
+                 " (+ did imports frame)"),
+          paste0("scenario_id: ", sc$scenario_id),
+          paste0("estimators: ",
+                 paste(sort(as.character(sc$estimators)), collapse = ","))),
+        paste0(partial, ".cs_safe_patches"))
+    }
+
     done_reps <- integer(0)
     if (resume && file.exists(partial)) {
       done <- tryCatch(
-        readr::read_csv(partial, show_col_types = FALSE, progress = FALSE),
+        readr::read_csv(partial, col_types = .PARTIAL_COL_TYPES,
+                        show_col_types = FALSE, progress = FALSE),
         error = function(e) NULL
       )
-      if (!is.null(done) && nrow(done) > 0L &&
-          dplyr::n_distinct(paste(done$estimator, done$rep, done$delta)) >=
-            n_expected) {
-        cat(sprintf("[%s] %s: partial complete (%d rows) — skipping (resume)\n",
-                    .ts(), sc$scenario_id, nrow(done)))
+      complete <- !is.null(done) && nrow(done) > 0L &&
+        dplyr::n_distinct(paste(done$estimator, done$rep, done$delta)) >=
+          n_expected
+      if (complete) {
+        # Shift-mode scenario whose reps are ALL present but whose
+        # end-of-scenario synthesis was interrupted (e.g. a crash between
+        # the batch loop finishing and .shift_synthesize_partial() running):
+        # every rep is done, so fall through to synthesis-only instead of
+        # skipping outright -- skipping would strand the "shift_pending"
+        # rows forever (they already satisfy the completeness check above).
+        n_pending <- if (isTRUE(sc$shift_mode)) {
+          sum(!is.na(done$error_msg) & done$error_msg == "shift_pending")
+        } else 0L
+        if (n_pending == 0L) {
+          cat(sprintf(
+            "[%s] %s: partial complete (%d rows) — skipping (resume)\n",
+            .ts(), sc$scenario_id, nrow(done)))
+          if (file.exists(ckpt)) unlink(ckpt)
+          next
+        }
+        cat(sprintf(paste0(
+          "[%s] %s: partial complete but %d shift_pending row(s) remain — ",
+          "running synthesis only (no reps to recompute)\n"),
+          .ts(), sc$scenario_id, n_pending))
+        done_reps <- seq_len(max_reps)
         if (file.exists(ckpt)) unlink(ckpt)
-        next
-      }
-      if (!is.null(done) && file.exists(ckpt)) {
+      } else if (!is.null(done) && file.exists(ckpt)) {
         # Batch-level resume: keep only reps recorded as fully written
         # (drops any torn trailing batch), rewrite the partial clean, and
         # compute the remaining reps below.
@@ -650,24 +1161,38 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
       } else {
         # Incomplete partial with no checkpoint sidecar (pre-checkpoint
         # scheme, or unreadable): start the scenario clean to avoid
-        # duplicate rows from appends.
+        # duplicate rows from appends. The shift-loading sidecar (if any --
+        # left over from an earlier completed-and-synthesized run of this
+        # SAME scenario_id) describes L_hat fitted on data that is about to
+        # be discarded; a stale one surviving into a fresh run would
+        # misrepresent the new run's provenance.
         unlink(partial)
+        unlink(paste0(partial, ".shift_loading.csv"))
         if (file.exists(ckpt)) unlink(ckpt)
       }
     } else if (file.exists(partial)) {
-      unlink(partial); if (file.exists(ckpt)) unlink(ckpt)
+      unlink(partial)
+      unlink(paste0(partial, ".shift_loading.csv"))
+      if (file.exists(ckpt)) unlink(ckpt)
     }
 
     cat(sprintf(
-      "[%s] %s START (%d reps x %d deltas x {%s}; design %s, %s/%s/%s)\n",
+      "[%s] %s START (%d reps x %d deltas x {%s}; design %s, %s/%s/%s%s)\n",
       .ts(), sc$scenario_id, max_reps, length(sc$effect_grid),
       paste(sc$estimators, collapse = ","), sc$design, sc$level, sc$sample,
-      sc$mechanism))
+      sc$mechanism,
+      if (isTRUE(sc$shift_mode)) {
+        sprintf("; shift_mode ON (calibration_reps=%d/%d)",
+               sc$shift_calibration_reps, max_reps)
+      } else ""))
 
     panel <- get_panel(sc)
 
     # Captured as a plain string so future exports it to parallel workers.
     power_root <- power_repo_root()
+    # Likewise captured as a plain logical: the worker closure below reads it
+    # to install the CS segfault guard in its own process.
+    cs_safe_patches <- isTRUE(sc$cs_safe_patches)
 
     run_one_rep <- function(rep) {
       # Parallel workers receive the functions this lambda references
@@ -684,6 +1209,17 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
                       "run_estimators.R")) {
           source(file.path(power_root, "R", "power", mod))
         }
+      }
+      # Each worker is a separate R process with its own namespaces, so the CS
+      # segfault guard must be installed per worker, not just in the parent.
+      # Outside the sentinel block above: a worker reused across reps still
+      # needs the check, which install_cs_safe_patches() short-circuits once
+      # installed. Guarded so the flag-OFF path is byte-for-byte the old code
+      # -- an unconditional call would introduce a new abort into a flag-OFF
+      # run if the symbol were ever missing (e.g. a mocked estimator_fn in a
+      # session where the sentinel above already exists).
+      if (isTRUE(cs_safe_patches)) {
+        install_cs_safe_patches(TRUE, root = power_root)
       }
       # Serial == parallel invariant: furrr(seed = TRUE) switches workers to
       # the L'Ecuyer-CMRG RNG kind, under which set.seed(seed_rep) inside
@@ -738,24 +1274,94 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
         }
         return(bind_rows(out))
       }
+      # spec is identical across deltas/estimators within a rep (only `est`
+      # varies its contents downstream via run_estimator()'s own dispatch);
+      # built once so both the brute-force and shift-mode branches share it.
+      .mk_spec <- function() {
+        list(anticipation   = sc$est_anticipation,
+             control_group  = sc$control_group,
+             outcome        = sc$outcome,
+             # Defensive: .re_spec() uses modifyList(), which DELETES a key
+             # whose value is NULL -- that would pass faster_mode = NULL
+             # into att_gt(). Never NULL for a grid built by
+             # expand_scenario_grid(), but a resumed or hand-built grid
+             # lacking the column must fall back to the historical default
+             # rather than error.
+             cs_faster_mode = isTRUE(sc$cs_faster_mode %||% TRUE))
+      }
+
       out <- list()
-      for (delta in sc$effect_grid) {
+
+      if (!isTRUE(sc$shift_mode)) {
+        # ---- Brute force (flag OFF): byte-for-byte the pre-shift-mode code.
+        for (delta in sc$effect_grid) {
+          sim <- fns$impose(panel, sched, mechanism = sc$mechanism,
+                            shape = sc$shape, delta = delta, params = list(),
+                            outcome = sc$outcome, seed = seed_rep + 1L)
+          truths <- .compute_truths(sim, sched, sc$shape)
+          for (est in sc$estimators) {
+            if (rep > est_reps[[est]]) next
+            res <- tryCatch(
+              fns$estimate(sim, estimator = est, spec = .mk_spec()),
+              error = function(e) .estimator_failure_row(est,
+                                                         conditionMessage(e))
+            )
+            res <- .attach_truth(res, truths)
+            out[[length(out) + 1L]] <- annotate_row(res, delta)
+          }
+        }
+        return(bind_rows(out))
+      }
+
+      # ---- Shift mode (flag ON): delta=0 ALWAYS fully estimated (every rep
+      # needs its own baseline fit + acts as the placeholder template).
+      # delta>0 is fully estimated only for calibration reps
+      # (rep <= shift_calibration_reps); every other rep gets a cheap
+      # impose_effect() (for .compute_truths()) plus placeholder rows
+      # shaped exactly like that rep's OWN delta=0 result (so CS's variable
+      # dynamic-event-time row count is mirrored correctly -- (g,t) cell
+      # identifiability depends on panel/schedule support, not on delta).
+      # .shift_synthesize_partial() fills these in at scenario end.
+      is_calibration_rep <- rep <= sc$shift_calibration_reps
+      zero_idx <- which(sc$effect_grid == 0)[1]  # existence asserted above
+      delta_order <- c(sc$effect_grid[zero_idx], sc$effect_grid[-zero_idx])
+      templates <- list()  # per estimator: raw fns$estimate() output at delta=0
+
+      for (delta in delta_order) {
+        run_full <- delta == 0 || is_calibration_rep
         sim <- fns$impose(panel, sched, mechanism = sc$mechanism,
                           shape = sc$shape, delta = delta, params = list(),
                           outcome = sc$outcome, seed = seed_rep + 1L)
         truths <- .compute_truths(sim, sched, sc$shape)
         for (est in sc$estimators) {
           if (rep > est_reps[[est]]) next
-          spec <- list(anticipation  = sc$est_anticipation,
-                       control_group = sc$control_group,
-                       outcome       = sc$outcome)
-          res <- tryCatch(
-            fns$estimate(sim, estimator = est, spec = spec),
-            error = function(e) .estimator_failure_row(est,
-                                                       conditionMessage(e))
-          )
-          res <- .attach_truth(res, truths)
-          out[[length(out) + 1L]] <- annotate_row(res, delta)
+          if (run_full) {
+            res <- tryCatch(
+              fns$estimate(sim, estimator = est, spec = .mk_spec()),
+              error = function(e) .estimator_failure_row(est,
+                                                         conditionMessage(e))
+            )
+            if (delta == 0) templates[[est]] <- res
+            res <- .attach_truth(res, truths)
+            out[[length(out) + 1L]] <- annotate_row(res, delta)
+          } else {
+            tmpl <- templates[[est]]
+            if (is.null(tmpl) || nrow(tmpl) == 0L) {
+              # delta=0 produced no rows for this estimator (should not
+              # happen -- defensive): a single generic placeholder still
+              # keeps the (estimator, rep, delta) triple present.
+              ph <- .estimator_failure_row(est, "shift_pending")
+            } else {
+              ph <- tmpl
+              ph$att <- NA_real_;  ph$se    <- NA_real_
+              ph$p   <- NA_real_;  ph$ci_lo <- NA_real_; ph$ci_hi <- NA_real_
+              ph$converged  <- FALSE
+              ph$error_msg  <- "shift_pending"
+              ph$runtime_s  <- NA_real_
+            }
+            ph <- .attach_truth(ph, truths)
+            out[[length(out) + 1L]] <- annotate_row(ph, delta)
+          }
         }
       }
       bind_rows(out)
@@ -776,7 +1382,35 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
                   min(batches[[bi]]), max(batches[[bi]]),
                   nrow(rows_bi)))
     }
-    sc_res <- readr::read_csv(partial, show_col_types = FALSE, progress = FALSE)
+    sc_res <- readr::read_csv(partial, col_types = .PARTIAL_COL_TYPES,
+                              show_col_types = FALSE, progress = FALSE)
+
+    if (isTRUE(sc$shift_mode)) {
+      synth <- .shift_synthesize_partial(partial)
+      if (isTRUE(synth$changed)) {
+        cat(sprintf(paste0(
+          "[%s] %s: shift synthesis — calibration_reps=%d, filled=%d, ",
+          "unfilled=%d\n"),
+          .ts(), sc$scenario_id, sc$shift_calibration_reps,
+          synth$n_filled, synth$n_unfilled))
+        if (!is.null(synth$loading) && nrow(synth$loading) > 0L) {
+          for (r in seq_len(nrow(synth$loading))) {
+            Lr <- synth$loading[r, ]
+            cat(sprintf("[%s]   L_hat[%s/%s/%s] = %s (n_calib_pairs=%d)\n",
+                        .ts(), Lr$estimator, Lr$inference, Lr$estimand,
+                        if (is.na(Lr$l_hat)) "NA" else sprintf("%.6f", Lr$l_hat),
+                        Lr$n_calib_pairs))
+          }
+        }
+        if (length(synth$unfilled_by_reason) > 0L) {
+          for (rn in names(synth$unfilled_by_reason)) {
+            cat(sprintf("[%s]   unfilled[%s] = %d row(s)\n",
+                        .ts(), rn, synth$unfilled_by_reason[[rn]]))
+          }
+        }
+      }
+    }
+
     if (file.exists(ckpt)) unlink(ckpt)
     cat(sprintf("[%s] %s END (%d rows -> %s)\n",
                 .ts(), sc$scenario_id, nrow(sc_res), basename(partial)))
@@ -796,7 +1430,8 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
   partial_files <- file.path(partials_dir, paste0(grid$scenario_id, ".csv"))
   partial_files <- partial_files[file.exists(partial_files)]
   results <- purrr::map_dfr(partial_files, function(f) {
-    readr::read_csv(f, show_col_types = FALSE, progress = FALSE) %>%
+    readr::read_csv(f, col_types = .PARTIAL_COL_TYPES, show_col_types = FALSE,
+                    progress = FALSE) %>%
       mutate(
         converged  = as.logical(.data$converged),
         error_msg  = as.character(.data$error_msg),

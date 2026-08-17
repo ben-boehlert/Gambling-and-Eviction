@@ -1,0 +1,131 @@
+# =============================================================================
+# power_cs_probe.yml — CS shift-mode validation probe (state level, local)
+#
+# Purpose: decide whether the delta-grid "shift shortcut" validated for TWFE
+# and did2s (analysis/diagnostics/validate_shift_sufficiency.R,
+# output/shift_validation/) also holds for CS-DiD. CS is the cost driver
+# (att_gt: 50-63h per county task) and is the estimator the shortcut is meant
+# to make affordable, but no CS rows exist in any run with a delta grid — the
+# _cs_cty_* probes are single-rep feasibility checks at delta in {0, 1}.
+#
+# Two questions this probe answers:
+#   1. LINEARITY. Is att_cs(delta) - att_cs(0) = L * truth rep-by-rep, with
+#      se_cs(delta) = se_cs(0)? The deterministic x step scenario is the clean
+#      test: no injection noise, in-span shape, so exactness is expected iff
+#      att_gt is linear in the outcome. Failure here kills shift mode for CS.
+#   2. LOADING. Does CS load at ~1 on non-constant shapes (like did2s, 1.02)
+#      or well below 1 (like TWFE, 0.746 on ramp)? The count_nb x ramp block
+#      answers it.
+#
+# Deliberately SMALL: 50 reps x 4 deltas is ample for a per-rep algebraic
+# linearity check (150 paired nonzero-delta observations per cell) but coarse
+# for power rates (MC SE ~0.07). Power-curve agreement is a secondary readout
+# here; the primary readouts are the loading and the SE invariance.
+#
+# twfe and did2s are included at the same rep count as an internal control:
+# their shift behavior is already known, so they confirm the probe itself is
+# sound, and the twfe-vs-did2s contrast on the SAME reps is what separates an
+# estimator-loading effect from a mechanism effect (this contrast settled the
+# round-1 misreading in the TWFE/did2s validation).
+#
+# base_seed matches power_primary.yml/power_cheap.yml by convention. Note the
+# scenario ids are content hashes that include effect_grid and n_reps, so this
+# probe's ids are distinct from every existing partial — it cannot collide
+# with or invalidate the cheap/primary runs.
+#
+# Scenario count: 3.
+#   bash scripts/run_power_cs_probe.sh
+# =============================================================================
+
+run_name: cs_probe
+
+# ---- Top-level defaults (inherited by every block) --------------------------
+
+level:      state                # state only — att_gt at county is the thing
+sample:     [S2]                 #   we are trying to avoid paying for
+covid:      drop
+treat_def:  online_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb, deterministic]
+shapes:       [step, ramp]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+
+template:   panel
+
+# 3 nonzero points: enough for a through-origin loading fit and to see whether
+# the shift-to-truth ratio drifts with delta (it does for state TWFE).
+effect_grid:  [0, 0.02, 0.05, 0.10]
+
+estimators:   [cs, twfe, did2s]
+
+# REQUIRED for any CS run on this design. did::att_gt(est_method = "reg",
+# allow_unbalanced_panel = TRUE) -> DRDID:::reg_did_rc() -> fastglm() aborts
+# the R process on a zero-row design matrix (~1 rep in 4 here, measured
+# 2026-08-17); the abort is C-level, so no tryCatch catches it and the furrr
+# worker dies with the scenario. TRUE installs patches/reg_did_rc_safe.R.
+# It is hashed into the scenario id, so these partials can never be pooled
+# with the unpatched _cs_cty_* probes.
+cs_safe_patches: true
+
+# REQUIRED for CS to estimate at all on this design. With the framework's
+# historical default (TRUE), att_gt() failed on 100% of probed rep x delta
+# cells: "singular matrix due to not enough control units. Try changing
+# faster_mode=FALSE" (2026-08-17 probe, batch 1; twfe and did2s converged on
+# 100% of the same reps). A prior session hit the identical failure on
+# 2026-08-11 and set FALSE in analysis/diagnostics/cs_cv3_calibration_state.R
+# without updating the framework. FALSE is the slower code path -- this probe
+# is also the measurement of how much slower, for the county budget.
+cs_faster_mode: false
+
+# ---- Execution --------------------------------------------------------------
+
+n_reps:     50
+estimator_reps:
+  cs:     50
+  twfe:   50
+  did2s:  50
+base_seed:  20260723
+mde_boot:   200
+
+alpha:      [0.1, 0.05, 0.01]
+
+min_pre:    12
+min_post:   6
+
+anticipation_months: 6
+
+# ---- Scenario families ------------------------------------------------------
+
+scenarios:
+
+  # 1. LINEARITY TEST. Deterministic transformed-scale shift, constant step:
+  # no injection noise, effect lies in the span of the estimated model. If CS
+  # is linear in the outcome, the shift is exact here (L = 1 to machine
+  # precision, SE identical across deltas) — this is the pass/fail gate.
+  - name: cs_probe_state_det_step
+    level: state
+    sample: [S2]
+    mechanisms: [deterministic]
+    shapes: [step]
+
+  # 2. HEADLINE MECHANISM. Same shape, NB count augmentation — isolates the
+  # mechanism/log1p-nonlinearity contribution against scenario 1.
+  - name: cs_probe_state_nb_step
+    level: state
+    sample: [S2]
+    mechanisms: [count_nb]
+    shapes: [step]
+
+  # 3. LOADING ON A NON-CONSTANT SHAPE. Ramp is where TWFE's loading collapses
+  # to 0.746 while did2s holds at 1.02; CS aggregates group-time ATTs, so it
+  # is expected to behave like did2s, but that is a prediction, not a result.
+  - name: cs_probe_state_nb_ramp
+    level: state
+    sample: [S2]
+    mechanisms: [count_nb]
+    shapes: [ramp]
+# =============================================================================

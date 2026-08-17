@@ -317,6 +317,34 @@ Analysis of how quickly state gambling markets reach their peak monthly Handle (
 
 ## Known Issues and Limitations
 
+### CS in the Blinded Power Framework: Two Execution Flags (2026-08-17)
+
+The CS arm of `R/power/` could not run at all until this date. Two run-level config keys
+now govern it; both default to historical behavior and both are hashed into the scenario
+id **only when non-default AND only for CS-bearing scenarios**, so enabling either never
+moves a twfe/did2s id or orphans a completed partial. Full write-up:
+`docs/methodology/POWER_SIMULATION_DESIGN.md` §16a. Tests:
+`tests/testthat/test-cs-safe-patches.R`.
+
+- **`cs_safe_patches`** (default `FALSE`). `att_gt` → `DRDID:::reg_did_rc` → `fastglm`
+  **aborts the R process** (C-level, uncatchable) on zero-row design matrices from
+  non-identifiable (g,t) cells — ~1 rep in 4 on the D1 state design. Under furrr the
+  worker dies and the scenario is lost. `TRUE` installs `patches/reg_did_rc_safe.R`.
+  **Must patch two bindings**: `did` does `importFrom(DRDID, reg_did_rc)` and copies it by
+  value, and under `faster_mode=TRUE` calls it unqualified — patching DRDID alone leaves
+  the hot path unguarded while appearing to succeed.
+- **`cs_faster_mode`** (default `TRUE` = historical). With `TRUE`, CS failed on **100%**
+  of probed rep × delta cells: "singular matrix due to not enough control units. Try
+  changing faster_mode=FALSE." TWFE/did2s converged on 100% of the same reps.
+  `analysis/diagnostics/cs_cv3_calibration_state.R:64-66` found this on 2026-08-11 and
+  fixed it only in that script. `FALSE` is also *faster* here (24–40 s vs 57–101 s/fit).
+  **Implication: every prior CS run in this framework used a non-estimating code path.**
+
+**Unresolved:** the two `faster_mode` settings return materially different ATTs on
+identical data (−0.033 vs +0.557 on one rep, with different SEs). `faster_mode` is meant
+to be a pure computational shortcut, so this should not happen. Treat CS point estimates
+from this framework as provisional and always record which mode produced them.
+
 ### Gambling Intensity Heterogeneity Analysis Does Not Work
 
 The `pretrends_statepanel_template.R` gambling intensity feature bins states by **pre-treatment average handle**. This always produces 0 states because gambling handle only exists AFTER legalization — there is no handle before a state legalizes (it's 0 by definition). The code at `filter(g > 0L, t < g, !is.na(gambling_amount))` correctly returns empty results.

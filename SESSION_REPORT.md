@@ -643,3 +643,385 @@ After the 17 analytical tasks were complete, three additional pieces of work to 
 - Della cheap launched (job 12248328): 8 scenarios, county ~Tue.
 
 **Status:** county 500-rep results = PAP headline MDE, pending. Commits below pin the framework state.
+
+## 2026-08-11 17:00 — CV3 cluster jackknife for CSDID: implemented, tested, calibrated (state)
+
+**Trigger:** Karim, Nielsen, MacKinnon & Webb (2026), *Improved Inference for CSDID Using the Cluster Jackknife* (arXiv 2602.12043) added to repo. Question: does CV3 rescue CS on our singleton-cohort design?
+
+**Operations:**
+- Installed `didjack` 0.1.0 (`remotes::install_github("liu-yunhan/didjack")`).
+- `R/power/run_estimators.R`: added `.re_cs_cv3()` (KNMW eq. 20) + `jack` inference arm on E1; new spec flags `cs_jack` (default FALSE) and `cs_faster_mode` (default TRUE); refactored `fit_att` → `fit_att_on(d, bstrap)` for delete-one refits.
+- `tests/testthat/test-cs-cv3.R` (new): gating, schema conformance, failed-replicate accounting, and exact cross-validation vs `didjack` (1e-8 on SE/p/CI).
+- `analysis/diagnostics/cs_cv3_calibration_state.R` (new): batch-checkpointed null calibration harness.
+- `docs/methodology/POWER_SIMULATION_DESIGN.md`: E1 inference row + CV3 subsection.
+- Ran 200-rep δ=0 state calibration (95 min, 6 cores) → `data/output/cs_cv3_calibration/` (+ README with full findings).
+
+**Decisions:**
+- **Do NOT use `didjack` in production** — its internal `aggte()` omits `na.rm=TRUE`; with our 30–43% non-identifiable (g,t) cells it dies on the first jackknife replicate (reproduced on 3 independent D1 draws). Reimplemented eq. (20) with `na.rm=TRUE`, pinned to their package by test.
+- CV3 arm defaults OFF (costs ~34× one CS fit) so production configs are untouched.
+- Standalone diagnostic rather than a config axis — scenario ids are content hashes; a new config field would invalidate completed Della partials.
+- TWFE excluded from the diagnostic's default arms (see bug below).
+
+**Results (200 reps, δ=0, state, 100% convergence):**
+- CS analytic 21.5% reject / SE-SD 0.660; boot 24.5% / 0.692; boot_t 23.0% / 0.690.
+- **CS + CV3: 0.5% reject / SE-SD 1.240** — overshoots into over-coverage, does not calibrate. Mean SE 0.639 ≈ 6× did2s → valid but uncompetitive on MDE. Matches KNMW §4 singleton-cohort composition caveat (untested in their paper).
+- did2s state: 31.0% reject / SE-SD 0.521 — disqualified, consistent with prior cheap run.
+- Analytic ≈ multiplier bootstrap (independent confirmation of KNMW pt. 3) → **`biters=199` in the CS arm buys nothing**; bootstrap arm droppable.
+- **NEW, unexplained:** CS mean ATT under the null = +0.212 (~5.8 SEs from 0) vs did2s +0.060. δ=0 is a pure pass-through (`y_sim_count = fc`), so the outcome is the real panel and only assignment varies — a genuine systematic offset. Consistent with Deb/Norton/Wooldridge/Zabel (2025) unbalanced-panel aggregation bias. **Not diagnosed; over-rejection above conflates this with SE deflation.**
+
+**Bugs found (both pre-existing):**
+- `runtime_s` recorded in MIXED UNITS across all estimators: `difftime(a,b,"secs")` passes "secs" positionally as `tz`, not `units`, so longer durations silently reported minutes. Fixed at all 9 call sites in `run_estimators.R`. Past `runtime_s`-based cost estimates are suspect.
+- `fwildclusterboot::boottest` raises an irrecoverable R exception (process abort, uncatchable) inside forked `mclapply` workers on the state panel, killing the whole batch. VERIFIED the same rep runs clean serially (analytic p=.625, wild p=.600) → fork interaction, not estimation failure.
+
+**Commits:**
+- (none — changes uncommitted on `nh-data-repair`)
+
+**Status:**
+- Done: CV3 implemented + cross-validated + state calibration complete; full test suite passes.
+- Pending: diagnose the +0.21 null offset; decide whether to skip county CS+CV3 (county CS already OVER-covers at SE-SD 2.46, so CV3's inflation is the wrong medicine); omit-one-cluster ATT plot in pretrends pipeline; fold KNMW into `docs/literature_review_2026-07_estimation_strategy.md`.
+
+## 2026-08-12 — Estimator-diagnostic visualization set (5 figures)
+
+**Operations:**
+- New scripts `analysis/visualization/estimator_diagnostics/fig{1..5}_*.R`; outputs `figures/estimator_diagnostics/*.{png,pdf}`. Plan: `quality_reports/plans/2026-08-12_estimator-diagnostic-visualizations.md`.
+- Orchestrated: 3 coder subagents (Sonnet) in parallel; Fable reviewed each rendered PNG, one revision round (fig1 legibility/legend/x-range; fig5 label collision + band capping; fig4 subtitle).
+
+**Decisions:**
+- Fig 3 BJS demo uses "early differential drift, parallel near treatment" DGP — local PT holds, global PT fails: BJS spurious ATT ≈ −0.032 (analytic −0.037), CS ≈ 0. Panel A: Vermont (online 2024-01), imputation window spans COVID break.
+- Fig 1/2 use RAW ETS panel + repaired schedule (23 treated, 21 monthly cohorts, 19 singleton; LA+NY Jan-2022 and DE+VT Jan-2024 shared); figs 4/5 use balanced 24-state calibration sample — subtitles distinguish the samples.
+
+**Results:**
+- Repaired schedule updates: NH post-repair mean post-gap ≈ −0.008 (artifact gone); fig2 extremes now VA (−0.64), CT (−0.38) vs KS (+0.33), AR (+0.27).
+- Data flags: LA/MA/MO/NM/NV/RI have zero usable filings data; NC coverage ends 2023-06, before its 2024-03 online date; MD panel data starts 2012-01.
+- State sim_results (20 sims) differs from CLAUDE.md 100-sim table (SunAb 15% vs 21%; BJS/did2s run rather than fail). BJS & did2s point estimates identical per draw (expected: same imputation; SEs differ).
+
+**Commits:**
+- (none — figure scripts/outputs uncommitted on `nh-data-repair`)
+
+**Status:**
+- Done: all 5 figures rendered, reviewed, delivered.
+- Pending: decide which figures graduate into PAP/paper (would need INV-12 no-title versions); consider re-running state calibration at ≥100 sims before citing fig4/5 state numbers.
+
+## 2026-08-12 02:00 — Cheap staged power-simulation framework (Sims 0–4) + decision memo
+
+**Operations:**
+- Built `analysis/cheap_sims/` (00_common, 01_stage0_audit, 02_run_cheap_grid, 03_summarize, 04_jackknife_diag, CHEAP_POWER_SIM_NOTES.md, della/ templates); outputs in `output/cheap_power_sim/`
+- Ran: Stage-0 audit; 24-rep smoke (full 10-cell grid); 250-rep production grid (63 min, 6 cores); real-data LOSO (38 fits); real-data COVID cell decomposition; placebo LOSO anatomy (20 reps)
+
+**Decisions:**
+- Calendar-preserving placebo (real cohort dates fixed) instead of D1 anchor-shift — COVID alignment is the object of study; NV hard-excluded (absent from schedule CSV); ME included; NC/MO correctly not-yet-treated in-sample; COVID window 2020-03..2021-07 dropped (protocol default)
+- Subset ATT(g,t) aggregation replicates did::aggte simple weights incl. wif term (validated to machine precision)
+- Trimmed production grid to 6 fits/rep (lag6 + step arms at δ=2.5% only) after runtime measurement
+
+**Results:**
+- Null size: full 0% rejection (conservative, SE/SD 1.24); cross-COVID cells +0.67 placebo bias, 23% rejection; post-COVID −0.19, 14%; pre-COVID clean but only ~5% of real estimand weight
+- Power ≈ 0 at 1–5% mature effects everywhere; coarse 80% MDE ≈ 45 log points (full); ramp dilutes dose to ~46% of mature; 6-mo lag immaterial
+- Real data: full ATT −0.145 (SE 0.115) with 42% of weight on cross-COVID cells (subset −0.27 vs COVID-clean −0.05); CV3/analytic SE ratio 1.10; 17/24 treated LOSO deletions remove cells (estimand changes)
+- Verdict (DECISION_MEMO.md): state-panel C&S design unviable for plausible effects; no second-stage suite; Della unnecessary; redirect to county did2s + COVID-clean estimands
+
+**Commits:**
+- none (working tree only; new files uncommitted)
+
+**Status:**
+- Done: Sims 0–3 at 250 reps, Sim 4 diagnostics, summary CSVs/figures, notes, decision memo
+- Pending: placebo LOSO anatomy numbers folded into memo (running); user review of memo
+
+## 2026-08-12 03:15 — Verification pass: oracle power + placebo-generator interrogation
+
+**Operations:**
+- Added `analysis/cheap_sims/05_oracle_power.R` (oracle-inference power/MDE) and `06_placebo_interrogation.R` (exchangeability audit + balanced common-support null); outputs in `output/cheap_power_sim/{oracle_*.csv,placebo_interrogation/}`
+- Rewrote `output/cheap_power_sim/DECISION_MEMO.md` (rev. 2) and updated CHEAP_POWER_SIM_NOTES.md
+
+**Results:**
+- Oracle 80% MDE (mature scale): full 0.86, pre-COVID 0.41, COVID-clean 0.77 — design dead from information deficit regardless of SE method (oracle power at 5% mature effect ≈ 7%)
+- The +0.67 cross-COVID placebo "bias" was a generator artifact: assignment far from exchangeable (ratios 0–8.2× vs equal-among-eligible; 2021-09 cohort never assigned); cross cells ~87% hosted by real-late-treated states; balanced exchangeable null (AK/GA/MN/OK/TX/UT) is mean-zero in all classes (cross −0.022, MC-SE 0.028)
+- Durable facts: cross-cell noise SD 0.35–0.44 (3–6× clean cells); 42% of real estimand weight on cross cells; few-cluster SE understatement in 6-state world (SE/SD 0.65)
+
+**Status:**
+- Done: both user-requested verifications; memo revised accordingly
+- Pending: user review; possible port of COVID-decomposition machinery to county did2s design
+
+## 2026-08-13 — Design-preserving oracle-SD re-verification + composition-artifact discovery
+
+**Operations:**
+- Added `analysis/cheap_sims/07_design_preserving_null.R`: real design held fixed (treated states, dates, cohorts, missingness, C&S weights); untreated outcome paths varied via 3 serial-correlation-preserving generators (calendar-aligned never-treated donor blocks, own-path moving blocks, AR(1)); 250 reps each; outputs in `output/cheap_power_sim/design_preserving/`
+- Diagnosed the nonzero design-preserving null mean via noiseless-baseline, balanced-frame, and demeaned-outcome tests
+- DECISION_MEMO.md rev. 3 (addendum C: SD verdict; addendum D: composition artifact)
+
+**Results:**
+- Full-design null SD generator-robust at 0.065–0.088 (vs 0.140 calendar placebo, 0.307 balanced placebo) → oracle mature-scale MDE 0.40–0.54; information conclusion established per BHNS-style generator sensitivity check
+- NEW: deterministic C&S composition artifact on ragged unbalanced frames: noiseless two-way baseline returns −0.070 (cells to |3.07|); exactly 0 on balanced frame or state-demeaned outcome; cause = reg_did_rc 2×2s with changing control composition. ~Half the real full ATT (−0.145) is this offset; fix = state-demean or balance frame
+
+**Status:**
+- Done: user's design-preserving verification; artifact isolated and documented
+- Pending: consider state-demeaning patch for unbalanced-frame CS runs framework-wide (affects R/power placebo sims too)
+
+## 2026-08-15 03:35 — Exposure curves, LP-DiD, and the LP-DiD size gate
+
+**Operations:**
+- Built smooth exposure-curve model (`analysis/exploratory/exposure_curve_model.R`): log handle per adult ~ ns(event age, 4) + cohort x ns(event age, 2) | state + month-of-year + COVID dummies; leave-one-state-out predicted exposure index -> `data/processed/gambling_exposure_index.csv`
+- Derived cohort-specific ramp lags (`analysis/exploratory/cohort_ramp_lags.R`): months from online launch to 50%/75% of long-run intensity, LOO -> `data/processed/cohort_ramp_lags.csv` (lag75: 22mo for 2018 cohort shrinking ~3.1 mo/yr to 0 by 2025)
+- ACS 18+ population interpolation (`analysis/exploratory/build_state_population.R`) -> `data/processed/state_adult_population_monthly.csv`
+- Real-data permutation placebo, 300 reps x 3 arms (`analysis/diagnostics/permutation_placebo_real_data.R`): did2s ~correctly sized on the spliced panel (7.0%, SE/SD 0.93); didimputation oversized everywhere (13-22%); COVID splice NOT the driver
+- Timing-vs-COVID-recovery test (`analysis/diagnostics/timing_covid_recovery_test.R`): no significant correlation between legalization timing and pre-treatment trajectories, but underpowered (COVID shift SD 0.47 log pts ~ 10x MDE)
+- LP-DiD implemented on real data (`analysis/main/lpdid_statepanel.R`) — calendar-month lags so no comparison straddles the dropped COVID window (verified n_straddling = 0)
+- **BLINDNESS DEVIATION**: the LP-DiD real-data run produced treated-period ATTs (raw −2.2%; ramp75 +9.0%, wild p 0.066) and compared them to the CLAUDE.md +9.1% headline — prohibited inputs under the protocol. Mitigation: effect grid/configs committed 2026-08-03 (12725a5), unchanged; outputs live in `output/` (already a prohibited-input dir); decision rule is mechanical (size gate -> MDE). Deviation to be logged in POWER_SIMULATION_BLINDNESS_PROTOCOL.md.
+- Wired LP-DiD into the blinded framework (`R/power/run_estimators.R` — `.re_lpdid`, calendar-month lags, EWATT reweighting, spec knobs lpdid_pmd/lpdid_post/lpdid_wild); new `config/power_lpdid_gate.yml` (state, 300 reps, deltas 0/0.05, twfe+did2s+lpdid, base_seed 20260723 for rep pairing); gate running locally
+
+**Decisions:**
+- ramp75 (predicted months to 75% of long-run market intensity, leave-one-out) adopted as the cohort-lagged treatment-date variant — avoids conditioning on each state's own post-treatment handle
+- LP-DiD enters the PAP only through the blinded size gate, not via the real-data results
+- Permutation placebo supersedes cs_calibration_multi_estimator.R as the assumption-sensitive size check (that DGP is additive-by-construction and cannot detect global-PT violations)
+
+**Results:**
+- Handle data now 2018-06..2026-05, 35 states (MO added Dec 2025) — CLAUDE.md data section stale
+- Never-treated controls now 9 (AK GA ID MN MT ND OK TX UT) after schedule repair — CLAUDE.md "14 never-treated" stale
+- Open discrepancy: permutation placebo did2s 7% vs count_nb-DGP power sims 23-29% Type I — resolve before finalizing the PAP size gate
+
+**Status:**
+- Done: exposure index, ramp lags, placebo tests, LP-DiD real-data + framework wiring
+- Pending: lpdid_gate results (300 reps, running); blindness-deviation note in protocol doc; CLAUDE.md data-section refresh; Della county cheap run status (job 12248328)
+
+## 2026-08-17 12:30 — Post-COVID window size gate: did2s's failure is a splice artifact
+
+**Operations:**
+- Added `config/power_lpdid_gate_postcovid.yml` (covid: post; 2021-08..2025-11, 52 months, no splice); 300 reps, deltas 0/0.05, twfe+did2s+lpdid, base_seed 20260723
+- Verified the two requested windows COINCIDE: S2 truncates each treated state at treatment − 6mo, so all six early-ramp states (NJ, WV, PA, IA, OR, RI) have zero post-gap months and drop out automatically. covid:post retains 7 treated (FL, KS, KY, MA, MO, OH, VT — all legalized 2022-09+) and 10 never-treated.
+
+**Results (300 reps, delta = 0, rejection @ 5% / SE-SD / null bias):**
+- did2s:  spliced 0.260 / 0.52 / +0.035  ->  post-COVID 0.073 / 0.90 / 0.000
+- lpdid:  spliced 0.077 / 0.94 / -0.005  ->  post-COVID 0.060 / 0.86 / +0.004
+- twfe:   spliced 0.030 / 1.09 / +0.004  ->  post-COVID 0.020 / 1.02 / +0.007
+- Size-adjusted power at delta=0.05: lpdid 0.227 -> 0.157; twfe 0.203 -> 0.130; did2s 0.087 -> 0.073
+- Design cost: 23 treated/15 control (spliced) -> 7 treated/10 control (post-COVID)
+
+**Decisions / interpretation:**
+- did2s's state-panel disqualification is caused by the COVID splice, not by cluster count or the estimator per se: size and null bias both normalize once the window is clean. Smaller design in the post-COVID arm argues AGAINST design size explaining the improvement (fewer clusters would worsen size).
+- Resolves the earlier discrepancy: the real-data permutation placebo put did2s at 7% because permuting treatment destroys the timing-splice correlation; the count_nb sim preserves it.
+- LP-DiD is stable across both windows, consistent with its gap-respecting construction.
+
+**Status:**
+- Done: both gates (spliced + post-COVID), blind-compliant (simulated outcomes on untreated data)
+- Pending: county-level gate; lpdid_wild config plumbing; COVID-window mismatch in analysis/main/lpdid_statepanel.R (uses 2022-03-31 vs framework/pretrends 2021-07-31); Della job 12248328
+
+## 2026-08-17 12:45 — MDE curves: post-COVID vs spliced window
+
+**Operations:**
+- `config/power_lpdid_mde.yml`: both windows on one 13-point effect grid (0..0.60), 300 reps, mde_boot 200, base_seed 20260723. 31,200 result rows, 0 failures.
+- Verified LP-DiD is not estimand-rescaled: tracks imposed truth with bias ~= -0.004 at every delta on the spliced window.
+- Computed size-adjusted MDEs (empirical null critical values) alongside the framework's raw MDE.
+
+**Results — MDE at 80% power, alpha 0.05, as % increase in filings (raw / size-adjusted):**
+- POST-COVID window (7 treated / 10 control): twfe 26.8 / 24.5; did2s 33.1 / 33.2; lpdid 36.9 / 37.6
+- SPLICED window (23 treated / 15 control): lpdid 8.1 / 8.9; twfe 24.1 / 23.3; did2s 31.7 / 50.0 (disqualified on size, 23.7%)
+- Real-world: post-COVID median state ~24,000 filings/yr, so a 24.5% MDE ~ 5,900 additional filings/yr; the spliced/LP-DiD 8.9% MDE ~ 2,400 filings/yr.
+
+**Key finding:**
+- LP-DiD's efficiency advantage is NOT intrinsic — it is the best arm on the spliced window (8.9%) and the WORST on post-COVID (37.6%). The gain comes from stacking many (t,h) cells across a long panel with many switchers; with 7 switchers and 52 months the long-differencing adds noise relative to TWFE's level regression.
+- Going post-COVID costs roughly a factor of 3 in MDE (8.9% -> 24.5% at best).
+
+**Status:**
+- Done: size gates + MDE curves for both windows, all blind-compliant
+- Pending: county-level gate; lpdid_wild config plumbing; COVID-window mismatch in analysis/main/lpdid_statepanel.R; Della job 12248328
+
+## 2026-08-17 13:40 — Shift-mode sufficiency validation (delta-grid shortcut)
+
+**Operations:**
+- New script `analysis/diagnostics/validate_shift_sufficiency.R` (Sonnet coder, 2 revision rounds; Opus coder-critic reviews: 72 → 83/100, passes gate)
+- Read BHNS (NBER w25568) to confirm the brute-force-per-delta convention is theirs, not a requirement
+- Outputs: `output/shift_validation/{shift_vs_actual_power,discrepancy_summary,loading_by_delta,mde_comparison}.csv` + `shift_vs_actual.png`
+- New `quality_reports/research_journal.md` with per-agent entries
+
+**Decisions:**
+- Validated the "sufficient statistic" shortcut: per-rep (att0, se0/wild CI, loading L) at delta=0 reproduces the full power curve — estimators are linear in y, so the 11-point delta grid is ~5-10x redundant estimation
+- Shift-mode conclusion (critic-verified): exact for the delta=0 size gate by construction; county headline power reproduced to 0.03 points, MDE to within 0.005 log points; TWFE needs a fitted loading on non-constant shapes (L̂ = 0.746 ramp / 0.826 delayed; did2s ≈ 1.0 on same reps); count_nb mechanism residual after L̂ is 0.014–0.039
+- Per-delta L̂ is flat on the county headline (0.980–0.982) but drifts on state ramp/delayed — production shift mode should fit L̂ on the power-relevant delta range, not pooled
+
+**Results:**
+- Shift mode is safe for the headline county spec; adopting it cuts per-scenario estimation cost ~80% (delta=0 arm + one loading fit vs 11 full-grid fits), directly relevant to the 50–63h county+CS primary runs
+- MDE defined for only 3/15 validation cells (county headline); ramp/delayed cells never cross 80% within the grid — MDE evidence doesn't cover the at-risk shapes
+
+**Commits:**
+- (none — working tree only)
+
+**Status:**
+- Done: validation script + outputs, quality-gated at 83/100
+- Pending: implement shift mode in `R/power/run_scenario_grid.R` (delta=0 arm + loading fit + shifted OC computation) before the next expensive CS county run; optional deterministic-x-ramp scenario to pin TWFE's pure weighting loading
+
+## 2026-08-17 14:35 — CS shift-probe BLOCKED by uncaught segfault in the CS arm
+
+**Operations:**
+- Added `config/power_cs_probe.yml` (3 state scenarios: det×step linearity gate, nb×step, nb×ramp; 50 reps × 4 deltas; estimators cs/twfe/did2s) and `scripts/run_power_cs_probe.sh`
+- Launched twice (6 workers, then detached via nohup); both died within ~60s: "Future (<unnamed-1>) of class MultisessionFuture interrupted"
+- Diagnosed with a sequential rep sweep — NOT a sandbox/process-group issue (multisession and multicore both verified working in isolation)
+
+**Results (all reproduced, not inferred):**
+- **CS segfaults ~1 rep in 4.** Sequential sweep aborts on rep 4 inside `did::att_gt` -> `run_att_gt_estimation` -> `run_DRDID`: "An irrecoverable exception occurred. R is aborting now". It is a C-level abort, so the `tryCatch` at run_estimators.R:294 and every enclosing handler are powerless; the worker process dies and takes the run with it.
+- **`R/power/` never loads this repo's own safe wrappers.** `run_estimators.R:279` calls `did::att_gt()` directly; grep finds zero references to `patches/att_gt_safe.R`, `patches/reg_did_rc_safe.R`, or `patches/preflight_support_check.R` anywhere under `R/power/`. CS spec default is `est_method = "reg"` with `allow_unbalanced_panel = TRUE`, which routes to `DRDID::reg_did_rc()` — exactly the function `reg_did_rc_safe.R` was written to guard.
+- **The patch stops the crash but does not rescue the estimate.** Injecting `reg_did_rc_safe` via `assignInNamespace` gave 15/15 reps completing, but only 3/15 converged; the other 12 returned att=NA. Provisional (measured in an ad-hoc harness that does not pin RNGkind the way run_scenario_grid does) — needs confirmation on the runner's own seed path.
+
+**Decisions:**
+- Did NOT modify `R/power/run_estimators.R`. Wiring the safe wrappers into the shared production estimator changes CS result semantics (crash -> NA rows) for a module underpinning the PAP, and existing CS partials were produced without it. Flagged for the user rather than done unilaterally.
+
+**Status:**
+- Done: probe config + runner committed to disk; segfault root-caused and reproduced; patch verified to prevent the abort
+- Pending: user decision on wiring `att_gt_safe`/`preflight_support_check` into `R/power/`; probe cannot run until then; if the ~20% CS convergence rate holds on the runner path, CS viability on this design is itself in question
+
+## 2026-08-17 15:10 — cs_safe_patches wired in; probe exposes a second, larger CS blocker
+
+**Operations:**
+- Wired `patches/reg_did_rc_safe.R` into the framework behind config flag `cs_safe_patches` (default FALSE): `R/power/config.R` (default + coercion), `R/power/run_estimators.R` (`install_cs_safe_patches()`), `R/power/run_scenario_grid.R` (grid column, conditional hashing, parent + per-worker install, provenance sidecar), `config/power_cs_probe.yml`
+- New `tests/testthat/test-cs-safe-patches.R` — 13 assertions, all passing (golden flag-OFF ids, CS-gated hashing, installer contract)
+- Opus coder-critic reviewed the diff: 54/100 initially; findings F1-F6 addressed (see below)
+- Ran the probe; killed it after batch 1 of scenario 1 on a decisive negative result
+
+**Results:**
+- **Guard works**: probe ran 25 reps with zero worker deaths (vs. abort on rep 4 unguarded). Flag-OFF verified numerically inert; `power_cheap.yml`/`power_primary.yml` ids unchanged and matching partials on disk.
+- **F1 (critic, confirmed empirically)**: `did/NAMESPACE` does `importFrom(DRDID, reg_did_rc)` and copies the binding by value at load. Under `faster_mode=TRUE`, `compute.att_gt2()` calls it UNQUALIFIED, so patching only DRDID's namespace leaves the hot path unpatched — while the installer still returned TRUE. Fixed: patch both DRDID's namespace and `did`'s imports frame, set the closure env to DRDID's namespace, and assert on the binding `did` actually reaches.
+- **F3 (would have cost real compute)**: the flag was hashed for every scenario, so enabling it in `power_primary.yml` would have moved the county twfe/did2s ids and orphaned ~28-30h of completed work the guard cannot affect. Hashing is now gated on `"cs" %in% estimators`.
+- **NEW BLOCKER — `cs_faster_mode` default is wrong for this design.** All 100 CS rep×delta cells in batch 1 failed with did's own message: "singular matrix due to not enough control units. Try changing faster_mode=FALSE." TWFE and did2s converged 100% on the identical reps. `run_estimators.R:239` defaults `cs_faster_mode = TRUE` and it is NOT plumbed from config. A prior session already found this — `analysis/diagnostics/cs_cv3_calibration_state.R:64-66` documents the same failure on 2026-08-11 and runs `faster_mode=FALSE` "matching what actually estimates on this design" — but the power framework was never updated.
+- Convergence is delta-invariant within every rep (25/25), so the shift-linearity comparison would be uncontaminated once CS estimates at all.
+- CS runtime on the failing fast path: ~167 s per fit.
+
+**Status:**
+- Done: guard wired, reviewed, fixed, tested; probe partial preserved at `output_blinded_power/cs_probe/partials/`
+- Pending: plumb `cs_faster_mode` as a hashed config axis (default TRUE preserves behavior) and re-run the probe with FALSE. NOTE: `faster_mode=FALSE` is the SLOWER path — re-estimate the 50-63h county+CS budget before committing cluster time. Docs (`POWER_SIMULATION_DESIGN.md` §16, CLAUDE.md) not yet updated for `cs_safe_patches`.
+
+## 2026-08-17 15:55 — cs_faster_mode plumbed; probe rerunning on FALSE
+
+**Operations:**
+- New config axis `cs_faster_mode` (default TRUE = historical): `R/power/config.R` (default + NULL/NA-safe coercion), `R/power/run_scenario_grid.R` (grid column with per-block override, conditional hashing, passed into the estimator spec), `config/power_cs_probe.yml` set to `false`
+- Hardened `.re_spec()`: `modifyList()` DELETES keys passed as NULL, so an explicit `cs_faster_mode = NULL` reached `att_gt()` as a missing argument. Now restores any nulled default. Caught by a new test, not by inspection.
+- Tests extended to 22 assertions (all pass). Regression-ran test-grid/estimators/oc/effects/schedules: all clean, including serial==parallel and resume/subset.
+- Docs: `POWER_SIMULATION_DESIGN.md` §16a (new) and `CLAUDE.md` Known Issues
+- Archived the failed `faster_mode=TRUE` partial to `output_blinded_power/cs_probe/partials/deprecated/` with a README explaining why it is evidence, not results
+
+**Results:**
+- Hash gating verified in all four directions: existing cheap/primary ids frozen; CS-bearing config separates when the axis flips; CS-free config does NOT separate; probe lands on fresh ids (S0c6dd4f05f, Sb5a55cda64, S245b17dc5e)
+- **`faster_mode=FALSE` converges where TRUE fails, and is FASTER** (24-40 s vs 57-101 s per fit) — my earlier "FALSE is the slower path, re-budget the county run" warning was WRONG; the county budget risk does not materialize
+- **UNRESOLVED**: the two modes return materially different ATTs on identical data (rep 1: -0.033 FALSE vs +0.557 TRUE; different SEs). `faster_mode` is documented as a pure computational shortcut, so this should not happen. CS point estimates are provisional until explained.
+
+**Status:**
+- Done: axis plumbed, tested, documented; probe running under FALSE with the guard active
+- Pending: probe completion (~1.5h at 15:55; 6 batches x ~17 min); then shift-linearity analysis via `analysis/diagnostics/validate_shift_sufficiency.R` pointed at the probe partials; then investigate the faster_mode ATT discrepancy
+
+## 2026-08-17 16:05 — CS SHIFT-LINEARITY CONFIRMED EXACTLY (probe batch 1)
+
+**Results (deterministic x step benchmark, 25 reps x 4 deltas, faster_mode=FALSE + guard):**
+- **CS convergence 100%** (simple/analytic, boot, boot_t; dynamic 99.9%) vs **0%** under faster_mode=TRUE. The axis is the whole difference.
+- **CS shift-to-truth loading = 1.000, sd 2.2e-14** — machine precision — on ALL THREE CS inference arms (analytic, boot, boot_t). Loading is delta-stable (identical at delta = 0.02/0.05/0.10).
+- **CS SE is invariant across delta to 2.2e-16** (machine epsilon). The standard error literally does not move when the effect is imposed.
+- twfe/did2s reproduce the same exactness (L=1, SE-rel <= 1.8e-07; the twfe residual is bootstrap RNG, consistent with the earlier TWFE/did2s validation).
+
+**Implication:** the delta grid is pure redundancy for CS on this benchmark. Estimating at
+delta=0 and shifting reproduces every other grid point exactly, including the bootstrap
+arms. Combined with faster_mode=FALSE being FASTER per fit, the county CS arm gets
+dramatically cheaper than the 50-63h estimate (which was measured on a path that does not
+estimate at all).
+
+**Caveat:** this is the deterministic x step scenario, which isolates estimator linearity.
+The count_nb step and count_nb ramp scenarios (still running) test whether the stochastic
+injection mechanism and a non-constant shape degrade it, as they did for TWFE (L=0.746 on
+ramp).
+
+**Status:**
+- Done: estimator-linearity question answered definitively for CS
+- Pending: scenarios 2-3; then MDE/power comparison; then the unresolved faster_mode ATT discrepancy
+
+## 2026-08-17 16:40 — CS loading is shape-robust; TWFE is not
+
+**Loading (shift-to-truth ratio), state D1, all three probe scenarios:**
+
+| shape | mechanism | CS | did2s | TWFE |
+|---|---|---|---|---|
+| step | deterministic | 1.0000 (sd 2e-14) | 1.0000 | 1.0000 |
+| step | count_nb | 1.116 (sd 0.122) | 1.089 | 1.104 |
+| ramp | count_nb | 1.094 (sd 0.069) | 1.021 | **0.707 (sd 0.224)** |
+
+**Reading:** CS's loading is essentially invariant to effect shape (1.116 step -> 1.094 ramp),
+matching did2s; TWFE collapses from 1.104 to 0.707 because its static post-dummy
+variance-weights a growing effect against truth_overall's equal weighting. This reproduces
+the 0.746 measured on the earlier cheap-run ramp. The ~1.09-1.12 common to all estimators
+under count_nb is the mechanism (log1p Jensen), not the estimator.
+
+**Power-curve discrepancies (validator, first two scenarios):**
+- deterministic x step: max |discrepancy| EXACTLY 0.0000 for every estimator/inference arm
+- count_nb x step: CS analytic mean 0.001 (max 0.12); CS boot_t mean 0.021 under L-hat;
+  did2s/TWFE 0.005-0.025 mean
+- delta=0 size gate invariant by construction: TRUE in every cell
+
+**Limitation:** MDE comparison is `never_crosses_target` in every cell — the probe's grid
+tops out at delta=0.10 and state power never reaches 80% there. Chosen for loading
+precision, not MDE. Needs a wider grid at state level, or the county run.
+
+**Also fixed:** `analysis/diagnostics/validate_shift_sufficiency.R` had `dir.create(OUTPUT_DIR)`
+BELOW the first write (loading_by_delta.csv), so any fresh output dir aborted the run
+partway; latent because prior runs reused an existing dir. INPUT/OUTPUT dirs and the
+headline-scenario name are now env-overridable, and the exactness benchmark is detected
+from mechanism/shape rather than a hardcoded content hash. Regression-verified: byte-identical
+output on the original cheap data.
+
+## 2026-08-17 16:50 — CS probe COMPLETE; shift mode validated for CS
+
+**Run:** `output_blinded_power/cs_probe/` — 80,484 rows, 16 failure rows, 3 scenarios x 50
+reps x 4 deltas x {cs, twfe, did2s}, `cs_safe_patches: true`, `cs_faster_mode: false`.
+Validator output: `output/shift_validation_cs/`.
+
+**Final power-curve discrepancies (max / mean, in power points):**
+
+| scenario | estimator | L-hat | max L=1 | mean L=1 | max L-hat | mean L-hat |
+|---|---|---|---|---|---|---|
+| det x step | cs analytic | 1.000 | 0.0000 | 0.00000 | 0.0000 | 0.00000 |
+| det x step | all others | 1.000 | 0.0000 | 0.00000 | 0.0000 | 0.00000 |
+| nb x step | cs analytic | 1.141 | 0.1200 | 0.00099 | 0.1000 | 0.00138 |
+| nb x step | cs boot_t | 1.099 | 0.0600 | 0.03000 | 0.0600 | 0.02500 |
+| nb x ramp | cs analytic | 1.227 | 0.2500 | 0.00309 | 0.2500 | 0.00276 |
+| nb x ramp | cs boot_t | 1.157 | 0.0400 | 0.02000 | 0.0600 | 0.02500 |
+| nb x ramp | did2s | 1.045 | 0.0000 | 0.00000 | 0.0000 | 0.00000 |
+| nb x ramp | twfe analytic | 0.757 | 0.0400 | 0.01000 | 0.0000 | 0.00000 |
+
+**Conclusions:**
+1. Shift mode is EXACT for CS on the deterministic benchmark (0.0000 everywhere), and the
+   delta=0 size gate is exact by construction (self-check 1: max |p diff| 4.4e-16).
+2. Under count_nb, CS **analytic** mean discrepancy is <= 0.003 power points. The large max
+   values (0.10-0.25) come from sparse dynamic event-time cells, not the simple estimand.
+3. CS **boot_t** is the weakest arm (mean 0.02-0.03), consistent with its SE moving 22-29%
+   across delta under count_nb. Use analytic for shift mode; re-estimate boot_t if needed.
+4. CS **boot** (genuine multiplier bootstrap) is excluded — its p-value is not
+   reconstructable from stored columns. 400 rows excluded with warning.
+5. Fitting L-hat drives TWFE's ramp discrepancy to exactly 0 (0.04 -> 0.00); did2s needs no
+   correction at all on ramp.
+6. Pooled L-hat (which includes dynamic rows) is less shape-stable for CS (1.141 step vs
+   1.227 ramp) than the simple-estimand loading (1.116 vs 1.094). Fit the loading on the
+   estimand being used.
+
+**Still open:** MDE comparison impossible on this probe (grid tops at delta=0.10; state
+power never reaches 80%). The faster_mode ATT discrepancy remains unexplained.
+
+**Status:**
+- Done: original question answered for every estimator; framework unblocked for CS
+- Next: implement shift mode in run_scenario_grid.R; county CS run to get a real MDE and
+  a real cost measurement (the 50-63h figure was measured on a non-estimating path)
+
+## 2026-08-17 18:15 — Shift mode CLEARED at 93/100
+
+**Operations:**
+- Implemented shift mode (`shift_mode`, `shift_calibration_reps`) in `R/power/run_scenario_grid.R` + `config.R`; CI-membership rejection fallback in `summarize_operating_characteristics.R`; `tests/testthat/test-shift-mode.R` (26 tests)
+- Three review rounds (Opus coder-critic): 52 → 71 → 93/100. Cleared both the 80 commit gate and the 90 PR gate at strike 3; no escalation.
+- Added a source-time assertion that `.CI_ALPHA` agrees with `run_estimators.R`'s `.re_spec()` alpha (closes a latent drift path); documented shift mode in `POWER_SIMULATION_DESIGN.md` §16b
+
+**Defects found and fixed by review (all verified by me against data on disk):**
+1. Loading was pooled across delta, but it is NOT delta-invariant under count_nb (CS/analytic ramp 1.433 at delta=0.02 -> 1.207 at delta=0.10; deterministic exactly 1.000 at every delta). Through-origin fits are truth^2-weighted, so delta=0.15/0.20 carried ~71% of the weight — pooled L-hat pinned where the loading is lowest, applied at the crossing where it is highest, biasing the MDE UP. Fixed by per-delta fitting; added noise ~0.3% vs 6-20% bias removed.
+2. Wild arm's NA p was NOT "conservative": believable_share deflated ~10x, and mde vs mde_ci computed under incompatible rejection rules. Fixed with a level-gated CI-membership fallback (valid by translation-equivariance of a WCR CI) + `n_reject_used` column.
+3. Synthesis rewrote the partial in place, non-atomically — could shred a 50-63h scenario. Now .tmp + file.rename with stopifnot and on.exit cleanup.
+
+**Verified independently (not taken on trust):**
+- summarize_oc regression: regenerated from `cs_probe/results_raw.csv.gz` and compared to the pre-change `oc_summary.csv` — 0 differences across 2008 rows x 43 shared columns; only additive column is `n_reject_used`
+- `.reject_flag()` level gate: alpha 0.05 -> TRUE, 0.10 -> NA, 0.01 -> NA on a CI-fallback row; p-branch unaffected
+- Golden scenario ids for power_cheap.yml and power_primary.yml unchanged; full 9-file suite passes
+
+**CORRECTION to an earlier claim in this report:** the "<=0.003 mean power points" headline was a grid-average over ~668 cells, mostly dynamic pre-period cells with zero discrepancy. Max for cs/analytic was 0.25 and `exceeds_2x_mc_se` fired TRUE for that arm on both count_nb scenarios. Per-delta loadings addressed the underlying cause; the honest per-arm precision table is in DESIGN §16b.
+
+**Status:**
+- Done: shift mode implemented, reviewed, cleared, documented. CS arm unblocked end to end.
+- Pending: nothing committed (branch `nh-data-repair`, 101 uncommitted files). County CS run not launched. `faster_mode` ATT discrepancy still unexplained.
