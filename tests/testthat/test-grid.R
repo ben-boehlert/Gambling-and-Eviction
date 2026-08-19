@@ -346,3 +346,75 @@ test_that("subset selection by block name matches selection by index", {
                          estimator_fn = mock_run_estimator)
   expect_equal(r$grid$scenario_id, grid$scenario_id[b_idx])
 })
+
+# ---------------------------------------------------------------------------
+# lpdid_wild plumbing (2026-08-19): config key -> grid column -> spec, hashed
+# into the scenario id ONLY when TRUE and only for lpdid-bearing scenarios
+# (same conditional-hash principle as cs_safe_patches / cs_faster_mode).
+# ---------------------------------------------------------------------------
+
+test_that("lpdid_wild defaults FALSE and leaves every id unchanged", {
+  base <- .write_yaml(c(
+    "level: state", "sample: [S2]", "covid: keep",
+    "treat_def: online_start_date", "designs: [D1]",
+    "mechanisms: [deterministic]", "shapes: [step]",
+    "estimators: [twfe, lpdid]", "effect_grid: [0, 0.05]",
+    "n_reps: 2", "base_seed: 123", "min_pre: 12", "min_post: 6"
+  ))
+  flag <- .write_yaml(c(
+    "level: state", "sample: [S2]", "covid: keep",
+    "treat_def: online_start_date", "designs: [D1]",
+    "mechanisms: [deterministic]", "shapes: [step]",
+    "estimators: [twfe, lpdid]", "effect_grid: [0, 0.05]",
+    "n_reps: 2", "base_seed: 123", "min_pre: 12", "min_post: 6",
+    "lpdid_wild: true"
+  ))
+  g0 <- expand_scenario_grid(read_power_config(base))
+  g1 <- expand_scenario_grid(read_power_config(flag))
+  expect_false(isTRUE(g0$lpdid_wild[1]))
+  expect_true(isTRUE(g1$lpdid_wild[1]))
+  # TRUE moves the id of an lpdid-bearing scenario ...
+  expect_false(identical(g0$scenario_id, g1$scenario_id))
+
+  # ... but never moves a scenario with no lpdid.
+  base_no <- .write_yaml(c(
+    "level: state", "sample: [S2]", "covid: keep",
+    "treat_def: online_start_date", "designs: [D1]",
+    "mechanisms: [deterministic]", "shapes: [step]",
+    "estimators: [twfe, did2s]", "effect_grid: [0, 0.05]",
+    "n_reps: 2", "base_seed: 123", "min_pre: 12", "min_post: 6"
+  ))
+  flag_no <- .write_yaml(c(
+    "level: state", "sample: [S2]", "covid: keep",
+    "treat_def: online_start_date", "designs: [D1]",
+    "mechanisms: [deterministic]", "shapes: [step]",
+    "estimators: [twfe, did2s]", "effect_grid: [0, 0.05]",
+    "n_reps: 2", "base_seed: 123", "min_pre: 12", "min_post: 6",
+    "lpdid_wild: true"
+  ))
+  expect_identical(
+    expand_scenario_grid(read_power_config(base_no))$scenario_id,
+    expand_scenario_grid(read_power_config(flag_no))$scenario_id)
+})
+
+test_that("lpdid_wild reaches the estimator spec through run_one_rep", {
+  seen <- new.env(parent = emptyenv()); seen$vals <- logical(0)
+  spy_estimator <- function(panel_sim, estimator = "lpdid", spec = list()) {
+    seen$vals <- c(seen$vals, isTRUE(spec$lpdid_wild))
+    mock_run_estimator(panel_sim, estimator, spec)
+  }
+  cfgp <- .write_yaml(c(
+    "level: state", "sample: [S2]", "covid: keep",
+    "treat_def: online_start_date", "designs: [D1]",
+    "mechanisms: [deterministic]", "shapes: [step]",
+    "estimators: [lpdid]", "effect_grid: [0]",
+    "n_reps: 1", "base_seed: 123", "min_pre: 12", "min_post: 6",
+    "lpdid_wild: true"
+  ))
+  rn <- "_test_lpdid_wild_spec"
+  on.exit(unlink(.power_out_dir(rn), recursive = TRUE), add = TRUE)
+  run_scenario_grid(cfgp, resume = FALSE, workers = 1, run_name = rn,
+                    impose_fn = mock_impose_effect,
+                    estimator_fn = spy_estimator)
+  expect_true(length(seen$vals) > 0L && all(seen$vals))
+})

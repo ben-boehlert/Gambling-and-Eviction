@@ -1,0 +1,83 @@
+# =============================================================================
+# power_postcovid_maturation_county_wild.yml — wild-cluster-bootstrap arm for
+# the county post-COVID design. The analytic arms ALL failed the county size
+# gate (did2s 21.5-23.9%, lpdid 11.7-14.0%; SE/SD 0.62-0.72 — the classic
+# few-treated-clusters problem: 4-5 treated states over 509 counties), so a
+# valid county MDE needs bootstrap inference. lpdid only: did2s has no wild
+# arm in the framework and is disqualified at county post-COVID as it stands.
+#
+# QUESTION: what does power look like using only markets that MATURED
+# post-COVID, for the imputation estimators (BJS/didimputation + did2s) whose
+# global-parallel-trends assumption is most defensible on the clean
+# post-COVID window (no COVID splice anywhere in the panel)?
+#
+# Two scenario blocks on identical seeds/window (paired rep-for-rep):
+#   1. treat_def = maturation50_start_date — treatment at handle50 market
+#      maturation (first month handle reaches 50% of the state's peak;
+#      analysis/data_prep/make_maturation50_schedule.R)
+#   2. treat_def = online_start_date — legalization dates, the 2026-08-17
+#      post-COVID baseline (power_lpdid_gate_postcovid.yml), rerun here with
+#      bjs added so all four estimators are compared on the same draws
+#
+# The schedule file carries BOTH treatment columns plus first_start_date;
+# blindness cutoffs always use first_start_date (earliest legal betting), so
+# the blinded panel is strictly conservative for the maturation definition.
+# Maturation dates derive from handle DATES only (never eviction outcomes) —
+# permitted design information under BLINDNESS_PROTOCOL §2.
+#
+# Size gate read from delta = 0 (rejection at alpha .05 in [2.5%, 10%],
+# failure rate <= 5%); MDEs only for gate-passing arms. Effect grid extends to
+# 0.60 because the 2026-08-17 post-COVID MDEs were 24-38%.
+#
+# Run:  N_WORKERS=6 Rscript -e 'source("R/power/run_scenario_grid.R");
+#        run_scenario_grid("config/power_postcovid_maturation.yml", workers=6)'
+# =============================================================================
+
+run_name: postcovid_maturation_county_wild
+
+schedule:   data/processed/maturation50_schedule.csv
+
+# ---- Top-level defaults -----------------------------------------------------
+
+level:      county
+sample:     [S2]
+covid:      post
+treat_def:  maturation50_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+template:   panel
+
+effect_grid:  [0, 0.02, 0.05, 0.08, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60]
+
+estimators:   [lpdid]
+lpdid_wild:   true
+
+# ---- Execution ----------------------------------------------------------------
+
+n_reps:     300
+base_seed:  20260723            # matches every other run — rep-for-rep pairing
+mde_boot:   200
+
+alpha:      [0.1, 0.05, 0.01]
+
+min_pre:    12
+min_post:   6
+anticipation_months: 6
+
+# ---- Scenarios ----------------------------------------------------------------
+
+scenarios:
+
+  # 1. Markets that matured post-COVID (handle50 treatment definition).
+  - name: postcovid_maturation50
+    treat_def: maturation50_start_date
+
+  # 2. Legalization-date companion on the same window/seeds (baseline + bjs).
+  - name: postcovid_legalization
+    treat_def: online_start_date

@@ -247,6 +247,15 @@ power_rep_seed <- function(base_seed, rep, scenario_offset) {
       "cs" %in% as.character(unlist(g$estimators[[i]]))) {
     id$cs_faster_mode <- FALSE
   }
+  # `lpdid_wild` is hashed CONDITIONALLY, same principle and estimator gating
+  # as cs_faster_mode: TRUE adds a genuine bootstrap inference arm to every
+  # lpdid fit (extra rows in the partial), so wild and non-wild runs must
+  # never share a partial — but a scenario with no lpdid is provably
+  # unaffected and must keep its id.
+  if (isTRUE(g$lpdid_wild[i]) &&
+      "lpdid" %in% as.character(unlist(g$estimators[[i]]))) {
+    id$lpdid_wild <- TRUE
+  }
   # `shift_mode` is hashed CONDITIONALLY, same principle as `template` /
   # `cs_safe_patches` above: FALSE reproduces pre-flag behavior bit-for-bit,
   # so every existing partial must keep its id. TRUE changes what a
@@ -350,6 +359,8 @@ expand_scenario_grid <- function(cfg) {
     # explicit FALSE (only NULL falls through to the run-level value).
     g$cs_faster_mode <- isTRUE(blk$cs_faster_mode %||% cfg$cs_faster_mode %||%
                                  TRUE)
+    # Per-fit boottest arm for LP-DiD; block may override, same principle.
+    g$lpdid_wild <- isTRUE(blk$lpdid_wild %||% cfg$lpdid_wild %||% FALSE)
     rows[[b]] <- g
   }
 
@@ -1287,7 +1298,8 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
              # expand_scenario_grid(), but a resumed or hand-built grid
              # lacking the column must fall back to the historical default
              # rather than error.
-             cs_faster_mode = isTRUE(sc$cs_faster_mode %||% TRUE))
+             cs_faster_mode = isTRUE(sc$cs_faster_mode %||% TRUE),
+             lpdid_wild     = isTRUE(sc$lpdid_wild %||% FALSE))
       }
 
       out <- list()

@@ -122,6 +122,12 @@ read_power_config <- function(path = NULL) {
     # time. Hashed into the scenario id only when non-default AND the scenario
     # runs CS (see .scenario_identity_string).
     cs_faster_mode      = TRUE,
+    # Wild-cluster-bootstrap inference arm for LP-DiD (run_estimators.R
+    # spec$lpdid_wild). OFF by default (historical behavior byte-identical);
+    # hashed into the scenario id only when TRUE and only for lpdid-bearing
+    # scenarios. Needed when analytic lpdid over-rejects with few treated
+    # clusters (county post-COVID gate, 2026-08-19).
+    lpdid_wild          = FALSE,
     # Shift-mode shortcut (validated 2026-08-17: analysis/diagnostics/
     # validate_shift_sufficiency.R — every estimator here is linear in the
     # outcome, so a rep's delta=0 fit plus a fitted loading L_hat reproduces
@@ -167,6 +173,8 @@ read_power_config <- function(path = NULL) {
                             is.na(as.logical(cfg$cs_faster_mode))) {
     TRUE
   } else as.logical(cfg$cs_faster_mode)
+
+  cfg$lpdid_wild <- isTRUE(as.logical(cfg$lpdid_wild))
 
   cfg$shift_mode <- isTRUE(as.logical(cfg$shift_mode %||% FALSE))
   # Left NULL when unset — the per-scenario 10%-of-n_reps default is computed

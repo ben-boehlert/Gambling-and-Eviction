@@ -629,7 +629,8 @@ run_adaptive_mde <- function(config_path, run_name = NULL, workers = NULL,
       spec <- list(anticipation   = sc$est_anticipation,
                    control_group  = sc$control_group,
                    outcome        = sc$outcome,
-                   cs_faster_mode = isTRUE(sc$cs_faster_mode %||% TRUE))
+                   cs_faster_mode = isTRUE(sc$cs_faster_mode %||% TRUE),
+                   lpdid_wild     = isTRUE(sc$lpdid_wild %||% FALSE))
       out <- list()
       for (est in sc$estimators) {
         if (rep > est_reps[[est]]) next
