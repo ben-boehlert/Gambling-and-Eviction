@@ -71,3 +71,15 @@ show SD 0.42 (pre) / 0.30 (post) — drift is generic, COVID adds modestly; post
 the most stable. Supports "global PT more tolerable post-COVID" for did2s; ID pre-trend (+85%/yr)
 is a likely data artifact worth a control-set robustness check.
 **Report:** output/covid_global_pt/
+
+### 2026-08-19 13:00 — Fable (strategist sketch)
+**Phase:** Strategy
+**Target:** quality_reports/strategy_memo_fourq_dose_response.md
+**Score:** N/A (sketch, not yet critic-reviewed)
+**Verdict:** Four-quarters (NY Fed) dose-response spec sketched for the spliced window:
+tercile-contrast primary + continuous-slope secondary; dose vector built
+(data/processed/fourq_dose_per_adult.csv, 22 states, IQR $26-69/adult-mo). Key threat:
+dose is strongly increasing in launch date (singleton cohorts → no within-cohort dose
+contrast); mitigations + placebo specified. Power-validation plan uses a new dose_step
+shape with the realized dose vector — requires a documented blindness-protocol amendment.
+**Report:** quality_reports/strategy_memo_fourq_dose_response.md
