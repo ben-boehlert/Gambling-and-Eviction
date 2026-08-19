@@ -394,3 +394,73 @@ disappear), and the test becomes degenerate: 0% rejection, SE/SD 1.14.
 All passing cells retain the §9.3 caveat: two-sided size within gate over an
 off-centre null, so directional inference is not 5% and the location shift
 would contaminate a real ATT.
+
+---
+
+## 13. Which combinations have BOTH calibrated SEs and usable power?
+
+Joint evidence, pairing δ=0 calibration with MDE-80 from the same runs
+(`output_blinded_power/lpdid_mde/`, 300 reps, 13-point grid, state panel;
+plus today's gates). "Calibrated" here is the strict bar — SE/SD ≈ 1 and small
+null bias — not merely "size inside [2.5%, 10%]".
+
+| Design | Estimator / arm | size | SE/SD | null bias | CI cover | **MDE-80** |
+|---|---|---|---|---|---|---|
+| **state SPLICED (23 tr)** | **lpdid analytic** | 9.0% | **0.92** | **−0.004** | 0.91 | **8.1%** |
+| state SPLICED | twfe analytic | 3.7% | **1.05** | +0.008 | 0.96 | 24.1% |
+| state SPLICED | twfe wild | 3.0% | 1.05 | +0.008 | — | 28.0% |
+| state SPLICED | did2s | 23.7% FAIL | 0.55 | +0.034 | — | (31.7%) |
+| state SPLICED | **cs (all arms)** | 17.7–20.7% FAIL | 0.64–0.67 | +0.161 | 0.82 | not run |
+| state post-COVID (7 tr) | twfe analytic | 2.3% | 0.95 | +0.006 | 0.98 | 26.8% |
+| state post-COVID | did2s | 5.3% | 0.86 | −0.001 | — | 33.1% |
+| state post-COVID | lpdid analytic | 6.3% | 0.90 | +0.007 | 0.94 | 36.9% |
+| state post-COVID | cs analytic | 5.0% | 1.06 | **−0.204** | 0.95 | not run |
+| county post-COVID (5 tr) | lpdid wild | 4.7% | — | — | — | 23.9% |
+| county post-COVID | cs boot/boot_t | 4.4% / 3.2% | **1.74** | +0.101 | 0.96 | **never crosses** |
+| county spliced pooled (16 tr) | lpdid wild | 3.7% | — | — | — | not run |
+
+### The answer: one combination clears both bars
+
+**LP-DiD on the state spliced window** is the only specification that is
+simultaneously well-calibrated *and* powerful: size 9.0% (6.3% in today's
+independent `month_drop` gate), **SE/SD 0.92**, null bias **−0.004** (two
+orders of magnitude smaller than CS's), and **MDE-80 = 8.1%** (8.9%
+size-adjusted). That is ~3× better power than the next calibrated arm.
+
+**TWFE on the same window** has the best raw SE calibration of anything tested
+(SE/SD 1.05, coverage 0.96, bias +0.008) but pays 3× in power (MDE 24.1%). It
+is the right robustness benchmark, not the headline.
+
+### Why LP-DiD wins exactly where CS fails — and vice versa
+
+§11 showed the splice destroys CS by letting ATT(g,t) pair a pre-gap base
+period with a post-gap outcome. **LP-DiD is built not to do that**: its long
+differences run on calendar months precisely so they cannot bridge a
+`covid: drop` gap (`run_estimators.R`). It is structurally immune to the
+contamination that inflates CS's dispersion from 0.274 to 0.537 — which is why
+it keeps a near-unit SE/SD and an 8.1% MDE on the very window where CS rejects
+18% of true nulls.
+
+The same property explains its one hard failure: that calendar-month lag logic
+finds no matching lags once periods are quarters or years, giving **0/300
+convergence** at coarse aggregation (§3, finding 5). LP-DiD's strength and its
+limitation have a single common cause.
+
+### Nothing else clears both bars
+
+- **CS:** never. Where it passes size it is either off-centre (bias −0.15 to
+  −0.20 with asymmetric tails, §9.3) or degenerate (county post-COVID: size
+  4.4% but SE/SD 1.74, CI ~2 log points, **no finite MDE**).
+- **did2s:** fails size on every spliced and `keep` window (19–27%); passes
+  post-COVID but MDE 33%.
+- **BJS:** fails size everywhere tested (27–29%, SE/SD 0.55).
+- **County lpdid-wild:** genuinely size-valid (3.7–4.7%) but MDE 23.9% — valid
+  and modest, not powerful.
+
+### Untested cell worth running next
+
+**LP-DiD on `month_keep`** posted the best SE calibration seen anywhere today —
+SE/SD **1.07**, size 3.0%, bias −0.018, on the full **23 treated clusters** —
+but no MDE has been computed for the `keep` window. It has more periods than
+`post` and no splice artifact, so it is the most promising untested candidate
+for beating 8.1%. One adaptive run would settle it.
