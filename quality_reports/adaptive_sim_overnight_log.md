@@ -55,3 +55,15 @@ passes the size gate. Plan: `quality_reports/plans/2026-08-19_adaptive-cs-mde-se
 - Next: gate 7 county smoke (n_reps_override 6 → measures county CS cell cost and
   exercises the gate-fail stop path at county scale), then gate 8 (250-rep county
   null calibration, the decision point).
+
+## 2026-08-19 01:45 — Gate 7 PASSED: county smoke
+
+- `_amde_county_smoke` (n_reps_override 6, batch 3, 6 workers): end-to-end county
+  plumbing OK; gate-failure stop path exercised at county scale (no delta>0 cells
+  after a failed gate). Smoke gate rates (6 reps, not evidence): analytic 5/6,
+  boot/boot_t 0/6 — direction consistent with the 125-rep county_cs partial.
+- County CS cell cost measured: ~28 s (both att_gt fits) → 250-rep null phase
+  ≈ 20-25 min on 6 workers; each searched delta ≈ 20 min.
+- Smoke output dir kept (underscore-prefix validation-dir convention).
+- Launching PRODUCTION run: output_blinded_power/county_cs_adaptive
+  (gate 8 null calibration → size gate → gate 9 search only if an arm passes).
