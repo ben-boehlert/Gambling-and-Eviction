@@ -247,6 +247,13 @@ power_rep_seed <- function(base_seed, rep, scenario_offset) {
       "cs" %in% as.character(unlist(g$estimators[[i]]))) {
     id$cs_faster_mode <- FALSE
   }
+  # `exclude_states` is hashed CONDITIONALLY (only when non-empty): an empty
+  # exclusion reproduces pre-axis behavior bit-for-bit, so every existing
+  # partial keeps its id; a non-empty exclusion changes the panel (and hence
+  # the template, controls, and every estimate) and must land in its own id.
+  if (length(g$exclude_states[[i]]) > 0L) {
+    id$exclude_states <- sort(as.character(g$exclude_states[[i]]))
+  }
   # `lpdid_wild` is hashed CONDITIONALLY, same principle and estimator gating
   # as cs_faster_mode: TRUE adds a genuine bootstrap inference arm to every
   # lpdid fit (extra rows in the partial), so wild and non-wild runs must
@@ -361,6 +368,12 @@ expand_scenario_grid <- function(cfg) {
                                  TRUE)
     # Per-fit boottest arm for LP-DiD; block may override, same principle.
     g$lpdid_wild <- isTRUE(blk$lpdid_wild %||% cfg$lpdid_wild %||% FALSE)
+    # States dropped from the panel BEFORE schedule/template derivation —
+    # neither treated-template members nor controls (dose-tercile
+    # subdesigns, 2026-08-19). Block may override the run level.
+    g$exclude_states <- rep(list(sort(unique(as.character(unlist(
+      blk$exclude_states %||% cfg$exclude_states %||% character(0)
+    ))))), nrow(g))
     rows[[b]] <- g
   }
 
@@ -1058,7 +1071,12 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
              ),
              envir = panel_cache)
     }
-    get(key, envir = panel_cache)
+    p <- get(key, envir = panel_cache)
+    # Scenario-level exclusion AFTER the cache (the cache key stays panel-
+    # level): excluded states vanish before schedule/template derivation.
+    ex <- as.character(unlist(sc$exclude_states %||% character(0)))
+    if (length(ex) > 0L) p <- p[!p$state_abb %in% ex, , drop = FALSE]
+    p
   }
 
   for (i in seq_len(nrow(grid))) {
@@ -1067,6 +1085,8 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
     sc$estimators     <- unlist(sc$estimators)
     sc$effect_grid    <- unlist(sc$effect_grid)
     sc$estimator_reps <- sc$estimator_reps[[1]]
+    sc$exclude_states <- as.character(unlist(sc$exclude_states %||%
+                                               character(0)))
 
     est_reps <- .estimator_rep_counts(sc$estimators, sc$n_reps,
                                       sc$estimator_reps)

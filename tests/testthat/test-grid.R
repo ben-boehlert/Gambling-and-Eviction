@@ -418,3 +418,63 @@ test_that("lpdid_wild reaches the estimator spec through run_one_rep", {
                     estimator_fn = spy_estimator)
   expect_true(length(seen$vals) > 0L && all(seen$vals))
 })
+
+# ---------------------------------------------------------------------------
+# exclude_states scenario axis (2026-08-19, dose-tercile subdesigns): states
+# listed are dropped from the panel BEFORE schedule/template derivation, so
+# they are neither treated-template members nor controls. Hashed into the
+# scenario id only when non-empty.
+# ---------------------------------------------------------------------------
+
+test_that("exclude_states: empty leaves ids unchanged, non-empty moves them", {
+  base <- .write_yaml(c(
+    "level: state", "sample: [S2]", "covid: keep",
+    "treat_def: online_start_date", "designs: [D1]",
+    "mechanisms: [deterministic]", "shapes: [step]",
+    "estimators: [twfe]", "effect_grid: [0, 0.05]",
+    "n_reps: 2", "base_seed: 123", "min_pre: 12", "min_post: 6"
+  ))
+  ex <- .write_yaml(c(
+    "level: state", "sample: [S2]", "covid: keep",
+    "treat_def: online_start_date", "designs: [D1]",
+    "mechanisms: [deterministic]", "shapes: [step]",
+    "estimators: [twfe]", "effect_grid: [0, 0.05]",
+    "n_reps: 2", "base_seed: 123", "min_pre: 12", "min_post: 6",
+    "exclude_states: [TX, UT]"
+  ))
+  g0 <- expand_scenario_grid(read_power_config(base))
+  g1 <- expand_scenario_grid(read_power_config(ex))
+  expect_identical(g0$exclude_states[[1]], character(0))
+  expect_identical(g1$exclude_states[[1]], c("TX", "UT"))
+  expect_false(identical(g0$scenario_id, g1$scenario_id))
+})
+
+test_that("exclude_states drops the states from the simulated panel", {
+  # Excluding a never-treated state must reduce the mock estimator's control
+  # cluster count by one, leaving treated clusters untouched.
+  mk <- function(extra = character(0)) .write_yaml(c(
+    "level: state", "sample: [S2]", "covid: keep",
+    "treat_def: online_start_date", "designs: [D1]",
+    "mechanisms: [deterministic]", "shapes: [step]",
+    "estimators: [twfe]", "effect_grid: [0]",
+    "n_reps: 2", "base_seed: 123", "min_pre: 12", "min_post: 6", extra
+  ))
+  rn0 <- "_test_exstates_base"; rn1 <- "_test_exstates_drop"
+  on.exit({
+    unlink(.power_out_dir(rn0), recursive = TRUE)
+    unlink(.power_out_dir(rn1), recursive = TRUE)
+  }, add = TRUE)
+  r0 <- run_scenario_grid(mk(), resume = FALSE, workers = 1, run_name = rn0,
+                          impose_fn = mock_impose_effect,
+                          estimator_fn = mock_run_estimator)
+  # TX is never-treated in the real schedule and present in the state panel.
+  r1 <- run_scenario_grid(mk("exclude_states: [TX]"), resume = FALSE,
+                          workers = 1, run_name = rn1,
+                          impose_fn = mock_impose_effect,
+                          estimator_fn = mock_run_estimator)
+  n0 <- r0$results$n_control_clusters[1]
+  n1 <- r1$results$n_control_clusters[1]
+  expect_identical(n1, n0 - 1L)
+  expect_identical(r1$results$n_treated_clusters[1],
+                   r0$results$n_treated_clusters[1])
+})

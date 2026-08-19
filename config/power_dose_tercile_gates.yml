@@ -1,0 +1,73 @@
+# =============================================================================
+# power_dose_tercile_gates.yml — SIZE GATES for the four-quarters dose-response
+# spec (quality_reports/strategy_memo_fourq_dose_response.md §6.2).
+#
+# County, SPLICED window (covid: drop), delta = 0 ONLY: these runs measure the
+# null size of every inference arm on the three designs the dose analysis
+# would use — pooled dose sample, top-dose tercile subdesign, bottom-dose
+# tercile subdesign. No dose enters at delta = 0, so the dose_step shape is
+# not needed here; what varies is the treated template + control pool via the
+# exclude_states axis (added 2026-08-19).
+#
+# TERCILES are computed WITHIN the county estimation sample (16 of the 22
+# dose states are in the county panel; MA/NY/MD/LA/ME/RI are not), from
+# data/processed/fourq_dose_per_adult.csv:
+#   T3 (high, $64-84/adult-mo): AZ KS OH NC KY
+#   T2 (mid,  $34-51):          CO VA CT TN VT
+#   T1 (low,  $10-29):          IN DE NH PA WV AR
+# FL is treated in the county panel but has NO handle data (LSR) -> excluded
+# from every dose scenario. Never-treated controls (12): AK GA HI ID MN MS MT
+# ND OK SC TX UT.
+#
+# Expected treated-cluster counts: pooled 16, T3 5, T1 6 — the tercile
+# subdesigns sit in the few-treated-cluster regime where county analytic
+# inference failed post-COVID; that is exactly what these gates measure.
+#
+# Run:  Rscript -> run_scenario_grid("config/power_dose_tercile_gates.yml")
+# =============================================================================
+
+run_name: dose_tercile_gates
+
+level:      county
+sample:     [S2]
+covid:      drop
+treat_def:  online_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+template:   panel
+
+effect_grid:  [0]
+
+estimators:   [did2s, lpdid]
+lpdid_wild:   true
+
+n_reps:     300
+base_seed:  20260723
+mde_boot:   50
+
+alpha:      [0.1, 0.05, 0.01]
+
+min_pre:    12
+min_post:   6
+anticipation_months: 6
+
+scenarios:
+
+  # 1. Pooled dose sample: all 16 county-panel treated states with a complete
+  # four-quarters dose window (FL dropped: no handle data).
+  - name: dose_pooled
+    exclude_states: [FL]
+
+  # 2. Top-dose tercile subdesign (treated = AZ KS OH NC KY).
+  - name: dose_t3_high
+    exclude_states: [FL, AR, WV, PA, NH, DE, IN, VT, TN, CT, VA, CO]
+
+  # 3. Bottom-dose tercile subdesign (treated = IN DE NH PA WV AR).
+  - name: dose_t1_low
+    exclude_states: [FL, VT, TN, CT, VA, CO, KY, NC, OH, KS, AZ]
