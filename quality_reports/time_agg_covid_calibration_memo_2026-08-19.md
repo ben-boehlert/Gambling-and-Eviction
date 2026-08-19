@@ -328,3 +328,69 @@ specifically — either keep the full contiguous calendar (and model COVID
 explicitly) or restrict to post-COVID. Do not drop a window out of the middle.
 did2s still fails on `keep` (19.3%), so this is not a general fix for
 imputation estimators.
+
+---
+
+## 12. Cells completed 16:48–17:15 (11 of 13 done)
+
+CS analytic, δ = 0, 300 reps, all completed cells:
+
+| Cell | reject@.05 | sd_att | mean_se | SE/SD | bias | treated |
+|---|---|---|---|---|---|---|
+| month_drop | 18.3% FAIL | 0.537 | 0.346 | 0.64 | +0.161 | 23 |
+| quarter_drop | 16.7% FAIL | 0.500 | 0.328 | 0.66 | +0.081 | 23 |
+| year_drop | 24.7% FAIL | 0.534 | 0.388 | 0.73 | −0.476 | 23 |
+| month_keep | 7.3% PASS | 0.326 | 0.249 | 0.76 | −0.146 | 23 |
+| quarter_keep | 16.3% FAIL | 0.375 | 0.297 | 0.79 | −0.278 | 23 |
+| **year_keep** | **62.7% FAIL** | 0.625 | 0.423 | 0.68 | **−1.047** | 23 |
+| month_post | 5.0% PASS | 0.274 | 0.289 | 1.06 | −0.204 | 7 |
+| quarter_post | 0.7% fail (cons.) | 0.240 | 0.278 | 1.16 | −0.212 | 7 |
+| year_post | 8.0% PASS | 0.463 | 0.598 | 1.29 | −0.578 | 7 |
+| quarter_post_completeperiods | **5.3% PASS** | 0.281 | 0.319 | 1.13 | −0.164 | 7 |
+| year_post_completeperiods | 0.0% fail (cons.) | 0.169 | 0.192 | 1.14 | **−0.042** | 4 |
+
+### 12.1 Annual + pandemic-kept is catastrophic (`year_keep`)
+
+62.7% null rejection and a **−1.047 log-point null bias** — the worst cell in
+the grid by a wide margin. With only 9 annual periods, the 2020 moratorium
+year is a single enormous negative outlier that no time effect can absorb into
+a comparison across differently-timed cohorts. **Annual aggregation and
+"leave COVID in" must never be combined.** Note this is the exact opposite of
+the monthly recommendation in §11, where `keep` was the *best* window: at
+monthly resolution the pandemic is ~17 unusual observations out of 119; at
+annual resolution it is 1–2 catastrophic observations out of 9.
+
+### 12.2 The partial-period artifact is CONFIRMED and quantified
+
+`complete_periods_only` removes unit-periods lacking their full month
+complement. Its effect on CS's null bias:
+
+| Pair | bias without rule | bias with rule | reduction |
+|---|---|---|---|
+| year_post | −0.578 | **−0.042** | **93%** |
+| quarter_post | −0.212 | −0.164 | 23% |
+
+This confirms §3's hypothesis: the great majority of annual's null bias was a
+mechanical aggregation artifact (the loader filters COVID months *before*
+aggregating, so post-COVID 2021 held 5 months of filings summed as if a year),
+not an estimator property. At quarterly the artifact is smaller because a
+partial quarter loses at most 1 of 3 months.
+
+**But the fix costs design size.** `year_post_completeperiods` drops from 7 to
+**4 treated states** (states whose only post-window periods were partial
+disappear), and the test becomes degenerate: 0% rejection, SE/SD 1.14.
+`quarter_post_completeperiods` is the one cell that improves on both margins —
+5.3% rejection (vs 0.7% without the rule), SE/SD 1.13, bias −0.164, 7 treated.
+
+### 12.3 Updated practical ranking for a CS design
+
+1. **`quarter_post` + complete periods** — 5.3%, 7 treated, smallest bias
+   among passing cells. Best-calibrated CS cell found in this project.
+2. **`month_post`** — 5.0%, 7 treated, bias −0.204.
+3. **`month_keep`** — 7.3%, 23 treated (most clusters of any passing cell),
+   bias −0.146, but SE/SD 0.76.
+4. Everything spliced, and anything annual-with-COVID: disqualified.
+
+All passing cells retain the §9.3 caveat: two-sided size within gate over an
+off-centre null, so directional inference is not 5% and the location shift
+would contaminate a real ATT.
