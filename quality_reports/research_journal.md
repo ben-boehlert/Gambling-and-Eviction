@@ -61,3 +61,13 @@ treatment ≈ power-neutral. Memo: quality_reports/postcovid_maturation_power_me
 exactly nominal (5.0%/4.7%) → valid county post-COVID MDE-80: 23.9% legalization /
 31.7% maturation-only. County does not rescue post-COVID power; did2s disqualified there.
 **Report:** quality_reports/postcovid_maturation_power_memo_2026-08-19.md
+
+### 2026-08-19 12:15 — Fable (diagnostic)
+**Phase:** Execution
+**Target:** analysis/diagnostics/nevertreated_trends_pre_post_covid.R (+ rerun of covid_global_pt_diagnostic.R)
+**Score:** N/A (descriptive diagnostic, real untreated data)
+**Verdict:** Never-treated state effects shift SD 0.47 log pts across COVID, but placebo splits
+show SD 0.42 (pre) / 0.30 (post) — drift is generic, COVID adds modestly; post-COVID segment is
+the most stable. Supports "global PT more tolerable post-COVID" for did2s; ID pre-trend (+85%/yr)
+is a likely data artifact worth a control-set robustness check.
+**Report:** output/covid_global_pt/
