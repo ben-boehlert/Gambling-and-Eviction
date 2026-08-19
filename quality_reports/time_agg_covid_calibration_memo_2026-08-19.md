@@ -144,3 +144,92 @@ since coarse CS cells cost 0.1–3.4 s.
   when TRUE. Attributes `time_agg`, `complete_periods_only`,
   `n_periods_dropped_incomplete` recorded on the panel.
 - Commit `79498b1`.
+
+---
+
+## 9. WHY does CS pass post-COVID? (diagnostic, 2026-08-19)
+
+**Short answer: it is the numerator, not the denominator — and the "pass" is a
+coincidental balance, not clean calibration.**
+
+### 9.1 CS's SEs barely move; its estimate dispersion halves
+
+| Cell | sd_att | mean_se | SE/SD | bias | coverage | reject |
+|---|---|---|---|---|---|---|
+| month_drop | **0.537** | 0.346 | 0.64 | +0.161 | 0.82 | 18.3% |
+| quarter_drop | 0.500 | 0.328 | 0.66 | +0.081 | 0.83 | 16.7% |
+| year_drop | 0.534 | 0.388 | 0.73 | −0.476 | 0.75 | 24.7% |
+| month_post | **0.274** | 0.289 | 1.06 | −0.204 | 0.95 | 5.0% |
+| quarter_post | 0.240 | 0.278 | 1.16 | −0.212 | 0.99 | 0.7% |
+| year_post | 0.463 | 0.598 | 1.29 | −0.578 | 0.92 | 8.0% |
+
+Going month_drop → month_post, `mean_se` falls only 16% (0.346 → 0.289) while
+`sd_att` falls 49% (0.537 → 0.274). CS's analytic SE is approximately right for
+post-COVID sampling variability and far too small for the spliced window. The
+question is therefore "what inflates CS's estimate dispersion on the spliced
+window", not "why do the SEs improve".
+
+### 9.2 The straddle mechanism, and a near-exact variance match
+
+CS's ATT(g,t) compares period t to base period g−1 (`base_period = "varying"`).
+On the spliced panel the calendar is non-contiguous, so a (g,t) pair can have
+its **base period before the COVID gap and its outcome period after it**. The
+never-treated diagnostic (`output/covid_global_pt/`) measured what such a
+comparison imports: never-treated state effects shift across the gap with
+**SD = 0.467 log points** (range −0.61 to +0.76). Which states straddle the gap
+depends on the random pseudo-assignment, so this enters as cross-replication
+dispersion that the analytic variance formula does not model — it is a real
+feature of Y(0), not estimator sampling noise.
+
+Back-of-envelope, treating the contamination as independent of the clean
+component:
+
+    sqrt(0.274^2 + 0.467^2) = sqrt(0.075 + 0.218) = 0.541   (predicted)
+    observed sd_att on month_drop                  = 0.537
+
+The independently-measured across-COVID shift SD reproduces the spliced
+dispersion almost exactly. Suggestive rather than conclusive (it assumes
+independence and one common contamination scale), but it is a strong match.
+
+**Why TWFE survives the same splice:** its state-clustered SE mechanically
+absorbs arbitrary within-state correlation — including a state-specific level
+shift — so its SE grows to match its own dispersion (SE/SD 1.06 spliced). CS's
+analytic/multiplier-bootstrap SE, built from (g,t)-cell influence functions,
+does not propagate the straddle contamination.
+
+### 9.3 The month_post "pass" is fragile: the null distribution is off-centre
+
+Rejections decomposed by tail (CS analytic, δ = 0, 300 reps):
+
+| Cell | reject (att<0) | reject (att>0) | total | median att |
+|---|---|---|---|---|
+| month_drop | 3.7% | 14.7% | 18.3% | **+0.133** |
+| quarter_drop | 6.0% | 10.7% | 16.7% | +0.117 |
+| year_drop | **24.0%** | 0.7% | 24.7% | −0.498 |
+| month_post | **4.0%** | **1.0%** | 5.0% | **−0.184** |
+| quarter_post | 0.7% | 0.0% | 0.7% | −0.207 |
+| year_post | **8.0%** | **0.0%** | 8.0% | −0.565 |
+
+Under a correctly-centred null each tail should carry ≈2.5%. `month_post`
+splits 4.0/1.0: its two-sided 5.0% is the **net of a null distribution centred
+at −0.18 against a slightly conservative SE**, not evidence that CS is
+correctly calibrated there. Consequences: (i) one-sided or directional
+inference at this cell is NOT 5%; (ii) the location shift would contaminate any
+real ATT estimate; (iii) the pass is not robust — small changes in SE
+conservativeness move it.
+
+CS's null centre is non-zero in **every** cell and flips sign by window
+(+0.13 spliced monthly, −0.18 to −0.57 post/annual). With δ = 0 the truth is
+exactly 0, so this is a genuine estimator/design artifact — most plausibly the
+not-yet-treated comparison on a strongly trending panel (post-COVID filings are
+recovering), where later-assigned states sit at a systematically different
+point on the trend than earlier-assigned ones.
+
+### 9.4 Decisive follow-up (NOT yet run)
+
+Re-run `month_post` with `control_group: nevertreated`. If the −0.18 centring
+collapses, the not-yet-treated comparison is the cause; if it persists, the
+cause is aggregation weights over identifiable (g,t) cells. Cost is trivial
+(~1.4 s/cell → ~2 min for 300 reps). Until then, **CS should not be described
+as "calibrated post-COVID"** — the defensible statement is "two-sided size is
+nominal at one cell, with a null distribution centred −0.18 away from truth".
