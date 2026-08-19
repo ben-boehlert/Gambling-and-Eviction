@@ -95,3 +95,16 @@ passes the size gate. Plan: `quality_reports/plans/2026-08-19_adaptive-cs-mde-se
   top-ups, and regenerate gate/MDE outputs in the new format.
 - Interim county tallies at 75/250 (monitoring only): analytic 58.7%, boot 5.3%,
   boot_t 2.7%, failures 0.
+
+## 2026-08-19 02:56 — GATE 8 DECIDED; worker crash recovered
+
+- **Size gate (250 reps, 0 failures): analytic 61.2% FAIL; boot 4.4% PASS;
+  boot_t 3.2% PASS.** The two bootstrap arms proceed to the MDE search.
+- Search evidence so far: boot power 8% at delta=.06, 4% at .15, ~5% at .20
+  (interim) — power ≈ size everywhere on the grid → heading to
+  never_crosses_target for both surviving arms.
+- 02:55 failure: furrr worker died mid-batch (delta=.20 reps 226-250,
+  "MultisessionFuture interrupted", exit 1) — sporadic macOS worker crash class,
+  first in 550+ cells. Checkpoint intact (225/250 at .20 in .done_cells; torn
+  batch dropped by design). Resumed under the FIXED code (run2 log), which also
+  regenerates gate/MDE outputs in the amended format.
