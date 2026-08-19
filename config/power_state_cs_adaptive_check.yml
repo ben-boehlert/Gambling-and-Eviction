@@ -1,0 +1,46 @@
+# =============================================================================
+# power_state_cs_adaptive_check.yml — gate-6 validation config (NOT production)
+#
+# State-level, real CS estimator, count_nb step: used ONLY to verify that
+# run_adaptive_mde() and run_scenario_grid() brute force produce bit-identical
+# overlapping (rep, delta) cells and the same MDE verdict on real data
+# (quality_reports/plans/2026-08-19_adaptive-cs-mde-search.md, gate 6).
+#
+# The comparison script disables the size gate for the ADAPTIVE run
+# (gate_interval = [0, 1]) because CS state arms are already known to be
+# miscalibrated (data/output/cs_cv3_calibration/state/) — this run validates
+# the search machinery, not the size of state-level CS.
+# =============================================================================
+
+run_name: state_cs_adaptive_check
+
+level:      state
+sample:     [S2]
+covid:      drop
+treat_def:  online_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+template:   panel
+
+effect_grid:  [0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.10, 0.15, 0.20]
+
+estimators:   [cs]
+
+# Both REQUIRED for CS to estimate at all on this design (design doc §16a).
+cs_safe_patches: true
+cs_faster_mode:  false
+
+n_reps:     40
+base_seed:  20260723
+mde_boot:   100
+alpha:      [0.05]
+
+min_pre:    12
+min_post:   6
+anticipation_months: 6

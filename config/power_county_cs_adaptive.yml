@@ -1,0 +1,74 @@
+# =============================================================================
+# power_county_cs_adaptive.yml — county CS arm via the ADAPTIVE MDE search
+#
+# Successor to power_county_cs.yml after the 2026-08-18 review
+# (quality_reports/sufficient_statistics_shift_mode_code_review.md) barred
+# shift-mode synthesis for the headline CS MDE. Every cell here is a genuine
+# full estimate; run via run_adaptive_mde() (R/power/adaptive_mde.R), which
+#   1. estimates delta = 0 for the full 250 reps first,
+#   2. applies the design-doc §14 size gate per CS inference arm
+#      (rejection at nominal 5% within [2.5%, 10%]) — NO arm passing means
+#      NO MDE search and a calibration-failure report,
+#   3. only for surviving arms, bisects the grid for the 80% power crossing,
+#      topping the bracketing points up to the full 250 reps.
+#
+# shift_mode is intentionally FALSE (the adaptive runner refuses shift-mode
+# configs). Ids therefore differ from both power_primary.yml (cs flags) and
+# power_county_cs.yml (shift hash) — no partial collisions anywhere; the
+# existing output_blinded_power/county_cs partial is untouched.
+#
+# `jack` (CV3) stays disabled: ~H+1 ≈ 30 att_gt fits per rep is out of local
+# reach at county scale, and the state-level evidence
+# (data/output/cs_cv3_calibration/state/: 0.5% rejection) already places it
+# outside the gate on the conservative side. Reports must state this.
+#
+# Run:  N_WORKERS=6 bash scripts/run_power_county_cs_adaptive.sh
+# =============================================================================
+
+run_name: county_cs_adaptive
+
+level:      county
+sample:     [S2]                 # S3 is structurally infeasible under D1
+covid:      drop
+treat_def:  online_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+template:   panel
+
+# Primary grid, unchanged from power_primary.yml / power_county_cs.yml intent.
+effect_grid:  [0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.10, 0.15, 0.20]
+
+estimators:   [cs]
+
+# Both REQUIRED for CS to estimate at all on this design (design doc §16a).
+cs_safe_patches: true
+cs_faster_mode:  false
+
+shift_mode: false
+
+n_reps:     250
+base_seed:  20260723            # shared with primary/cheap: same rep -> same
+                                # simulated panel where scenario ids coincide
+mde_boot:   200
+
+alpha:      [0.05]
+
+min_pre:    12
+min_post:   6
+anticipation_months: 6
+
+scenarios:
+
+  # HEADLINE. County, NB count augmentation, constant step — the cell the
+  # PAP's CS MDE would be read off, IF an inference arm passes the size gate.
+  - name: headline_county_nb_step
+    level: county
+    sample: [S2]
+    mechanisms: [count_nb]
+    shapes: [step]

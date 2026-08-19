@@ -39,3 +39,19 @@ passes the size gate. Plan: `quality_reports/plans/2026-08-19_adaptive-cs-mde-se
 - Next: commit, then gate 6 (state-level real-CS brute-force comparison; gate
   interval disabled for that run only — CS state arms are known miscalibrated and
   the run exists to validate search machinery + cell equivalence, not size).
+
+## 2026-08-19 01:43 — Gate 6 PASSED: state-level real-CS adaptive vs brute force
+
+- Config `config/power_state_cs_adaptive_check.yml` (state/S2/D1/count_nb/step, cs,
+  n_reps 40); script `analysis/diagnostics/adaptive_vs_brute_state_check.R`.
+- Adaptive visited 130 (rep, delta) cells (0, .06, .15, .20) vs brute's 440 — and
+  all 16,980 overlapping rows are BIT-IDENTICAL (att/se/p/ci_lo/ci_hi/truth all
+  TRUE), including genuine multiplier-bootstrap p-values → the cell-equivalence
+  invariant holds on the real estimator, RNG paths included.
+- MDE verdicts identical per arm: never_crosses_target for analytic/boot/boot_t
+  (expected at state level; the size gate was intentionally disabled for this
+  machinery-validation run). gate6_agreement.csv: all agree = TRUE.
+- Wall clock: adaptive 5.5 min, brute 16.5 min (6 workers). State CS cell ≈ 17 s.
+- Next: gate 7 county smoke (n_reps_override 6 → measures county CS cell cost and
+  exercises the gate-fail stop path at county scale), then gate 8 (250-rep county
+  null calibration, the decision point).
