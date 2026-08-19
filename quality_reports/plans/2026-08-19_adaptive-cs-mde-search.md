@@ -157,3 +157,37 @@ Pure decision core (unit-testable without estimation):
   statistical disputes (per overnight protocol).
 - Before accepting gate 8/9 output: Opus review of the size-gate table and (if
   reached) the adaptive-vs-brute agreement.
+
+---
+
+## AMENDMENT 1 — 2026-08-19 02:05 (BEFORE any county delta>0 estimation)
+
+Written while the county null phase (delta = 0 only) is still running, in response
+to the Opus review of the adaptive machinery (see overnight log entry 02:05).
+These rules are fixed before the county MDE search begins:
+
+1. **Headline arm (X1).** If more than one CS inference arm passes the size gate,
+   the headline county CS MDE is the **largest** MDE among surviving arms (design
+   §15(2): worst reasonable case); the other arms are reported as a range. The
+   arm_priority order is a cell-reuse device only, never a selection rule.
+2. **Flank top-up (C1).** After a bracket completes, the grid points immediately
+   flanking the bracket (one below lo, one above hi, where they exist) are also
+   topped up to the full n_reps before the MDE bootstrap CI is computed, so the
+   CI's admissible support spans at least two grid steps on each side of the
+   crossing. The CI is additionally labeled as conditional on the crossing lying
+   within the evaluated window, with n_boot_finite reported.
+3. **Gate scoping (B1/B5).** `pass` additionally requires the arm's delta=0
+   failure rate <= 5% (§14 criterion 3). The gate implements the SIZE criterion
+   of §14 (plus failure rate); §14's coverage/bias/fragility criteria are NOT
+   implemented in this run and no report may claim full §14 compliance. The
+   fragility criterion is structurally unmet (single sample S2, single mechanism
+   count_nb) and must be flagged in any PAP use.
+4. **Arm enumeration (B3).** The size-gate table enumerates the expected arms
+   (analytic, boot, boot_t; jack disabled) and reports an arm with no usable
+   rows as pass = FALSE with reason, never silently omits it.
+5. **Reporting (E3).** Any calibration-failure conclusion is scoped: "none of
+   the three tested CS inference arms is calibrated at county", never "no valid
+   CS inference exists"; cs_jack was never run at county and its exclusion was
+   on compute cost, with state-level over-coverage (0.5%) as supporting evidence
+   only. If an arm passes near the top of [2.5%, 10%], the report notes the MDE
+   is understated relative to nominal 5%.

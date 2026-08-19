@@ -88,23 +88,38 @@ if (!exists("power_paths", mode = "function")) source("R/power/config.R")
     source(file.path(power_repo_root(),
                      "R/power/summarize_operating_characteristics.R"))
   }
-  rows %>%
-    filter(.data$inference == arm | (!is.na(.data$converged) &
-                                       !.data$converged &
-                                       is.na(.data$inference)),
-           .data$estimand %in% c("simple", "overall") | is.na(.data$inference)) %>%
+  # n_done counts ATTEMPTED cells: any row for a (rep, delta) — any arm,
+  # any estimand, or a failure row — proves the cell ran. An arm-filtered
+  # count would silently drop a rep from the arm's failure denominator
+  # whenever the estimator emitted some arms but not this one (run_estimators
+  # has three such paths for CS), understating failure AND stalling the
+  # scheduler's rep allocation (review findings B2 / D1).
+  attempted <- rows %>%
+    group_by(.data$delta) %>%
+    summarise(n_done = dplyr::n_distinct(.data$rep), .groups = "drop")
+  armed <- rows %>%
+    filter(!is.na(.data$inference), .data$inference == arm,
+           .data$estimand %in% c("simple", "overall")) %>%
     mutate(
       converged = !is.na(.data$converged) & .data$converged,
       rej = .reject_flag(.data$p, .data$ci_lo, .data$ci_hi, alpha)
     ) %>%
     group_by(.data$delta) %>%
     summarise(
-      n_done   = dplyr::n_distinct(.data$rep),
       n_used   = sum(.data$converged & !is.na(.data$rej)),
       k_reject = sum(.data$converged & !is.na(.data$rej) & .data$rej),
       .groups = "drop"
-    ) %>%
+    )
+  out <- attempted %>%
+    left_join(armed, by = "delta") %>%
+    mutate(n_used   = dplyr::coalesce(.data$n_used, 0L),
+           k_reject = dplyr::coalesce(.data$k_reject, 0L)) %>%
     mutate(across(c("n_done", "n_used", "k_reject"), as.integer))
+  # Load-bearing invariant (one usable simple row per rep x arm): if an
+  # estimator ever emitted duplicates, every rate downstream would silently
+  # exceed its denominator.
+  stopifnot("tally: n_used exceeds n_done" = all(out$n_used <= out$n_done))
+  out
 }
 
 #' Next scheduling action for the adaptive search (pure function)
@@ -205,9 +220,20 @@ if (!exists("power_paths", mode = "function")) source("R/power/config.R")
                 reps = integer(0)))
   }
 
-  # ---- Adjacent bracket: top up lo, then hi, then done.
+  # ---- Adjacent bracket: top up lo, then hi, then the FLANKING grid points
+  # (one below lo, one above hi, where they exist). Flanks at full reps give
+  # the MDE bootstrap CI admissible support of at least two grid steps per
+  # side of the crossing instead of confining every draw to [lo, hi]
+  # (Amendment 1 rule 2; review finding C1). A flank whose full-rep
+  # classification breaks monotonicity is caught by the anomaly branch on
+  # the next call — never silently reconciled.
   if (n_done_at(lo) < n_reps) return(batch_at(lo, "top_up"))
   if (n_done_at(hi) < n_reps) return(batch_at(hi, "top_up"))
+  il <- match(lo, P); ih <- match(hi, P)
+  flanks <- c(if (il > 1L) P[il - 1L], if (ih < length(P)) P[ih + 1L])
+  for (f in flanks) {
+    if (n_done_at(f) < n_reps) return(batch_at(f, "top_up_flank"))
+  }
   list(type = "bracket_done", delta = NA_real_, reps = integer(0),
        bracket = c(lo, hi))
 }
@@ -216,16 +242,49 @@ if (!exists("power_paths", mode = "function")) source("R/power/config.R")
 # Driver
 # ---------------------------------------------------------------------------
 
+# Canonical text key for one (rep, delta) cell. formatC("g", 15) is the
+# shortest-round-trip rendering readr also uses, so a key computed from a
+# CSV-round-tripped delta matches the key written at estimation time; exact
+# float equality elsewhere is protected by .amde_snap_delta below.
+.amde_key <- function(rep, delta) {
+  paste(rep, formatC(delta, format = "g", digits = 15), sep = ",")
+}
+
+# Snap CSV-round-tripped deltas onto the config grid (tolerance 1e-9). A
+# single silent float mismatch would otherwise stall the scheduler into
+# re-running cells forever (review finding D7).
+.amde_snap_delta <- function(x, grid) {
+  grid <- sort(unique(as.numeric(grid)))
+  i <- vapply(x, function(v) which.min(abs(grid - v)), integer(1))
+  snapped <- grid[i]
+  off <- abs(snapped - x) > 1e-9
+  snapped[off] <- x[off]
+  snapped
+}
+
+# Inference arms each estimator is EXPECTED to emit (review finding B3): the
+# size-gate table must enumerate these and mark an arm with no usable rows
+# as an explicit failure, never silently omit it.
+.amde_expected_arms <- function(estimator, cs_jack = FALSE) {
+  switch(estimator,
+         cs    = c("analytic", "boot", "boot_t", if (isTRUE(cs_jack)) "jack"),
+         twfe  = c("analytic", "wild"),
+         lpdid = c("analytic", "wild"),
+         did2s = "analytic",
+         character(0))
+}
+
 .AMDE_TERMINAL <- c("bracket_done", "verdict_never_crosses",
                     "verdict_at_or_below_smallest", "done_anomalous",
-                    "cell_failed")
+                    "cell_failed", "scheduler_stalled")
 
 .AMDE_VERDICT <- c(
   bracket_done                 = "interpolated",
   verdict_never_crosses        = "never_crosses_target",
   verdict_at_or_below_smallest = "at_or_below_smallest_grid_point",
   done_anomalous               = "anomalous_curve",
-  cell_failed                  = "estimation_failed"
+  cell_failed                  = "estimation_failed",
+  scheduler_stalled            = "scheduler_stalled"
 )
 
 #' Adaptive/sequential MDE search over a power config
@@ -393,7 +452,7 @@ run_adaptive_mde <- function(config_path, run_name = NULL, workers = NULL,
       finished_at = format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"),
       runtime_min = as.numeric(difftime(Sys.time(), t_start, units = "mins")),
       git_rev = git_rev, r_version = R.version.string,
-      blindness = "all data via load_blinded_panel(); assert_blinded passed"
+      blindness = "all data via load_blinded_panel() (blindness enforced there)"
     )
     jsonlite::write_json(meta, .power_out_file(run_name, "run_metadata.json"),
                          auto_unbox = TRUE, pretty = TRUE, null = "null",
@@ -442,17 +501,26 @@ run_adaptive_mde <- function(config_path, run_name = NULL, workers = NULL,
                       show_col_types = FALSE, progress = FALSE),
       error = function(e) NULL)
     if (!is.null(old) && nrow(old) > 0L) {
-      keep <- paste(old$rep, old$delta, sep = ",") %in% done_keys
+      old$delta <- .amde_snap_delta(old$delta, sc$effect_grid)
+      keep <- .amde_key(old$rep, old$delta) %in% done_keys
       rows <- old[keep, , drop = FALSE]
       readr::write_csv(rows, partial)
-      writeLines(unique(paste(rows$rep, rows$delta, sep = ",")), cells_sc)
+      writeLines(unique(.amde_key(rows$rep, rows$delta)), cells_sc)
       cat(sprintf("[%s] %s: resuming — %d completed cells found\n",
                   .ts(), sc$scenario_id,
                   nrow(unique(rows[, c("rep", "delta")]))))
     }
   }
   if (is.null(rows)) {
-    unlink(c(partial, cells_sc, state_pth))
+    # A partial that cannot be resumed (no/unreadable sidecar, or a fresh
+    # resume = FALSE run) is ORPHANED, not deleted — a stray sidecar loss
+    # must never destroy tens of hours of CS fits (review finding D6).
+    if (file.exists(partial)) {
+      file.rename(partial, paste0(partial, ".orphaned"))
+      cat(sprintf("[%s] %s: existing partial moved to .orphaned\n",
+                  .ts(), sc$scenario_id))
+    }
+    unlink(c(cells_sc, state_pth))
     rows <- tibble::tibble()
   }
 
@@ -540,10 +608,18 @@ run_adaptive_mde <- function(config_path, run_name = NULL, workers = NULL,
   }
 
   run_cells <- function(delta, reps) {
+    # Duplicate-cell guard (review finding D1): a scheduler defect must fail
+    # loudly, never append duplicate rows that would silently re-weight the
+    # power curve.
+    if (nrow(rows) > 0L) {
+      clash <- .amde_key(rows$rep, rows$delta) %in% .amde_key(reps, delta)
+      stopifnot("run_cells: proposed cells already exist in the partial" =
+                  !any(clash))
+    }
     new_rows <- map_cells(reps, cell_fn_for(delta))
+    stopifnot("run_cells: a batch produced zero rows" = nrow(new_rows) > 0L)
     readr::write_csv(new_rows, partial, append = file.exists(partial))
-    write(paste(reps, delta, sep = ","), cells_sc, ncolumns = 1L,
-          append = TRUE)
+    write(.amde_key(reps, delta), cells_sc, ncolumns = 1L, append = TRUE)
     rows <<- dplyr::bind_rows(rows, new_rows)
     cat(sprintf("[%s]   %s delta=%.3g reps %d-%d: %d rows\n",
                 .ts(), sc$scenario_id, delta, min(reps), max(reps),
@@ -552,8 +628,7 @@ run_adaptive_mde <- function(config_path, run_name = NULL, workers = NULL,
 
   rows_primary <- function() {
     if (nrow(rows) == 0L) return(rows)
-    rows[rows$estimator == primary | is.na(rows$estimator) |
-           (!is.na(rows$converged) & !rows$converged), , drop = FALSE]
+    rows[!is.na(rows$estimator) & rows$estimator == primary, , drop = FALSE]
   }
 
   state <- list(scenario_id = sc$scenario_id, phase = "null",
@@ -598,17 +673,39 @@ run_adaptive_mde <- function(config_path, run_name = NULL, workers = NULL,
                rp$estimand %in% c("simple", "overall") &
                !is.na(rp$converged) & rp$converged, , drop = FALSE]
   observed_arms <- unique(obs0$inference)
-  gate <- purrr::map_dfr(observed_arms, function(arm) {
+  # Enumerate the arms the estimator is EXPECTED to emit plus anything
+  # actually observed; an arm with no usable rows appears as an explicit
+  # failure (review finding B3), never a silent absence.
+  gate_arms <- union(.amde_expected_arms(primary), observed_arms)
+  gate <- purrr::map_dfr(gate_arms, function(arm) {
     tal <- .amde_tally(rp, arm, gate_alpha)
     d0 <- tal[tal$delta == 0, ]
-    rate <- if (d0$n_used[1] > 0L) d0$k_reject[1] / d0$n_used[1] else NA_real_
-    ci <- .amde_wilson(d0$k_reject[1], d0$n_used[1])
+    n_done <- if (nrow(d0) > 0L) d0$n_done[1] else 0L
+    n_used <- if (nrow(d0) > 0L) d0$n_used[1] else 0L
+    k      <- if (nrow(d0) > 0L) d0$k_reject[1] else 0L
+    rate <- if (n_used > 0L) k / n_used else NA_real_
+    ci <- .amde_wilson(k, n_used)
+    fr <- if (n_done > 0L) 1 - n_used / n_done else NA_real_
+    # Size criterion of design section 14 PLUS its failure-rate criterion
+    # (Amendment 1 rule 3; review finding B1). The other section-14 criteria
+    # (coverage, bias, fragility) are NOT implemented here.
+    size_ok <- !is.na(rate) &&
+      rate >= gate_interval[1] && rate <= gate_interval[2]
+    fail_ok <- !is.na(fr) && fr <= 0.05
     tibble::tibble(
       scenario_id = sc$scenario_id, estimator = primary, arm = arm,
-      n_done = d0$n_done[1], n_used = d0$n_used[1], k_reject = d0$k_reject[1],
+      n_done = n_done, n_used = n_used, k_reject = k,
       reject_rate = rate, wilson_lo = ci[1], wilson_hi = ci[2],
-      failure_rate = 1 - d0$n_used[1] / d0$n_done[1],
-      pass = !is.na(rate) & rate >= gate_interval[1] & rate <= gate_interval[2]
+      failure_rate = fr,
+      gate_lo = gate_interval[1], gate_hi = gate_interval[2],
+      pass = size_ok && fail_ok,
+      reason = dplyr::case_when(
+        n_used == 0L               ~ "no_usable_rows",
+        !fail_ok                   ~ "failure_rate_gt_5pct",
+        rate < gate_interval[1]    ~ "size_below_gate",
+        rate > gate_interval[2]    ~ "size_above_gate",
+        TRUE                       ~ "pass"
+      )
     )
   })
   surviving <- gate$arm[gate$pass]
@@ -627,7 +724,11 @@ run_adaptive_mde <- function(config_path, run_name = NULL, workers = NULL,
       scenario_id = sc$scenario_id, estimator = primary,
       arm = gate$arm, verdict = "size_gate_failed",
       mde = NA_real_, mde_ci_lo = NA_real_, mde_ci_hi = NA_real_,
+      n_boot_finite = NA_integer_,
       bracket_lo = NA_real_, bracket_hi = NA_real_,
+      power_lo = NA_real_, power_hi = NA_real_,
+      n_used_lo = NA_integer_, n_used_hi = NA_integer_,
+      full_deltas = NA_character_, ci_note = NA_character_,
       search_terminal = NA_character_, anomaly = FALSE
     )
     save_state(phase = "done_gate_failed")
@@ -635,9 +736,24 @@ run_adaptive_mde <- function(config_path, run_name = NULL, workers = NULL,
   }
 
   # ---- Phase 3: bisection search, driven by each surviving arm in turn.
+  # Hard iteration cap per arm (review finding D1): a scheduler defect must
+  # surface as an explicit scheduler_stalled verdict, never an unbounded
+  # compute burn. The cap is far above any legitimate path (every grid point
+  # fully replicated twice over).
+  max_iter <- 4L * ceiling(n_reps / batch_size) * length(sc$effect_grid)
   terminals <- list()
   for (arm in surviving) {
+    iter <- 0L
     repeat {
+      iter <- iter + 1L
+      if (iter > max_iter) {
+        cat(sprintf(paste0("[%s] %s: arm %s exceeded the scheduler ",
+                           "iteration cap (%d) — flagging stalled\n"),
+                    .ts(), sc$scenario_id, arm, max_iter))
+        terminals[[arm]] <- list(type = "scheduler_stalled",
+                                 delta = NA_real_, reps = integer(0))
+        break
+      }
       tal <- .amde_tally(rows_primary(), arm, gate_alpha)
       act <- .amde_next_action(tal, grid = sc$effect_grid, n_reps = n_reps,
                                batch_size = batch_size, target = power_target)
@@ -666,8 +782,11 @@ run_adaptive_mde <- function(config_path, run_name = NULL, workers = NULL,
     base_row <- tibble::tibble(
       scenario_id = sc$scenario_id, estimator = primary, arm = arm,
       verdict = "size_gate_failed", mde = NA_real_,
-      mde_ci_lo = NA_real_, mde_ci_hi = NA_real_,
+      mde_ci_lo = NA_real_, mde_ci_hi = NA_real_, n_boot_finite = NA_integer_,
       bracket_lo = NA_real_, bracket_hi = NA_real_,
+      power_lo = NA_real_, power_hi = NA_real_,
+      n_used_lo = NA_integer_, n_used_hi = NA_integer_,
+      full_deltas = NA_character_, ci_note = NA_character_,
       search_terminal = NA_character_, anomaly = FALSE
     )
     if (!arm %in% surviving) return(base_row)
@@ -675,31 +794,45 @@ run_adaptive_mde <- function(config_path, run_name = NULL, workers = NULL,
     tal <- .amde_tally(rows_primary(), arm, gate_alpha)
     full_deltas <- tal$delta[tal$n_done >= n_reps]
     rp <- rows_primary()
-    sub <- rp[rp$inference == arm & !is.na(rp$inference) &
+    sub <- rp[!is.na(rp$inference) & rp$inference == arm &
                 rp$estimand %in% c("simple", "overall") &
                 rp$delta %in% full_deltas, , drop = FALSE]
-    fail_sub <- rp[is.na(rp$inference) & rp$delta %in% full_deltas, ,
-                   drop = FALSE]
-    sub <- dplyr::bind_rows(sub, fail_sub)
     oc <- summarize_oc(sub, alpha_vec = gate_alpha, sig_alpha = gate_alpha)
     mtb <- compute_mde(oc, power_target = power_target, alpha = gate_alpha,
                        results = sub,
                        n_boot = as.integer(cfg$mde_boot %||% 200L))
-    mrow <- mtb[mtb$inference == arm, , drop = FALSE]
+    mrow <- mtb[!is.na(mtb$inference) & mtb$inference == arm, , drop = FALSE]
     base_row$verdict <- if (act$type == "bracket_done") {
       mrow$mde_reason[1]
     } else .AMDE_VERDICT[[act$type]]
-    base_row$mde        <- if (act$type %in%
-                                c("bracket_done",
-                                  "verdict_at_or_below_smallest")) {
+    base_row$mde <- if (act$type %in%
+                          c("bracket_done",
+                            "verdict_at_or_below_smallest")) {
       mrow$mde[1]
     } else NA_real_
-    base_row$mde_ci_lo  <- mrow$mde_ci_lo[1] %||% NA_real_
-    base_row$mde_ci_hi  <- mrow$mde_ci_hi[1] %||% NA_real_
+    # The bootstrap CI is only meaningful for a completed bracket: any other
+    # terminal leaves it NA by construction, not by luck (review finding C4).
     if (act$type == "bracket_done") {
+      base_row$mde_ci_lo    <- mrow$mde_ci_lo[1] %||% NA_real_
+      base_row$mde_ci_hi    <- mrow$mde_ci_hi[1] %||% NA_real_
+      base_row$n_boot_finite <- as.integer(mrow$n_boot_finite[1] %||%
+                                             NA_integer_)
       base_row$bracket_lo <- act$bracket[1]
       base_row$bracket_hi <- act$bracket[2]
+      t_lo <- tal[tal$delta == act$bracket[1], ]
+      t_hi <- tal[tal$delta == act$bracket[2], ]
+      base_row$power_lo  <- t_lo$k_reject[1] / t_lo$n_used[1]
+      base_row$power_hi  <- t_hi$k_reject[1] / t_hi$n_used[1]
+      base_row$n_used_lo <- t_lo$n_used[1]
+      base_row$n_used_hi <- t_hi$n_used[1]
+      # Honesty label (review finding C1): the CI conditions on the crossing
+      # lying inside the evaluated full-rep window; draws crossing outside
+      # it return NA and are dropped from the percentile CI.
+      base_row$ci_note <- sprintf(
+        "conditional on crossing within evaluated window [%g, %g]",
+        min(full_deltas[full_deltas > 0]), max(full_deltas))
     }
+    base_row$full_deltas <- paste(sort(full_deltas), collapse = ";")
     base_row$search_terminal <- act$type
     base_row$anomaly <- act$type == "done_anomalous"
     base_row

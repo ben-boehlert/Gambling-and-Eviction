@@ -67,3 +67,31 @@ passes the size gate. Plan: `quality_reports/plans/2026-08-19_adaptive-cs-mde-se
 - Smoke output dir kept (underscore-prefix validation-dir convention).
 - Launching PRODUCTION run: output_blinded_power/county_cs_adaptive
   (gate 8 null calibration → size gate → gate 9 search only if an arm passes).
+
+## 2026-08-19 02:05 — Opus design review received; MAJOR fixes implemented
+
+- Opus review verdict: sound in principle (size gate free of optional stopping;
+  A2/A3 residual biases second-order and conservative-signed; cell equivalence
+  D11 verified), but 4 MAJOR classes to fix before reporting: (B1/B3/B4) gate must
+  enforce the failure-rate criterion, enumerate expected arms, record its interval;
+  (B2/D1) arm-specific n_done lost reps when an arm's row was missing → failure
+  understatement + a potential infinite re-run loop; (C1/C2) bootstrap MDE CI was
+  truncated to [lo, hi] and n_boot_finite was dropped; (X1) no prespecified
+  headline-arm rule. Plus E2: cs_jack exclusion is defensible on COST only —
+  report must scope any failure conclusion to the three tested arms.
+- AMENDMENT 1 written to the plan at 01:57 — BEFORE any county delta>0 estimation
+  (null phase still running): headline arm = LARGEST MDE among survivors (§15(2));
+  flank top-up rule; gate = size criterion of §14 + failure rate (not full §14);
+  expected-arm enumeration; scoped reporting language.
+- Fixes implemented TDD (tests updated first): .amde_tally attempted-cell
+  denominator; flank top-up before bracket_done; gate columns
+  (gate_lo/gate_hi/reason) + failure-rate enforcement + expected arms; Phase-4
+  output now carries n_boot_finite, power/n_used at bracket, full_deltas, ci_note;
+  duplicate-cell + zero-row guards; per-arm iteration cap → scheduler_stalled;
+  orphan-rename instead of unlink on unresumable partials; float-safe cell keys.
+- Full suite green. The RUNNING county process (old code) is unaffected: its cells
+  are bit-identical under either scheduler; after it finishes, the driver will be
+  re-run with resume=TRUE under the fixed code to reuse every cell, add flank
+  top-ups, and regenerate gate/MDE outputs in the new format.
+- Interim county tallies at 75/250 (monitoring only): analytic 58.7%, boot 5.3%,
+  boot_t 2.7%, failures 0.

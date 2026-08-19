@@ -101,9 +101,15 @@ test_that("tally counts attempted, usable, and rejected reps per delta", {
   expect_identical(d5$n_done, 1L)
   expect_identical(d5$n_used, 0L)
   expect_identical(d5$k_reject, 0L)
-  # Other arms' rows never leak into the tally.
+  # n_done counts ATTEMPTED cells (any arm's row proves the cell ran): a rep
+  # whose analytic row is missing still counts as attempted-but-unusable for
+  # the analytic arm (review finding B2 — an arm must never lose reps from
+  # its failure denominator just because the estimator skipped that arm).
   t_an <- .amde_tally(rows, arm = "analytic", alpha = 0.05)
-  expect_identical(t_an$n_done, 1L)
+  d0a <- t_an[t_an$delta == 0, ]
+  expect_identical(d0a$n_done, 3L)
+  expect_identical(d0a$n_used, 1L)
+  expect_identical(d0a$k_reject, 1L)
 })
 
 # ---------------------------------------------------------------------------
@@ -188,11 +194,23 @@ test_that("adjacent bracket points are topped up to full reps, lo first", {
   expect_identical(b$type, "top_up")
   expect_identical(b$delta, 0.06)
 
+  # Both bracket points full: the FLANKING grid points (0.04 below lo, 0.08
+  # above hi) must also reach full reps before completion, so the MDE
+  # bootstrap CI's admissible support spans at least two grid steps per side
+  # (Amendment 1 rule 2, review finding C1).
   tal3 <- .tly(delta = c(0, 0.05, 0.06), n_done = c(250L, 250L, 250L),
                k_reject = c(10L, 100L, 240L))
   d <- .next(tal3)
-  expect_identical(d$type, "bracket_done")
-  expect_identical(d$bracket, c(0.05, 0.06))
+  expect_identical(d$type, "top_up_flank")
+  expect_identical(d$delta, 0.04)
+  expect_identical(d$reps, 1:25)
+
+  tal4 <- .tly(delta = c(0, 0.04, 0.05, 0.06, 0.08),
+               n_done = c(250L, 250L, 250L, 250L, 250L),
+               k_reject = c(10L, 50L, 100L, 240L, 245L))
+  e <- .next(tal4)
+  expect_identical(e$type, "bracket_done")
+  expect_identical(e$bracket, c(0.05, 0.06))
 })
 
 test_that("a topped-up point that flips reopens the search", {

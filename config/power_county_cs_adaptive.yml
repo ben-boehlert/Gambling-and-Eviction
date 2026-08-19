@@ -6,9 +6,13 @@
 # shift-mode synthesis for the headline CS MDE. Every cell here is a genuine
 # full estimate; run via run_adaptive_mde() (R/power/adaptive_mde.R), which
 #   1. estimates delta = 0 for the full 250 reps first,
-#   2. applies the design-doc §14 size gate per CS inference arm
-#      (rejection at nominal 5% within [2.5%, 10%]) — NO arm passing means
-#      NO MDE search and a calibration-failure report,
+#   2. applies the SIZE criterion of design-doc §14 per CS inference arm
+#      (rejection at nominal 5% within [2.5%, 10%]) plus its failure-rate
+#      criterion (delta=0 failures <= 5%) — NO arm passing means NO MDE
+#      search and a calibration-failure report. §14's coverage / bias /
+#      fragility criteria are NOT implemented by this run; its fragility
+#      criterion is structurally unmet here (single sample S2, single
+#      mechanism count_nb) and any PAP use must flag that,
 #   3. only for surviving arms, bisects the grid for the 80% power crossing,
 #      topping the bracketing points up to the full 250 reps.
 #
