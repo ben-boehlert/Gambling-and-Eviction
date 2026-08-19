@@ -43,3 +43,12 @@
 curve → never_crosses_target; no finite CS MDE on the pre-registered grid; CS eliminated
 on power. Report: quality_reports/adaptive_cs_mde_report_2026-08-19.md
 **Report:** quality_reports/adaptive_sim_overnight_log.md
+
+### 2026-08-19 10:30 — Fable (coder+analyst)
+**Phase:** Execution
+**Target:** config/power_postcovid_maturation.yml; R/power/run_estimators.R (bjs)
+**Score:** N/A (diagnostic run)
+**Verdict:** Post-COVID maturation-market power: gate-passing MDEs 28–31% (lpdid/twfe/did2s);
+BJS disqualified on size (27–29%, SE/SD 0.55) in both blocks; maturation vs legalization
+treatment ≈ power-neutral. Memo: quality_reports/postcovid_maturation_power_memo_2026-08-19.md
+**Report:** quality_reports/postcovid_maturation_power_memo_2026-08-19.md

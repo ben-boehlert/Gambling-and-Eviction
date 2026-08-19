@@ -1068,3 +1068,27 @@ power never reaches 80%). The faster_mode ATT discrepancy remains unexplained.
   (`quality_reports/adaptive_cs_mde_report_2026-08-19.md`)
 - Pending: faster_mode ATT discrepancy (§16a) and truth-weighting mismatch (review
   finding 3) remain open; single-cell scope — fragility across samples/mechanisms untested
+
+## 2026-08-19 ~10:30 — Post-COVID maturation-market power (BJS + did2s), per user request
+
+**Operations:**
+- Added `bjs` (didimputation/BJS) to `R/power/run_estimators.R` (TDD; toy-panel recovery +
+  failure-logging tests); added `maturation50_start_date` treat_def to the loader
+- Built `data/processed/maturation50_schedule.csv` (handle50 maturation treatment dates;
+  blindness cutoffs stay at first_start_date — strictly conservative)
+- Ran `config/power_postcovid_maturation.yml`: state, covid: post (52 months, 17 states),
+  two paired blocks (maturation50 vs legalization dates), twfe/did2s/bjs/lpdid,
+  300 reps × 12-δ grid to 0.60; full suite green
+
+**Results:**
+- Size gate: **bjs FAILS in both blocks (27–29% null rejection, SE/SD ≈ 0.55)** — its
+  21–22% "MDE" is invalid; did2s passes (5.0% legalization; 9.3% maturation, borderline);
+  lpdid passes (6.3% both); twfe passes maturation (6.0%), conservative-fails legalization (0.7%)
+- MDE-80 among gate passers: maturation lpdid 28.0%, twfe 30.8%, did2s 31.3%;
+  legalization did2s 31.0%, lpdid 32.6% — maturation treatment neither costs nor buys power
+- Post-COVID penalty stands: ~3× the spliced-window LP-DiD MDE (8.9% size-adj)
+
+**Status:**
+- Done: memo `quality_reports/postcovid_maturation_power_memo_2026-08-19.md`
+- Pending: county post-COVID run for these estimators; a valid BJS inference arm (wild
+  bootstrap) if BJS is to be pursued
