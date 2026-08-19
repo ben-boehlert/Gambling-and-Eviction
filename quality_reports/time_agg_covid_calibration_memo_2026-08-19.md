@@ -273,3 +273,58 @@ fix CS calibration; the COVID splice dominates; the single apparent pass
 4. Unrelated but flagged today: re-verify the "did2s is the calibrated county
    workhorse" claim at 300 reps (it failed the pooled county spliced gate at
    13.6% in `dose_tercile_gates`, vs 4.1% in a 50-rep smoke).
+
+---
+
+## 11. `month_keep` result (completed 16:42) — the splice mechanism confirmed
+
+Monthly, **no COVID handling at all** (pandemic months left in, calendar
+contiguous), 300 reps, δ = 0:
+
+| Estimator / arm | reject@.05 | sd_att | mean_se | SE/SD | bias |
+|---|---|---|---|---|---|
+| cs analytic | **7.3% PASS** | 0.326 | 0.249 | 0.76 | −0.146 |
+| cs boot | 9.3% PASS (top of gate) | 0.326 | 0.265 | 0.81 | −0.146 |
+| cs boot_t | 6.3% PASS | 0.326 | 0.266 | 0.82 | −0.146 |
+| did2s analytic | 19.3% FAIL | 0.158 | 0.112 | 0.71 | +0.001 |
+| lpdid analytic / wild | 3.0% PASS | 0.080 | 0.085 | 1.07 | −0.018 |
+| twfe analytic / wild | 1.0% / 0.7% | 0.089 | 0.108 | 1.22 | +0.001 |
+
+### The decisive comparison: CS's dispersion by COVID handling (monthly)
+
+| Window | Calendar | sd_att | CS analytic reject |
+|---|---|---|---|
+| `drop` (spliced) | **non-contiguous** | **0.537** | 18.3% FAIL |
+| `keep` (pandemic left in) | contiguous | 0.326 | 7.3% PASS |
+| `post` (post-COVID only) | contiguous | 0.274 | 5.0% PASS |
+
+**This isolates the mechanism.** The `keep` window contains *more* pandemic
+disruption than `drop` — it retains every volatile 2020–21 month — yet CS's
+dispersion is 39% lower and its size passes. The damage therefore comes from
+the **discontinuity in the calendar, not from the pandemic observations**:
+only the spliced panel lets an ATT(g,t) pair its base period before the gap
+with its outcome after it, importing the state-specific level shifts the
+never-treated diagnostic measured at SD 0.467.
+
+Quadrature check against both contiguous baselines (assuming independence):
+
+    sqrt(0.274^2 + 0.467^2) = 0.541      (post as baseline)
+    sqrt(0.326^2 + 0.467^2) = 0.569      (keep as baseline)
+    observed month_drop sd_att = 0.537
+
+Both bracket the observed value, the post-based estimate almost exactly.
+
+### But the same fragility applies
+
+`month_keep`'s CS tail split is **6.3% negative / 1.0% positive**, median att
+**−0.112** — again a two-sided pass over an off-centre null, and SE/SD is still
+0.76 (SEs too small; the pass survives only because the dispersion shrank).
+So the §9.3 caveat stands for `keep` as well: two-sided size within gate,
+directional inference not 5%, and a location shift that would contaminate a
+real ATT.
+
+**Revised practical implication:** if a CS design is wanted, avoid the SPLICE
+specifically — either keep the full contiguous calendar (and model COVID
+explicitly) or restrict to post-COVID. Do not drop a window out of the middle.
+did2s still fails on `keep` (19.3%), so this is not a general fix for
+imputation estimators.
