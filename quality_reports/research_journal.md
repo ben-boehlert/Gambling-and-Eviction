@@ -94,3 +94,13 @@ pooled county spliced design (13.6%, SE/SD 0.63, 300 reps) — contradicts the 5
 (4.1%), needs re-verification before the PAP repeats the "did2s calibrated county" claim.
 New framework axis: exclude_states (hashed, tested).
 **Report:** quality_reports/strategy_memo_fourq_dose_response.md (§6.2 addendum)
+
+### 2026-08-19 16:15 — Fable (framework + calibration)
+**Phase:** Execution
+**Target:** R/power/load_blinded_panel.R (time_agg, complete_periods_only); config/power_time_agg_covid_gates.yml
+**Score:** N/A (size gates, 6/13 complete)
+**Verdict:** NEGATIVE result for the singleton-cohort hypothesis: aggregation collapses
+cohorts 21→7 but CS size worsens (18.3%→24.7% annual). COVID splice dominates — monthly
+post-COVID CS passes the gate (5.0/6.0/3.3%) for the first time. LP-DiD 0/300 at coarse
+aggregation. Spliced + complete-periods = D1-infeasible.
+**Report:** quality_reports/time_agg_covid_calibration_memo_2026-08-19.md

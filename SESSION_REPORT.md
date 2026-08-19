@@ -1114,3 +1114,36 @@ power never reaches 80%). The faster_mode ATT discrepancy remains unexplained.
 **Status:**
 - Done: full suite green; all runs committed/logged
 - Pending: a did2s wild/bootstrap arm if did2s at county post-COVID is wanted
+
+## 2026-08-19 ~16:15 — Time aggregation (month/quarter/year) × COVID handling: CS calibration
+
+**Operations:**
+- Added `time_agg` axis (month/quarter/year) to `load_blinded_panel()` + scenario grid,
+  superseding the legacy boolean `quarterly` (kept in sync; existing month/quarter ids do
+  NOT move, year hashed conditionally); added `complete_periods_only` rule (drops
+  unit-periods lacking their full month complement). TDD, full suite green. Commit 79498b1.
+- Ran `config/power_time_agg_covid_gates.yml` (13 scenarios, state/S2/D1-panel/count_nb,
+  δ=0 size gate, 300 reps, cs+twfe+did2s+lpdid, lpdid_wild). 6 complete at time of writing.
+
+**Results (δ=0, 300 reps, gate 2.5–10%):**
+- **Aggregation does NOT fix CS.** Cohorts collapse 21 → 17 → 7 (max cohort 2 → 3 → 6) but
+  spliced-window CS analytic goes 18.3% (month) → 16.7% (quarter) → **24.7% (year)**.
+- **The COVID splice is the dominant factor:** monthly post-COVID CS PASSES for the first
+  time in this project (5.0% / 6.0% / 3.3%, SE/SD 1.06–1.14); every spliced cell fails for
+  CS *and* did2s (26–42%). Generalises the 2026-08-17 did2s splice-artifact finding to CS.
+- **Annual carries a large null bias** (−0.476 spliced, −0.578 post) — partial-period
+  artifact (COVID filter runs before aggregation; annual 2020 = 2 months, 2021 = 5).
+- **LP-DiD: 0/300 convergence at quarterly and annual** (lags are calendar-month by design);
+  converges 300/300 monthly. Blocking issue for any quarterly LP-DiD spec.
+- **Structural finding:** on the spliced window `complete_periods_only=TRUE` makes coarse
+  aggregation D1-INFEASIBLE (quarter 1/5, year 0/5 placements vs 5/5 with it off).
+- CS null bias is large/negative on every post-COVID cell even where size passes.
+
+**Incidents:** furrr worker crash at month_post batch 9/12 (2nd today); resumed from batch
+checkpoint at reduced concurrency (6 → 5 workers), no data lost.
+
+**Status:**
+- Done: memo `quality_reports/time_agg_covid_calibration_memo_2026-08-19.md` (incl. resume
+  command); 6/13 scenarios
+- Pending: 7 scenarios (month/quarter/year `keep` + 4 complete-period variants); power/MDE
+  not yet run (adaptive_mde, passing cells only — shift mode barred for CS)
