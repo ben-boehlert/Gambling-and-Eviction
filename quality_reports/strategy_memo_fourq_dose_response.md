@@ -131,3 +131,33 @@ the pooled ATT by roughly √3.
 - Whether estimand 2 uses did2s (calibrated county, analytic) or LP-DiD-wild
   as primary — decide by the §6.2 gate, not post hoc.
 - DC has handle + launch (2020-05) but no eviction panel; excluded throughout.
+
+---
+
+# §6.2 SIZE-GATE RESULTS (run 2026-08-19, `output_blinded_power/dose_tercile_gates/`)
+
+County spliced window, δ = 0, 300 reps per design, D1 panel template,
+`exclude_states` axis (commit 691d6e5). Gate = reject@.05 ∈ [2.5%, 10%] and
+failure ≤ 5%.
+
+| Design (treated/control) | did2s analytic | lpdid analytic | **lpdid wild** |
+|---|---|---|---|
+| pooled dose sample (16/12) | 13.6% FAIL (SE/SD 0.63) | 8.0% pass | **3.7% PASS** |
+| T3 high-dose (5/12) | 18.4% FAIL (+4.0% failures) | 21.3% FAIL | **3.0% PASS** |
+| T1 low-dose (6/12) | 20.8% FAIL | 17.7% FAIL | **5.7% PASS** |
+
+**Decision (per §7): the dose analysis runs on LP-DiD with wild-cluster
+inference in all three designs.** Every analytic arm fails in the tercile
+subdesigns (5–6 treated clusters — the same few-treated-cluster regime as the
+county post-COVID gates); lpdid-wild is inside the gate everywhere. Null bias
+≤ 0.01 in all cells.
+
+**Flag for follow-up (independent of the dose spec):** did2s analytic FAILS
+the pooled county spliced gate here (13.6%, SE/SD 0.63, 300 reps), whereas
+the 2026-08-10 corrected-design smoke reported 4.1% / SE-SD 0.96 on 50 reps.
+Differences: 6× the replications, FL excluded (16 vs 17 cohorts), same
+schedule/template/mechanism. The smoke's 50-rep MC interval (~±6pp) can
+almost cover 13.6%, but SE/SD 0.96 vs 0.63 cannot both be right. The standing
+"did2s is the calibrated county workhorse" claim should be re-verified with a
+300-rep no-exclusion gate (or the Della 500-rep cheap-run results, job
+12248328) before the PAP cites it.

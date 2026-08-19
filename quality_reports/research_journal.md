@@ -83,3 +83,14 @@ dose is strongly increasing in launch date (singleton cohorts → no within-coho
 contrast); mitigations + placebo specified. Power-validation plan uses a new dose_step
 shape with the realized dose vector — requires a documented blindness-protocol amendment.
 **Report:** quality_reports/strategy_memo_fourq_dose_response.md
+
+### 2026-08-19 13:45 — Fable (gates)
+**Phase:** Execution
+**Target:** output_blinded_power/dose_tercile_gates/ (config power_dose_tercile_gates.yml)
+**Score:** N/A (size gates)
+**Verdict:** Dose-spec gates: lpdid-wild PASSES all three designs (pooled 3.7%, T3 3.0%,
+T1 5.7%); every analytic arm fails the tercile subdesigns; did2s analytic fails even the
+pooled county spliced design (13.6%, SE/SD 0.63, 300 reps) — contradicts the 50-rep smoke
+(4.1%), needs re-verification before the PAP repeats the "did2s calibrated county" claim.
+New framework axis: exclude_states (hashed, tested).
+**Report:** quality_reports/strategy_memo_fourq_dose_response.md (§6.2 addendum)
