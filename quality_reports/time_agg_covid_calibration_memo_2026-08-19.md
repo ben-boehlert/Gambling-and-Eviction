@@ -464,3 +464,60 @@ SE/SD **1.07**, size 3.0%, bias −0.018, on the full **23 treated clusters** �
 but no MDE has been computed for the `keep` window. It has more periods than
 `post` and no splice artifact, so it is the most promising untested candidate
 for beating 8.1%. One adaptive run would settle it.
+
+---
+
+## 14. Grid COMPLETE (13/13, 17:2x); assumptions assessment for LP-DiD spliced
+
+Run-level summaries now exist (`oc_summary.csv`, `mde_table.csv`,
+`run_metadata.json`). Third furrr crash occurred post-sleep/wake; final two
+cells finished serially (workers = 1). `quarter_keep_completeperiods` and
+`year_keep_completeperiods` change no conclusions.
+
+### Are LP-DiD's assumptions on the spliced state window reasonable?
+
+**What it needs (weakest assumption class of any estimator tested here):**
+LOCAL parallel trends — for a switch at t and horizon h, treated states'
+counterfactual change y_{t+h} − y_{t−1} matches clean (not-yet/never-treated)
+controls' — same family as CS, strictly weaker than did2s/BJS global PT.
+Crucially the implementation NEVER needs it across COVID: real-data outputs
+record `n_straddling = 0` in every cell, and gap-interior switchers are
+excluded rather than compared across the gap. Plus no-anticipation (plausible:
+betting cannot occur before launch) and timing exogeneity conditional on FEs.
+
+**Direct evidence FOR (real schedule, same estimator,
+`output/lpdid_statepanel/`):** 11 usable pre-horizons; max |pre-ATT| 0.071
+(raw dates) / 0.080 (ramp75); Holm-adjusted min wild p = **0.414 / 1.000** —
+joint pre-trends not rejected by LP-DiD's own event study. Corroborated by
+CS/SunAb pretrends on the repaired panel (not rejected — and those tests
+over-reject, so non-rejection is the stronger reading), and by the
+never-treated within-segment drift being smallest post-COVID (§ boundary
+sweep).
+
+**Honest caveats — mostly about the ESTIMAND, not assumption plausibility:**
+1. **The real design is smaller than the simulated one.** Under raw
+   legalization dates, 6 treated states switch inside/too close to the gap
+   (AR AZ CT NY TN VA: `g_in_gap`, no baseline) and contribute ZERO switch
+   events; real horizons identify from 8–13 switchers, not the 23 clusters D1
+   places (random placement avoids the gap by construction). The 8.1% MDE is
+   therefore optimistic for the real schedule.
+2. **Horizon support is cohort-unbalanced:** pre-COVID cohorts truncate at
+   2020-02; long horizons come mostly from 2022+ cohorts. With ~2-year onset
+   dynamics (Hollenbeck et al.), the pooled 0..12 estimand undersamples where
+   effects live, and cohort-era × horizon heterogeneity is confounded with era.
+3. **Timing exogeneity is untestable by the blinded gates** (D1 randomizes
+   timing). Real threat: 2022+ switch timing correlating with moratorium
+   unwinding / recovery paths (the dose ≈ launch-year confound is a symptom).
+   The pre-horizon test partially covers this but with 8–13 switchers is
+   low-powered (Roth 2022): max |pre| ≈ 0.07–0.08 bounds violations only
+   loosely against a ~0.08–0.09 effect scale. Rambachan–Roth (HonestDiD)
+   sensitivity is the right supplement in the PAP.
+4. Size sits at the top of the gate (9.0%); the wild arm (plumbed today,
+   reported by the real pipeline as p_wild) is the conservative fallback.
+
+**Verdict:** yes — the assumptions are reasonable, and are the weakest and
+best-evidenced of any calibrated-and-powerful option in this project. The
+defensible PAP framing: local within-segment PT, never bridged across COVID,
+supported by the estimator's own non-rejected pre-trends, with HonestDiD
+sensitivity reported; the simulated 8.1% MDE labeled as an upper bound on
+real-schedule power given the excluded COVID-era cohort.
