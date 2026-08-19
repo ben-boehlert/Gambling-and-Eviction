@@ -303,7 +303,8 @@ install_cs_safe_patches <- function(enable = TRUE, root = NULL) {
 #'   (inference x estimand). Never throws.
 #' @export
 run_estimator <- function(panel_sim,
-                          estimator = c("cs", "twfe", "did2s", "sunab", "lpdid"),
+                          estimator = c("cs", "twfe", "did2s", "sunab",
+                                        "lpdid", "bjs"),
                           spec = list()) {
   estimator <- match.arg(estimator)
   sp  <- .re_spec(spec)
@@ -320,6 +321,7 @@ run_estimator <- function(panel_sim,
     cs    = .re_cs(est, sp, cl, df_cluster),
     twfe  = .re_twfe(est, sp, cl, df_cluster),
     did2s = .re_did2s(est, sp, cl, df_cluster),
+    bjs   = .re_bjs(est, sp, cl, df_cluster),
     sunab = .re_sunab(est, sp, cl, df_cluster),
     # lpdid needs month_date and pseudo_g, which .re_prep discards: its lags
     # must run on calendar months so they cannot bridge a covid: drop gap.
@@ -709,6 +711,53 @@ run_estimator <- function(panel_sim,
           n_treated_clusters = cl$n_treated, n_control_clusters = cl$n_control,
           converged = ok,
           error_msg = if (ok) NA_character_ else "did2s SE not identified",
+          runtime_s = rt)
+}
+
+# ------------------------------ BJS (didimputation) ---------------------------
+
+# Borusyak-Jaravel-Spiess imputation estimator. Added 2026-08-19 for the
+# post-COVID maturation power run: on a clean (splice-free) window the
+# imputation family's global-parallel-trends assumption is at its most
+# defensible, and the 2026-05-21 county calibration already "rescued"
+# didimputation there (14% / 0.73 / 1.1x). Mirrors .re_did2s's conventions:
+# single analytic arm, p from t(df = n_clusters - 1), failures logged never
+# thrown. didimputation's never-treated convention is gname = NA (any finite
+# gname is read as a cohort, and g_int = 0 would be "treated since before the
+# panel"), so g_int == 0 maps to NA_integer_ here.
+.re_bjs <- function(est, sp, cl, df_cluster) {
+  dat <- as.data.frame(est)
+  dat$first_treat <- ifelse(dat$g_int == 0L, NA_integer_, dat$g_int)
+  z <- stats::qt(1 - sp$alpha / 2, df = max(1L, df_cluster))
+
+  t0 <- Sys.time()
+  fit <- tryCatch(
+    suppressMessages(suppressWarnings(
+      didimputation::did_imputation(data = dat, yname = "y_sim",
+                                    gname = "first_treat", tname = "t",
+                                    idname = "id",
+                                    cluster_var = "state_abb"))),
+    error = function(e) structure(NA, err = conditionMessage(e)))
+  rt <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
+
+  if (isTRUE(is.na(fit)) && !is.null(attr(fit, "err"))) {
+    return(.re_row("bjs", "analytic", "simple",
+                   n_treated_clusters = cl$n_treated,
+                   n_control_clusters = cl$n_control, converged = FALSE,
+                   error_msg = attr(fit, "err"), runtime_s = rt))
+  }
+
+  cf <- tryCatch(as.numeric(fit$estimate[1]), error = function(e) NA_real_)
+  se <- tryCatch(as.numeric(fit$std.error[1]), error = function(e) NA_real_)
+  ok <- is.finite(cf) && is.finite(se) && se > 0
+
+  .re_row("bjs", "analytic", "simple", att = cf, se = se,
+          p = .re_tp(cf, se, df_cluster),
+          ci_lo = if (ok) cf - z * se else NA_real_,
+          ci_hi = if (ok) cf + z * se else NA_real_,
+          n_treated_clusters = cl$n_treated, n_control_clusters = cl$n_control,
+          converged = ok,
+          error_msg = if (ok) NA_character_ else "bjs SE not identified",
           runtime_s = rt)
 }
 

@@ -124,3 +124,29 @@ test_that("returned columns match the fixed schema exactly", {
     expect_identical(names(res), .RE_SCHEMA, info = est)
   }
 })
+
+test_that("bjs (didimputation) recovers a known constant effect", {
+  skip_if_not_installed("didimputation")
+  toy <- build_toy_est(seed = 103L)
+  inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",
+                       shape = "step", delta = TRUTH, outcome = "y_log1p",
+                       seed = 1L)
+  bj <- run_estimator(inj, "bjs")
+  rb <- bj[bj$estimand == "simple", ]
+  expect_true(rb$converged)
+  expect_lt(abs(rb$att - TRUTH), max(3 * rb$se, 0.03))
+  expect_identical(names(bj), .RE_SCHEMA)
+  expect_identical(rb$inference, "analytic")
+  expect_true(rb$n_treated_clusters == 3L && rb$n_control_clusters == 7L)
+})
+
+test_that("bjs failure is logged, not thrown (all states treated same date)", {
+  skip_if_not_installed("didimputation")
+  toy <- build_toy_est(seed = 301L,
+                       treat = setNames(rep(24L, 10L), sprintf("S%02d", 1:10)))
+  inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",
+                       shape = "step", delta = TRUTH, outcome = "y_log1p",
+                       seed = 1L)
+  res <- expect_no_error(run_estimator(inj, "bjs"))
+  expect_gt(nrow(res), 0L)
+})

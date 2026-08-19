@@ -118,7 +118,15 @@ if (!exists("load_eviction_treatment_schedule", mode = "function")) {
 load_blinded_panel <- function(level = c("county", "state"),
                                treat_def = c("online_start_date",
                                              "first_start_date",
-                                             "retail_start_date"),
+                                             "retail_start_date",
+                                             # handle50 market maturation
+                                             # (requires a schedule file that
+                                             # carries the column, e.g.
+                                             # data/processed/
+                                             # maturation50_schedule.csv);
+                                             # blindness cutoffs still use
+                                             # first_start_date regardless.
+                                             "maturation50_start_date"),
                                anticipation = 6L,
                                sample = c("S1", "S2", "S3"),
                                covid = c("drop", "pre", "covid", "post", "keep"),
