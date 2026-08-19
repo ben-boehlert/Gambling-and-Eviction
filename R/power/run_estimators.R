@@ -304,7 +304,7 @@ install_cs_safe_patches <- function(enable = TRUE, root = NULL) {
 #' @export
 run_estimator <- function(panel_sim,
                           estimator = c("cs", "twfe", "did2s", "sunab",
-                                        "lpdid", "bjs"),
+                                        "lpdid", "bjs", "longdiff"),
                           spec = list()) {
   estimator <- match.arg(estimator)
   sp  <- .re_spec(spec)
@@ -325,8 +325,158 @@ run_estimator <- function(panel_sim,
     sunab = .re_sunab(est, sp, cl, df_cluster),
     # lpdid needs month_date and pseudo_g, which .re_prep discards: its lags
     # must run on calendar months so they cannot bridge a covid: drop gap.
-    lpdid = .re_lpdid(panel_sim, sp, cl, df_cluster)
+    lpdid = .re_lpdid(panel_sim, sp, cl, df_cluster),
+    # longdiff likewise works on calendar months and pseudo_g directly.
+    longdiff = .re_longdiff(panel_sim, sp, cl)
   )
+}
+
+# --------------------- Cohort-specific long differences -----------------------
+#
+# Ben's design (audited 2026-08-03, quality_reports/
+# cohort_specific_long_difference_code_review.md), simplified to the framework
+# contract for power simulation:
+#   * per treated state with pseudo date g: baseline mean of y over calendar
+#     months g-30..g-7 (24 months, preserving a 6-month anticipation gap),
+#     post mean over g..g+11 (h1, the "simple" estimand), g+12..g+23 (h2) and
+#     g+24..g+35 (h3) as dynamic rows at event_time 18 / 30;
+#   * cohort-specific calendar transformation of controls: each NEVER-pseudo-
+#     treated state's long difference is computed on the SAME calendar windows
+#     as the cohort, then averaged; ATT_i = dY_i - mean(dY_controls,i);
+#   * coverage rule: a state contributes to a cohort-window only if >=
+#     ld_min_frac (default 0.5) of the window's calendar months are observed
+#     (the spliced window and panel edges both truncate windows);
+#   * equal-treated-state aggregation: ATT(h) = mean over supported treated;
+#   * inference: delete-one-STATE jackknife over every contributing state
+#     (treated and controls), p from t(df = n_contributing - 1). Labeled
+#     inference = "jack" -- it is not an analytic cluster SE.
+#
+# Splice note: unlike lpdid, a long difference here MAY span a covid: drop
+# gap (a post-gap cohort's baseline reaches into the pre-gap era). That is
+# deliberate -- the design bets that differencing against controls on the
+# same calendar windows removes the common shift; the state-specific shift
+# component remains, and the power gates measure exactly that exposure.
+
+.re_longdiff <- function(panel_sim, sp, cl) {
+  t0 <- Sys.time()
+  bw      <- as.integer(sp$ld_baseline %||% c(-30L, -7L))
+  windows <- list(h1 = c(0L, 11L), h2 = c(12L, 23L), h3 = c(24L, 35L))
+  minfrac <- as.numeric(sp$ld_min_frac %||% 0.5)
+
+  fail <- function(msg) {
+    .re_row("longdiff", "jack", "simple",
+            n_treated_clusters = cl$n_treated,
+            n_control_clusters = cl$n_control, converged = FALSE,
+            error_msg = msg,
+            runtime_s = as.numeric(difftime(Sys.time(), t0, units = "secs")))
+  }
+  if (!all(c("pseudo_g", "month_date", "y_sim") %in% names(panel_sim))) {
+    return(fail("longdiff: panel_sim lacks pseudo_g/month_date/y_sim"))
+  }
+
+  # County-to-state collapse (a no-op on the state panel).
+  s <- panel_sim %>%
+    group_by(.data$state_abb, .data$month_date) %>%
+    summarise(y = mean(.data$y_sim), .groups = "drop")
+  sched <- panel_sim %>%
+    filter(!is.na(.data$pseudo_g)) %>%
+    distinct(.data$state_abb, .data$pseudo_g)
+  controls <- setdiff(unique(s$state_abb), sched$state_abb)
+  if (nrow(sched) == 0L) return(fail("longdiff: no pseudo-treated states"))
+  if (length(controls) == 0L) {
+    return(fail("longdiff: no never-pseudo-treated control states"))
+  }
+
+  # Long difference for one state on one cohort's calendar windows; NA when
+  # either window fails the coverage rule. Memoized into per-window matrices
+  # D[state, cohort] so the delete-one-state jackknife is pure re-averaging
+  # (the naive recompute-per-deletion version cost 2.7 s/cell; this is ~20x).
+  # Integer month indices: lubridate `%m+% months()` costs milliseconds per
+  # call, which dominated the naive version; plain integer arithmetic is free.
+  mi <- function(d) lubridate::year(d) * 12L + (lubridate::month(d) - 1L)
+  s$m_idx <- mi(s$month_date)
+  g_idx   <- mi(sched$pseudo_g)
+  state_months <- split(s$m_idx, s$state_abb)
+  state_y      <- split(s$y, s$state_abb)
+  ld_one <- function(st, gi, w) {
+    m <- state_months[[st]]
+    bi <- m >= gi + bw[1] & m <= gi + bw[2]
+    pi <- m >= gi + w[1] & m <= gi + w[2]
+    if (sum(bi) < minfrac * (bw[2] - bw[1] + 1L) ||
+        sum(pi) < minfrac * (w[2] - w[1] + 1L)) return(NA_real_)
+    mean(state_y[[st]][pi]) - mean(state_y[[st]][bi])
+  }
+
+  all_states <- unique(s$state_abb)
+  ld_matrix <- function(w) {
+    vapply(seq_len(nrow(sched)), function(i) {
+      vapply(all_states, ld_one, numeric(1), gi = g_idx[i], w = w)
+    }, numeric(length(all_states))) |>
+      matrix(nrow = length(all_states),
+             dimnames = list(all_states, sched$state_abb))
+  }
+
+  # ATT(h) from the memoized matrix, given the retained state set.
+  att_from <- function(D, keep_states) {
+    per_cohort <- vapply(colnames(D), function(tst) {
+      if (!tst %in% keep_states) return(NA_real_)
+      dy_t <- D[tst, tst]
+      if (is.na(dy_t)) return(NA_real_)
+      cc <- intersect(controls, keep_states)
+      dy_c <- D[cc, tst]
+      dy_c <- dy_c[!is.na(dy_c)]
+      if (length(dy_c) == 0L) return(NA_real_)
+      dy_t - mean(dy_c)
+    }, numeric(1))
+    if (all(is.na(per_cohort))) return(list(att = NA_real_, n_t = 0L))
+    list(att = mean(per_cohort, na.rm = TRUE),
+         n_t = sum(!is.na(per_cohort)))
+  }
+
+  rows <- list()
+  for (h in names(windows)) {
+    w <- windows[[h]]
+    D <- ld_matrix(w)
+    full <- att_from(D, all_states)
+    est_label <- if (h == "h1") "simple" else "dynamic"
+    etime <- switch(h, h1 = NA_real_, h2 = 18, h3 = 30)
+    if (full$n_t == 0L || !is.finite(full$att)) {
+      if (h == "h1") {
+        rows[[h]] <- fail("longdiff: no supported treated state at h1")
+      }
+      next
+    }
+    # Contributing states at this horizon: supported treated + controls with
+    # a usable long difference for at least one supported cohort.
+    contrib_t <- colnames(D)[!is.na(D[cbind(colnames(D), colnames(D))])]
+    contrib_c <- controls[rowSums(!is.na(D[controls, contrib_t,
+                                           drop = FALSE])) > 0L]
+    contrib <- c(contrib_t, contrib_c)
+    jk <- vapply(contrib, function(st) {
+      att_from(D, setdiff(all_states, st))$att
+    }, numeric(1))
+    jk <- jk[is.finite(jk)]
+    n_jk <- length(jk)
+    se <- if (n_jk >= 2L) {
+      sqrt((n_jk - 1) / n_jk * sum((jk - mean(jk))^2))
+    } else NA_real_
+    df <- max(1L, n_jk - 1L)
+    z  <- stats::qt(1 - sp$alpha / 2, df = df)
+    ok <- is.finite(full$att) && is.finite(se) && se > 0
+    rows[[h]] <- .re_row(
+      "longdiff", "jack", est_label, event_time = etime,
+      att = full$att, se = se,
+      p = if (ok) 2 * stats::pt(-abs(full$att / se), df = df) else NA_real_,
+      ci_lo = if (ok) full$att - z * se else NA_real_,
+      ci_hi = if (ok) full$att + z * se else NA_real_,
+      n_treated_clusters = full$n_t,
+      n_control_clusters = length(contrib_c),
+      converged = ok,
+      error_msg = if (ok) NA_character_ else "longdiff: jackknife SE unusable",
+      runtime_s = as.numeric(difftime(Sys.time(), t0, units = "secs")))
+  }
+  if (length(rows) == 0L) return(fail("longdiff: no horizon produced rows"))
+  dplyr::bind_rows(rows)
 }
 
 # ------------------------------ CS (E1) ---------------------------------------

@@ -279,6 +279,7 @@ if (!exists("power_paths", mode = "function")) source("R/power/config.R")
          lpdid = c("analytic", "wild"),
          did2s = "analytic",
          bjs   = "analytic",
+         longdiff = "jack",
          character(0))
 }
 

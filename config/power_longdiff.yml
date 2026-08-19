@@ -1,0 +1,79 @@
+# =============================================================================
+# power_longdiff.yml — POWER SIMS for the cohort-specific long-differences
+# design (Ben's estimator, audited 2026-08-03; framework arm `longdiff` added
+# 2026-08-19: baseline g-30..g-7, post g..g+11 headline (h2/h3 dynamic),
+# cohort-calendar controls, equal-treated aggregation, delete-one-state
+# jackknife — inference labeled "jack").
+#
+# User request 2026-08-19: "a few power sims of the long differences idea",
+# plus variants EXCLUDING NY (its large post-COVID eviction decline is
+# plausibly orthogonal to treatment and inflates control/treated dispersion).
+#
+# Four scenarios: {spliced, keep} x {all states, excl NY}, state level, full
+# 13-point grid to 0.60 so every arm's 80% crossing is bracketed. twfe and
+# lpdid ride along as calibrated benchmarks on IDENTICAL draws (analytic
+# arms only — lpdid analytic passed the state gates; wild skipped for cost).
+#
+# Splice exposure is the scientific question for `drop`: a post-gap cohort's
+# baseline (g-30..g-7) reaches across the COVID gap. The design bets that
+# same-calendar-window control differencing removes the common shift; the
+# state-specific component (never-treated across-gap shift SD 0.467,
+# output/covid_global_pt/) remains, and these gates measure it. The `keep`
+# variants remove the splice entirely (monthly `keep` was the best-calibrated
+# window today for CS and LP-DiD-SE/SD).
+#
+# NY note: in D1 sims NY's DATA (not its real treatment date's identity)
+# is what matters — excluding it removes its idiosyncratic post-COVID
+# trajectory from both the control pool and the pseudo-treated draws, and
+# drops its cohort from the panel template (23 -> 22 cohorts).
+#
+# Run:  Rscript -> run_scenario_grid("config/power_longdiff.yml", workers=5)
+# =============================================================================
+
+run_name: longdiff_power
+
+level:      state
+sample:     [S2]
+treat_def:  online_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+template:   panel
+
+effect_grid:  [0, 0.02, 0.05, 0.08, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60]
+
+estimators:   [longdiff, twfe, lpdid]
+
+n_reps:     300
+base_seed:  20260723            # paired rep-for-rep with every other run
+mde_boot:   200
+
+alpha:      [0.1, 0.05, 0.01]
+
+min_pre:    12
+min_post:   6
+anticipation_months: 6
+
+scenarios:
+
+  # 1-2. Spliced window (the design's intended home; splice-exposure test).
+  - name: ld_drop
+    covid: drop
+
+  - name: ld_drop_exny
+    covid: drop
+    exclude_states: [NY]
+
+  # 3-4. Contiguous calendar, pandemic left in (best-calibrated monthly
+  # window found today; no splice for baselines to straddle).
+  - name: ld_keep
+    covid: keep
+
+  - name: ld_keep_exny
+    covid: keep
+    exclude_states: [NY]

@@ -150,3 +150,34 @@ test_that("bjs failure is logged, not thrown (all states treated same date)", {
   res <- expect_no_error(run_estimator(inj, "bjs"))
   expect_gt(nrow(res), 0L)
 })
+
+test_that("longdiff recovers a known constant effect on the toy panel", {
+  # Cohort-specific long differences (Ben's design, audited 2026-08-03):
+  # baseline mean over g-30..g-7, post mean over g..g+11, cohort-calendar
+  # control differencing, equal-treated aggregation, delete-one-state
+  # jackknife. On the 48-month toy, S02 (g=18) lacks 50% baseline coverage
+  # and must be dropped; S04 (g=26) and S06 (g=34) are supported.
+  toy <- build_toy_est(seed = 104L)
+  inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",
+                       shape = "step", delta = TRUTH, outcome = "y_log1p",
+                       seed = 1L)
+  ld <- run_estimator(inj, "longdiff")
+  rs <- ld[ld$estimand == "simple", ]
+  expect_true(rs$converged)
+  expect_identical(rs$inference, "jack")
+  expect_identical(rs$n_treated_clusters, 2L)
+  expect_identical(rs$n_control_clusters, 7L)
+  expect_lt(abs(rs$att - TRUTH), max(3 * rs$se, 0.05))
+  expect_identical(names(ld), .RE_SCHEMA)
+})
+
+test_that("longdiff failure is logged, not thrown (no never-treated controls)", {
+  toy <- build_toy_est(seed = 302L,
+                       treat = setNames(rep(30L, 10L), sprintf("S%02d", 1:10)))
+  inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",
+                       shape = "step", delta = TRUTH, outcome = "y_log1p",
+                       seed = 1L)
+  res <- expect_no_error(run_estimator(inj, "longdiff"))
+  expect_gt(nrow(res), 0L)
+  expect_true(any(!res$converged))
+})
