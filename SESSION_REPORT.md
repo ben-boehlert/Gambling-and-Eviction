@@ -1092,3 +1092,25 @@ power never reaches 80%). The faster_mode ATT discrepancy remains unexplained.
 - Done: memo `quality_reports/postcovid_maturation_power_memo_2026-08-19.md`
 - Pending: county post-COVID run for these estimators; a valid BJS inference arm (wild
   bootstrap) if BJS is to be pursued
+
+## 2026-08-19 ~11:45 — County post-COVID power (did2s/lpdid) + lpdid_wild plumbing
+
+**Operations:**
+- Ran `config/power_postcovid_maturation_county.yml` (did2s+lpdid analytic): ALL arms fail
+  the county size gate (did2s 21.5–23.9%, lpdid 11.7–14.0%; SE/SD 0.62–0.72 — few treated
+  clusters: 4–5 states over 509 counties)
+- Plumbed `lpdid_wild` through config→grid→spec (TDD; conditionally hashed like
+  cs_faster_mode; commit 1b5a2aa); reran county with the wild arm
+  (`power_postcovid_maturation_county_wild.yml`)
+
+**Results:**
+- **lpdid wild is exactly nominal at county post-COVID (5.0% / 4.7%)** → valid MDEs:
+  legalization 23.9% [23.0, 24.9]; maturation50 31.7% [28.7, 35.3]
+- County does NOT rescue post-COVID power (spliced county did2s was ~4–5% MDE); the
+  binding constraint is 4–5 treated clusters. Maturation-only costs power at county
+  (4 vs 5 treated). did2s disqualified at county post-COVID (no wild arm).
+- Memo updated: quality_reports/postcovid_maturation_power_memo_2026-08-19.md (county addendum)
+
+**Status:**
+- Done: full suite green; all runs committed/logged
+- Pending: a did2s wild/bootstrap arm if did2s at county post-COVID is wanted

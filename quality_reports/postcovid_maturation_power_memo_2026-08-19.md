@@ -77,3 +77,51 @@ invalid test would have claimed.
 - `output_blinded_power/postcovid_maturation/{oc_summary,mde_table,results_raw.csv.gz,run_metadata.json}`
 - Paired seeds with all other framework runs (base_seed 20260723); the two
   blocks share draws rep-for-rep with each other via the common window.
+
+---
+
+# COUNTY addendum (2026-08-19, later same day)
+
+**Runs:** `output_blinded_power/postcovid_maturation_county/` (did2s + lpdid,
+analytic) and `output_blinded_power/postcovid_maturation_county_wild/` (lpdid
+with the newly plumbed `lpdid_wild` wild-cluster-bootstrap arm; config key →
+grid → spec, conditionally hashed — commit 1b5a2aa). County post-COVID panel:
+509 counties, 14 states, 50 months; maturation block 4 treated / 10 control
+states, legalization block 5 / 9. 300 reps × same 12-δ grid.
+
+## Size gate at county (δ = 0, 300 reps, failures ≤ 1%)
+
+| Arm | maturation50 | legalization | Verdict |
+|---|---|---|---|
+| did2s analytic | 23.9% | 21.5% | **FAIL both** (SE/SD 0.62) |
+| lpdid analytic | 11.7% | 14.0% | FAIL both (SE/SD 0.70–0.72) |
+| **lpdid wild** | **5.0%** | **4.7%** | **PASS — exactly nominal** |
+
+The county reversal vs state level (where did2s/lpdid analytic passed) is the
+classic few-treated-clusters problem: 4–5 treated state clusters over 509
+counties makes cluster-robust analytic SEs badly downward-biased; the wild
+cluster bootstrap restores exact size. did2s has no wild arm in the framework,
+so **did2s is disqualified at county post-COVID as it stands**.
+
+## Valid county post-COVID MDEs (lpdid wild, α = .05)
+
+| Block | MDE-80 | bootstrap CI | MDE-90 |
+|---|---|---|---|
+| legalization (5 treated) | **0.239** | [0.230, 0.249] | 0.281 |
+| maturation50 (4 treated) | **0.317** | [0.287, 0.353] | 0.436 |
+
+(Analytic lpdid's apparent ~19% MDEs are artifacts of the invalid test.)
+
+## Updated interpretation
+
+1. **County data does NOT rescue post-COVID power the way it rescued the
+   spliced window.** Spliced-window county did2s reached MDE ≈ 4–5%; the best
+   valid county post-COVID MDE is 23.9% — because the binding constraint is
+   4–5 treated state clusters, which counties cannot fix.
+2. **Maturation-only costs real power at county** (31.7% vs 23.9%): dropping
+   from 5 to 4 treated clusters matters when clusters are this scarce —
+   unlike at state level, where the composition change was power-neutral.
+3. Best available post-COVID design overall: **county lpdid with wild
+   inference, legalization dates — MDE-80 ≈ 24%** (~5,700 extra filings/yr at
+   the post-COVID median state), still crisis-size-only detection.
+4. Same single-cell scope caveats (S2, count_nb, step) as the state runs.

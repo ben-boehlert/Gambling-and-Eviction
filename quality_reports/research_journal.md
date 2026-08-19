@@ -52,3 +52,12 @@ on power. Report: quality_reports/adaptive_cs_mde_report_2026-08-19.md
 BJS disqualified on size (27–29%, SE/SD 0.55) in both blocks; maturation vs legalization
 treatment ≈ power-neutral. Memo: quality_reports/postcovid_maturation_power_memo_2026-08-19.md
 **Report:** quality_reports/postcovid_maturation_power_memo_2026-08-19.md
+
+### 2026-08-19 11:45 — Fable (coder+analyst)
+**Phase:** Execution
+**Target:** county post-COVID power; lpdid_wild plumbing
+**Score:** N/A (diagnostic run)
+**Verdict:** County analytic arms all fail size (did2s 22–24%, lpdid 12–14%); lpdid wild
+exactly nominal (5.0%/4.7%) → valid county post-COVID MDE-80: 23.9% legalization /
+31.7% maturation-only. County does not rescue post-COVID power; did2s disqualified there.
+**Report:** quality_reports/postcovid_maturation_power_memo_2026-08-19.md
