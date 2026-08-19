@@ -242,13 +242,20 @@ if (!exists("power_paths", mode = "function")) source("R/power/config.R")
 # Driver
 # ---------------------------------------------------------------------------
 
-# Canonical text key for one (rep, delta) cell. formatC("g", 15) is the
-# shortest-round-trip rendering readr also uses, so a key computed from a
-# CSV-round-tripped delta matches the key written at estimation time; exact
-# float equality elsewhere is protected by .amde_snap_delta below.
+# Canonical text key for one (rep, delta) cell. sprintf("%.15g") is a
+# shortest-15-significant-digit rendering with NO padding — formatC(format =
+# "g", digits = 15) left-pads to the digits width, which on 2026-08-19 made
+# every new key mismatch an old-format sidecar and cost a 675-cell partial.
+# A key computed from a CSV-round-tripped delta matches the key written at
+# estimation time; exact float equality elsewhere is protected by
+# .amde_snap_delta below.
 .amde_key <- function(rep, delta) {
-  paste(rep, formatC(delta, format = "g", digits = 15), sep = ",")
+  paste(rep, sprintf("%.15g", delta), sep = ",")
 }
+
+# Sidecar keys have existed in three renderings (paste(), padded formatC,
+# sprintf); stripping whitespace makes them all comparable.
+.amde_normalize_keys <- function(keys) gsub("[[:space:]]+", "", keys)
 
 # Snap CSV-round-tripped deltas onto the config grid (tolerance 1e-9). A
 # single silent float mismatch would otherwise stall the scheduler into
@@ -495,14 +502,25 @@ run_adaptive_mde <- function(config_path, run_name = NULL, workers = NULL,
   # as fully appended; anything else is a torn batch and is redone.
   rows <- NULL
   if (resume && file.exists(partial) && file.exists(cells_sc)) {
-    done_keys <- unique(readLines(cells_sc))
+    done_keys <- .amde_normalize_keys(unique(readLines(cells_sc)))
     old <- tryCatch(
       readr::read_csv(partial, col_types = .PARTIAL_COL_TYPES,
                       show_col_types = FALSE, progress = FALSE),
       error = function(e) NULL)
     if (!is.null(old) && nrow(old) > 0L) {
       old$delta <- .amde_snap_delta(old$delta, sc$effect_grid)
-      keep <- .amde_key(old$rep, old$delta) %in% done_keys
+      keep <- .amde_normalize_keys(.amde_key(old$rep, old$delta)) %in%
+        done_keys
+      # Data-loss guard (2026-08-19 incident): a non-empty partial whose keys
+      # match NOTHING in a non-empty sidecar means the matching itself is
+      # broken — rewriting the partial with the empty match would destroy
+      # every completed cell. Fail loudly instead.
+      if (!any(keep) && length(done_keys) > 0L) {
+        stop("run_adaptive_mde resume: sidecar and partial share no cell ",
+             "keys for ", sc$scenario_id, " — refusing to discard a ",
+             "non-empty partial. Inspect ", cells_sc, " before rerunning.",
+             call. = FALSE)
+      }
       rows <- old[keep, , drop = FALSE]
       readr::write_csv(rows, partial)
       writeLines(unique(.amde_key(rows$rep, rows$delta)), cells_sc)

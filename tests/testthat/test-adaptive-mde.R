@@ -459,3 +459,54 @@ test_that("adaptive driver: a failed size gate stops before any MDE search", {
     show_col_types = FALSE)
   expect_identical(unique(rows$delta), 0)   # no delta > 0 ever estimated
 })
+
+# ---------------------------------------------------------------------------
+# Regression: resume key formats and the zero-match data-loss guard
+# (2026-08-19 03:05 incident: formatC(format="g", digits=15) left-pads to the
+# digits width, so no new key matched an old-format sidecar and the resume
+# rewrote a 675-cell partial with the empty match.)
+# ---------------------------------------------------------------------------
+
+test_that("cell keys are whitespace-free and match every historical format", {
+  k <- .amde_key(1:2, 0.06)
+  expect_false(any(grepl("[[:space:]]", k)))
+  expect_identical(k, c("1,0.06", "2,0.06"))
+  expect_identical(.amde_key(7L, 0), "7,0")
+  expect_identical(.amde_key(226L, 0.2), "226,0.2")
+
+  # Normalization accepts all three formats ever written to a sidecar:
+  # old paste(), the padded formatC interlude, and the current key.
+  legacy <- c("1,0", "2,               0", "3,            0.06")
+  expect_identical(.amde_normalize_keys(legacy), c("1,0", "2,0", "3,0.06"))
+})
+
+test_that("a resume that matches zero cells refuses to discard the partial", {
+  skip_if_not(file.exists(file.path(.power_test_root,
+                                    "data/raw/state_month_panel_with_treatment.csv")),
+              "state panel data unavailable")
+  rn <- "_amde_e2e_zeromatch"
+  on.exit(unlink(.power_out_dir(rn), recursive = TRUE), add = TRUE)
+
+  r0 <- run_adaptive_mde(.amde_cfg_path, run_name = rn, workers = 1,
+                         batch_size = 20L, max_actions = 2L,
+                         impose_fn = mock_impose_effect,
+                         estimator_fn = mock_estimator_known_power,
+                         resume = FALSE)
+  pdir <- file.path(.power_out_dir(rn), "partials")
+  sc_file <- list.files(pdir, pattern = "done_cells$", full.names = TRUE)[1]
+  # Corrupt the sidecar so no key can match.
+  writeLines(c("999999,42"), sc_file)
+  expect_error(
+    run_adaptive_mde(.amde_cfg_path, run_name = rn, workers = 1,
+                     batch_size = 20L, max_actions = 2L,
+                     impose_fn = mock_impose_effect,
+                     estimator_fn = mock_estimator_known_power,
+                     resume = TRUE),
+    "refusing"
+  )
+  # The partial survived untouched.
+  pfile <- list.files(pdir, pattern = "csv$", full.names = TRUE)
+  pfile <- pfile[!grepl("orphaned|done_cells|cs_safe_patches", pfile)][1]
+  rows <- readr::read_csv(pfile, show_col_types = FALSE)
+  expect_gt(nrow(rows), 0L)
+})
