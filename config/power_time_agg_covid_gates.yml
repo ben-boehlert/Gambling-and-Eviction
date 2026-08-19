@@ -1,0 +1,140 @@
+# =============================================================================
+# power_time_agg_covid_gates.yml — CS calibration under TIME AGGREGATION
+# (month / quarter / year) crossed with COVID handling (2026-08-19).
+#
+# QUESTION: CLAUDE.md diagnoses CS's miscalibration on this design as a
+# SINGLETON-COHORT problem (11-21 treated states, each its own cohort).
+# Coarser time aggregation collapses distinct legalization months into shared
+# cohorts. Measured on the D1 panel template (state, S2, rep 1):
+#
+#   covid=keep : month 21 cohorts (max 2 states) -> quarter 17 (max 3)
+#                -> year 7 cohorts (max 6 states)
+#   CS cost/cell: month 27.7s -> quarter 3.4s -> year 0.2s
+#
+# So aggregation is both the hypothesised fix AND an 8-140x speedup.
+#
+# COVID HANDLING is crossed because the two interact: the loader filters COVID
+# months BEFORE aggregating, so a spliced window leaves PARTIAL periods
+# (2020Q1 = Jan+Feb, 2021Q3 = Aug+Sep; annual 2020 = 2 months, 2021 = 5) whose
+# summed counts are mechanically depressed — an aggregation artifact that can
+# masquerade as a COVID break. `complete_periods_only` removes them.
+#
+# FEASIBILITY FINDING (probed 2026-08-19, 5 seeds per cell): on the SPLICED
+# window, complete_periods_only = TRUE makes coarse aggregation D1-INFEASIBLE
+# (quarter 1/5 placements, year 0/5) because dropping partial periods shortens
+# per-state coverage below what the 55-month cohort template needs (annual
+# loses 5 states outright: 38 -> 33). With it FALSE, placement is 5/5 at every
+# aggregation. Those two cells are therefore reported as infeasible rather
+# than run:  covid=drop x {quarter, year} x complete_periods_only=TRUE.
+#
+# The scenarios below are the 13 FEASIBLE cells:
+#   9 = {month, quarter, year} x {drop, post, keep}, partial periods kept
+#   4 = {quarter, year} x {post, keep}, complete periods only
+#       (for `month` the rule is a no-op, so it gets no variant)
+#
+# delta = 0 ONLY: this run is the SIZE GATE. Power/MDE for whichever cells
+# pass is a separate adaptive run (R/power/adaptive_mde.R) — shift mode is
+# barred for CS MDEs by the 2026-08-18 review.
+#
+# Run:  Rscript -> run_scenario_grid("config/power_time_agg_covid_gates.yml")
+# =============================================================================
+
+run_name: time_agg_covid_gates
+
+level:      state
+sample:     [S2]
+treat_def:  online_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+template:   panel
+
+effect_grid:  [0]
+
+estimators:   [cs, twfe, did2s, lpdid]
+
+# CS cannot estimate on this design without both (design doc §16a).
+cs_safe_patches: true
+cs_faster_mode:  false
+
+# LP-DiD analytic over-rejects with few treated clusters; carry the wild arm.
+lpdid_wild:   true
+
+n_reps:     300
+base_seed:  20260723            # paired rep-for-rep with every other run
+mde_boot:   50
+
+alpha:      [0.1, 0.05, 0.01]
+
+min_pre:    12                  # CALENDAR months in make_pseudo_schedule, so
+min_post:   6                   # the window is identical across aggregations
+anticipation_months: 6
+
+scenarios:
+
+  # ---- Partial periods KEPT (feasible at every aggregation) -----------------
+
+  - name: month_drop
+    covid: drop
+    time_agg: month
+
+  - name: quarter_drop
+    covid: drop
+    time_agg: quarter
+
+  - name: year_drop
+    covid: drop
+    time_agg: year
+
+  - name: month_post
+    covid: post
+    time_agg: month
+
+  - name: quarter_post
+    covid: post
+    time_agg: quarter
+
+  - name: year_post
+    covid: post
+    time_agg: year
+
+  - name: month_keep
+    covid: keep
+    time_agg: month
+
+  - name: quarter_keep
+    covid: keep
+    time_agg: quarter
+
+  - name: year_keep
+    covid: keep
+    time_agg: year
+
+  # ---- COMPLETE periods only (partial-period artifact removed) -------------
+  # Only where feasible: the spliced-window variants are structurally
+  # infeasible (see header) and are reported as such, not run.
+
+  - name: quarter_post_completeperiods
+    covid: post
+    time_agg: quarter
+    complete_periods_only: true
+
+  - name: year_post_completeperiods
+    covid: post
+    time_agg: year
+    complete_periods_only: true
+
+  - name: quarter_keep_completeperiods
+    covid: keep
+    time_agg: quarter
+    complete_periods_only: true
+
+  - name: year_keep_completeperiods
+    covid: keep
+    time_agg: year
+    complete_periods_only: true

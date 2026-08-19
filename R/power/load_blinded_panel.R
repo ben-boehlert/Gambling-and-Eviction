@@ -131,11 +131,22 @@ load_blinded_panel <- function(level = c("county", "state"),
                                sample = c("S1", "S2", "S3"),
                                covid = c("drop", "pre", "covid", "post", "keep"),
                                quarterly = FALSE,
+                               time_agg = NULL,
+                               complete_periods_only = FALSE,
                                config = read_power_config()) {
   level     <- match.arg(level)
   treat_def <- match.arg(treat_def)
   sample    <- match.arg(sample)
   covid     <- match.arg(covid)
+  # `time_agg` supersedes the legacy boolean `quarterly`; when it is NULL the
+  # boolean decides, so every existing call is bit-for-bit unchanged.
+  time_agg <- if (is.null(time_agg)) {
+    if (isTRUE(quarterly)) "quarter" else "month"
+  } else {
+    match.arg(time_agg, c("month", "quarter", "year"))
+  }
+  quarterly <- identical(time_agg, "quarter")
+  complete_periods_only <- isTRUE(complete_periods_only)
   anticipation     <- as.integer(anticipation)
   universal_cutoff <- as.Date(config$universal_cutoff)
   covid_win        <- as.Date(config$covid_drop)
@@ -185,23 +196,41 @@ load_blinded_panel <- function(level = c("county", "state"),
     keep  = panel
   )
 
-  if (quarterly) {
+  # Aggregation to coarser periods. NOTE the ordering: the COVID filter above
+  # runs FIRST, so a period straddling the COVID boundary arrives here holding
+  # only its surviving months (covid = "drop" leaves 2020Q1 = Jan+Feb and
+  # 2021Q3 = Aug+Sep; annual 2020 = 2 months, 2021 = 5). Summing those yields a
+  # mechanically depressed count that is an aggregation artifact, not a real
+  # level change — `complete_periods_only = TRUE` removes any unit-period that
+  # does not hold its full complement of months (3 / 12). Default FALSE keeps
+  # historical behavior byte-identical.
+  n_dropped_incomplete <- 0L
+  if (time_agg != "month") {
+    per_len <- if (time_agg == "quarter") 3L else 12L
     panel <- panel %>%
-      mutate(month_date = floor_date(.data$month_date, "quarter")) %>%
-      group_by(.data$unit_id, .data$state_abb, .data$month_date) %>%
+      mutate(period = floor_date(.data$month_date, time_agg)) %>%
+      group_by(.data$unit_id, .data$state_abb, .data$period) %>%
       summarise(
         filings_count = sum(.data$filings_count, na.rm = TRUE),
         renters       = mean(.data$renters, na.rm = TRUE),
+        n_months      = dplyr::n_distinct(.data$month_date),
         .groups = "drop"
-      )
+      ) %>%
+      rename(month_date = "period")
+    if (complete_periods_only) {
+      n_dropped_incomplete <- sum(panel$n_months < per_len, na.rm = TRUE)
+      panel <- panel %>% filter(.data$n_months >= per_len)
+    }
+    panel$n_months <- NULL
   }
 
   # Integer time index (contiguous within the returned panel).
-  if (quarterly) {
-    tkey <- year(panel$month_date) * 4L + (quarter(panel$month_date) - 1L)
-  } else {
-    tkey <- year(panel$month_date) * 12L + (month(panel$month_date) - 1L)
-  }
+  tkey <- switch(
+    time_agg,
+    month   = year(panel$month_date) * 12L + (month(panel$month_date) - 1L),
+    quarter = year(panel$month_date) * 4L + (quarter(panel$month_date) - 1L),
+    year    = year(panel$month_date)
+  )
   panel$t <- as.integer(tkey - min(tkey) + 1L)
 
   panel <- panel %>%
@@ -224,6 +253,9 @@ load_blinded_panel <- function(level = c("county", "state"),
   attr(panel, "covid_window")     <- covid_win
   attr(panel, "level")            <- level
   attr(panel, "quarterly")        <- quarterly
+  attr(panel, "time_agg")         <- time_agg
+  attr(panel, "complete_periods_only")        <- complete_periods_only
+  attr(panel, "n_periods_dropped_incomplete") <- n_dropped_incomplete
   # Never-treated = panel states with no first-any treatment date. Derived from
   # the panel (the schedule CSV lists treated states only), so states absent
   # from the schedule correctly count as never-treated.

@@ -478,3 +478,66 @@ test_that("exclude_states drops the states from the simulated panel", {
   expect_identical(r1$results$n_treated_clusters[1],
                    r0$results$n_treated_clusters[1])
 })
+
+# ---------------------------------------------------------------------------
+# time_agg / complete_periods_only axes (2026-08-19): id stability for month
+# and quarter, new ids for year and for the complete-periods rule.
+# ---------------------------------------------------------------------------
+
+test_that("time_agg id stability: month/quarter keep ids, year moves them", {
+  mk <- function(extra = character(0)) .write_yaml(c(
+    "level: state", "sample: [S2]", "covid: drop",
+    "treat_def: online_start_date", "designs: [D1]",
+    "mechanisms: [deterministic]", "shapes: [step]",
+    "estimators: [twfe]", "effect_grid: [0, 0.05]",
+    "n_reps: 2", "base_seed: 123", "min_pre: 12", "min_post: 6", extra
+  ))
+  g_month  <- expand_scenario_grid(read_power_config(mk()))
+  g_explicit_month <- expand_scenario_grid(read_power_config(mk('time_agg: month')))
+  g_legacy <- expand_scenario_grid(read_power_config(mk("quarterly: true")))
+  g_quart  <- expand_scenario_grid(read_power_config(mk('time_agg: quarter')))
+  g_year   <- expand_scenario_grid(read_power_config(mk('time_agg: year')))
+
+  # Explicitly naming the default must not move an id.
+  expect_identical(g_month$scenario_id, g_explicit_month$scenario_id)
+  # The legacy boolean and the new axis describe the SAME design -> same id.
+  expect_identical(g_legacy$scenario_id, g_quart$scenario_id)
+  expect_true(g_quart$quarterly[1])
+  expect_identical(g_quart$time_agg[1], "quarter")
+  # Year is a genuinely new design.
+  expect_false(identical(g_month$scenario_id, g_year$scenario_id))
+  expect_false(g_year$quarterly[1])
+
+  # complete_periods_only is hashed only when TRUE.
+  g_cp <- expand_scenario_grid(read_power_config(mk("complete_periods_only: true")))
+  expect_false(identical(g_month$scenario_id, g_cp$scenario_id))
+  expect_identical(
+    expand_scenario_grid(read_power_config(mk("complete_periods_only: false")))$scenario_id,
+    g_month$scenario_id)
+})
+
+test_that("time_agg='year' reaches the loader and shrinks the simulated panel", {
+  seen <- new.env(parent = emptyenv()); seen$n_periods <- integer(0)
+  spy_impose <- function(panel, schedule, ...) {
+    seen$n_periods <- c(seen$n_periods, dplyr::n_distinct(panel$month_date))
+    mock_impose_effect(panel, schedule, ...)
+  }
+  # S2 + panel template: D1 x S3 is structurally infeasible (design doc §8
+  # addendum), which would fail every rep before the injector is ever called.
+  mk <- function(extra) .write_yaml(c(
+    "level: state", "sample: [S2]", "covid: keep",
+    "treat_def: online_start_date", "designs: [D1]",
+    "mechanisms: [deterministic]", "shapes: [step]",
+    "template: panel",
+    "estimators: [twfe]", "effect_grid: [0]",
+    "n_reps: 1", "base_seed: 123", "min_pre: 12", "min_post: 6", extra
+  ))
+  rn <- "_test_timeagg_year"
+  on.exit(unlink(.power_out_dir(rn), recursive = TRUE), add = TRUE)
+  run_scenario_grid(mk('time_agg: year'), resume = FALSE, workers = 1,
+                    run_name = rn, impose_fn = spy_impose,
+                    estimator_fn = mock_run_estimator)
+  # A 2016..2025 annual panel has ~10 periods, far fewer than ~100 months.
+  expect_true(length(seen$n_periods) > 0L)
+  expect_lt(max(seen$n_periods), 15L)
+})

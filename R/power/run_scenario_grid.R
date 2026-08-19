@@ -142,6 +142,10 @@ power_rep_seed <- function(base_seed, rep, scenario_offset) {
   loader_anticipation = "loader_anticipation",
   control_group = "control_group",
   quarterly = "quarterly",
+  # Time aggregation: "month" (default) / "quarter" / "year". Supersedes the
+  # legacy boolean `quarterly`, which is kept in sync for id stability.
+  time_agg = "time_agg", time_aggs = "time_agg",
+  complete_periods_only = "complete_periods_only",
   # Cohort-template source for pseudo-schedules (make_pseudo_schedule §8):
   # "national" (full real schedule) or "panel" (restricted to panel states).
   template = "template", templates = "template"
@@ -152,6 +156,8 @@ power_rep_seed <- function(base_seed, rep, scenario_offset) {
              g$shape, g$outcome, paste0("a", g$est_anticipation), sep = "-")
   s <- paste0(s,
               ifelse(g$quarterly, "-q", ""),
+              ifelse(g$time_agg == "year", "-yr", ""),
+              ifelse(g$complete_periods_only, "-cp", ""),
               ifelse(g$control_group == "nevertreated", "-nt", ""),
               ifelse(g$template == "panel", "-tpanel", ""))
   tolower(gsub("[^A-Za-z0-9_-]", "", s))
@@ -247,6 +253,16 @@ power_rep_seed <- function(base_seed, rep, scenario_offset) {
       "cs" %in% as.character(unlist(g$estimators[[i]]))) {
     id$cs_faster_mode <- FALSE
   }
+  # `time_agg` is hashed CONDITIONALLY, and only for "year": "month" is the
+  # pre-axis default and "quarter" is already fully encoded by the legacy
+  # `quarterly = TRUE` field hashed above, so both keep their existing ids.
+  if (identical(as.character(g$time_agg[i]), "year")) {
+    id$time_agg <- "year"
+  }
+  # `complete_periods_only` likewise: FALSE reproduces pre-rule behavior.
+  if (isTRUE(g$complete_periods_only[i])) {
+    id$complete_periods_only <- TRUE
+  }
   # `exclude_states` is hashed CONDITIONALLY (only when non-empty): an empty
   # exclusion reproduces pre-axis behavior bit-for-bit, so every existing
   # partial keeps its id; a non-empty exclusion changes the panel (and hence
@@ -330,6 +346,8 @@ expand_scenario_grid <- function(cfg) {
     loader_anticipation = cfg$anticipation_months %||% 6L,
     control_group       = cfg$control_group %||% "notyettreated",
     quarterly           = cfg$quarterly %||% FALSE,
+    time_agg            = cfg$time_agg %||% "month",
+    complete_periods_only = cfg$complete_periods_only %||% FALSE,
     template            = cfg$template %||% "national"
   )
 
@@ -381,7 +399,15 @@ expand_scenario_grid <- function(cfg) {
     mutate(
       est_anticipation    = as.integer(.data$est_anticipation),
       loader_anticipation = as.integer(.data$loader_anticipation),
-      quarterly           = as.logical(.data$quarterly),
+      # Reconcile the legacy boolean with the axis: a config that sets only
+      # `quarterly: true` still yields time_agg = "quarter", and `quarterly`
+      # is then always derived from time_agg so the two can never disagree
+      # (and a quarterly scenario keeps the id it had before this axis).
+      time_agg            = ifelse(.data$time_agg == "month" &
+                                     as.logical(.data$quarterly),
+                                   "quarter", as.character(.data$time_agg)),
+      quarterly           = .data$time_agg == "quarter",
+      complete_periods_only = as.logical(.data$complete_periods_only),
       # Run-level only (no per-block override), same rationale as
       # cs_safe_patches: shift mode changes the rep-loop MECHANICS
       # uniformly across every scenario in a run, not something that varies
@@ -1061,13 +1087,18 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
   panel_cache <- new.env(parent = emptyenv())
   get_panel <- function(sc) {
     key <- paste(sc$level, sc$sample, sc$covid, sc$treat_def,
-                 sc$loader_anticipation, sc$quarterly, sep = "|")
+                 sc$loader_anticipation, sc$quarterly, sc$time_agg,
+                 sc$complete_periods_only, sep = "|")
     if (!exists(key, envir = panel_cache)) {
       assign(key,
              load_blinded_panel(
                level = sc$level, treat_def = sc$treat_def,
                anticipation = sc$loader_anticipation, sample = sc$sample,
-               covid = sc$covid, quarterly = sc$quarterly, config = cfg
+               covid = sc$covid, quarterly = sc$quarterly,
+               time_agg = sc$time_agg %||% "month",
+               complete_periods_only =
+                 isTRUE(sc$complete_periods_only %||% FALSE),
+               config = cfg
              ),
              envir = panel_cache)
     }
@@ -1275,6 +1306,8 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
         res$loader_anticipation <- sc$loader_anticipation
         res$control_group    <- sc$control_group
         res$quarterly        <- sc$quarterly
+        res$time_agg         <- sc$time_agg
+        res$complete_periods_only <- sc$complete_periods_only
         res$template         <- sc$template
         res$rep              <- rep
         res$delta            <- delta
