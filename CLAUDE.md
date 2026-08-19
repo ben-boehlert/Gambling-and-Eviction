@@ -345,6 +345,31 @@ identical data (−0.033 vs +0.557 on one rep, with different SEs). `faster_mode
 to be a pure computational shortcut, so this should not happen. Treat CS point estimates
 from this framework as provisional and always record which mode produced them.
 
+### County CS Verdict via the Adaptive MDE Search (2026-08-19 — RESOLVED question)
+
+Shift mode was barred for the headline CS MDE by an Opus review
+(`quality_reports/sufficient_statistics_shift_mode_code_review.md`); the replacement is
+`R/power/adaptive_mde.R` (`run_adaptive_mde()`, design doc §16c) — an adaptive grid where
+every cell is a genuine full estimate, bit-identical per (rep, δ) to brute force
+(verified on real state CS). Production run `output_blinded_power/county_cs_adaptive/`
+(county/S2/D1-panel/count_nb/step, 250 reps, faster_mode=FALSE, safe patches on):
+
+- **Size gate:** analytic 61.2% FAIL (SE/SD 0.23, coverage 39%); **boot 4.4% and
+  boot_t 3.2% size-valid** (0 failures) — the multiplier bootstrap that over-rejected at
+  state (24.5%) is size-valid at county — **but NOT calibrated**: SE/SD ≈ 1.74, CI width
+  ≈ 2 log points ([−60%, +150%] in filings).
+- **Power curve is FLAT for both size-valid arms** — power ≈ size everywhere, 7.2%/4.8%
+  at δ=0.20 with full 250 reps → `never_crosses_target`. **No defensible finite county CS
+  MDE exists on the pre-registered grid** (do not write "MDE > 20%" as if it sits nearby).
+- **CS point estimate is biased +0.10 upward under the null** on this cell (t ≈ 4.7),
+  which inflates power and so strengthens the never-crosses verdict a fortiori; the cell
+  must not be reused for point-estimate claims.
+- PAP consequence: CS is eliminated on power among size-valid arms (did2s remains the
+  calibrated county workhorse). One-cell scope; §14 fragility criterion unmet by design.
+- Full report: `quality_reports/adaptive_cs_mde_report_2026-08-19.md`; overnight
+  narrative: `quality_reports/adaptive_sim_overnight_log.md`. The old shift-mode partial
+  `output_blinded_power/county_cs/` is preserved untouched.
+
 ### Gambling Intensity Heterogeneity Analysis Does Not Work
 
 The `pretrends_statepanel_template.R` gambling intensity feature bins states by **pre-treatment average handle**. This always produces 0 states because gambling handle only exists AFTER legalization — there is no handle before a state legalizes (it's 0 by definition). The code at `filter(g > 0L, t < g, !is.na(gambling_amount))` correctly returns empty results.

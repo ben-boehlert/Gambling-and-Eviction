@@ -395,6 +395,12 @@ test_that("adaptive driver: gate passes, bracket found, matches brute force", {
 
   mb <- rb$mde |> dplyr::filter(inference == "analytic")
   expect_equal(m$mde, mb$mde[1], tolerance = 1e-12)
+
+  # Run-level OC table (power at every visited delta with achieved reps).
+  oc_path <- file.path(.power_out_dir(rn_a), "oc_summary.csv")
+  expect_true(file.exists(oc_path))
+  oc <- readr::read_csv(oc_path, show_col_types = FALSE)
+  expect_true(all(c("delta", "n_reps", "reject_005") %in% names(oc)))
 })
 
 test_that("adaptive driver: interrupted run resumes to the identical result", {

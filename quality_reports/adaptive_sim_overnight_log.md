@@ -108,3 +108,26 @@ passes the size gate. Plan: `quality_reports/plans/2026-08-19_adaptive-cs-mde-se
   first in 550+ cells. Checkpoint intact (225/250 at .20 in .done_cells; torn
   batch dropped by design). Resumed under the FIXED code (run2 log), which also
   regenerates gate/MDE outputs in the amended format.
+
+## 2026-08-19 (final) — GATES 8-9 COMPLETE; Opus production sign-off; result reported
+
+- Resume-key incident (03:05): formatC(format="g",digits=15) pads keys → resume matched
+  0 cells and discarded the first run's 675 cells (recomputed deterministically —
+  bit-identical, no statistical effect). Fixed: sprintf keys, whitespace-normalized
+  matching (accepts all historical sidecar formats), refuse-to-discard-on-zero-match
+  guard, regression tests. Full suite green.
+- Production run completed 04:02 (550 cells; finalize pass under fixed code reused all
+  550 from checkpoint in 4 s and wrote size_gate/mde_adaptive/oc_summary/run_metadata).
+- **RESULT:** size gate — analytic 61.2% FAIL; boot 4.4% / boot_t 3.2% size-valid, 0
+  failures. Both size-valid arms: never_crosses_target with a FLAT power curve
+  (7.2%/4.8% at δ=0.20, 250 reps). SE/SD ≈ 1.74, CI ≈ 2 log points. CS null-cell point
+  estimate biased +0.101 (t≈4.7). No finite county CS MDE on the pre-registered grid.
+- Opus production-gate review: "No unresolved CRITICAL/MAJOR blocks publication";
+  required reframings (flat curve not 'MDE>0.20'; 'size-valid but not calibrated';
+  jack-exclusion asymmetry; CI width in real terms; monotonicity assumption for
+  unvisited grid points; single-cell scope) — ALL incorporated into the report.
+- Report: output_blinded_power/county_cs_adaptive/ADAPTIVE_CS_MDE_REPORT.md
+  (tracked copy quality_reports/adaptive_cs_mde_report_2026-08-19.md); design doc §16c
+  added; CLAUDE.md updated. Overnight completion condition: SUCCESSFUL COMPLETION
+  (implementation + validation gates passed; gate decided; boundary-verdict MDE output
+  complete; Opus sign-off; Fable clears).

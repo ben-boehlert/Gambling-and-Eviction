@@ -1025,3 +1025,46 @@ power never reaches 80%). The faster_mode ATT discrepancy remains unexplained.
 **Status:**
 - Done: shift mode implemented, reviewed, cleared, documented. CS arm unblocked end to end.
 - Pending: nothing committed (branch `nh-data-repair`, 101 uncommitted files). County CS run not launched. `faster_mode` ATT discrepancy still unexplained.
+
+## 2026-08-19 ~09:45 — Adaptive CS MDE search: built, validated, county verdict delivered (overnight)
+
+**Operations:**
+- Built `R/power/adaptive_mde.R` (adaptive/sequential MDE search; every cell a genuine full
+  estimate, bit-identical per (rep, δ) to `run_scenario_grid` brute force) + 20+ tests in
+  `tests/testthat/test-adaptive-mde.R`; configs `power_county_cs_adaptive.yml`,
+  `power_state_cs_adaptive_check.yml`; script `scripts/run_power_county_cs_adaptive.sh`;
+  diagnostic `analysis/diagnostics/adaptive_vs_brute_state_check.R`; design doc §16c
+- Progressive gates all passed: unit → full suite → mock e2e (known power curve, resume
+  equivalence) → state real-CS brute-force comparison (130 vs 440 cells, 16,980 rows
+  bit-identical incl. bootstrap p-values) → county smoke (~28 s/cell) → county null
+  calibration (250 reps) → county adaptive search
+- Two Opus reviews (design + production gate); Amendment 1 prespecified (commit 980b201,
+  02:09) before the first county search cell (02:20)
+
+**Decisions:**
+- Candidate deltas restricted to the pre-registered 11-point grid; δ=0 always full n_reps;
+  bracket + flanks topped to full reps; headline arm = largest MDE among survivors (§15(2))
+- cs_jack excluded at county on compute cost only (state 0.5% as supporting evidence)
+
+**Results:**
+- **County CS size gate (250 reps, 0 failures): analytic 61.2% FAIL (coverage 39%);
+  boot 4.4% / boot_t 3.2% size-valid but NOT calibrated (SE/SD ≈ 1.74, CI ≈ 2 log points
+  ≈ [−60%, +150%] filings)**
+- **Both size-valid arms: `never_crosses_target`, FLAT power curve (power ≈ size everywhere;
+  7.2%/4.8% at δ=0.20 full reps) → no defensible finite county CS MDE on the grid; CS
+  eliminated on power; did2s remains the calibrated county workhorse**
+- CS null-cell point estimate biased +0.101 (t ≈ 4.7) — strengthens the verdict a fortiori
+- Incidents recovered: 1 furrr worker crash (checkpoint held); 1 resume-key padding bug
+  (formatC → sprintf + refuse-to-discard guard + regression tests; cells recomputed
+  bit-identically)
+
+**Commits:**
+- `61e8910` adaptive core+driver; `8e47409` gate 6 + county config; `c4078a6` gate 7;
+  `980b201` Opus review fixes + Amendment 1; `3628657` resume-key fix; (final commit
+  follows this entry)
+
+**Status:**
+- Done: adaptive framework production-validated; county CS question resolved and reported
+  (`quality_reports/adaptive_cs_mde_report_2026-08-19.md`)
+- Pending: faster_mode ATT discrepancy (§16a) and truth-weighting mismatch (review
+  finding 3) remain open; single-cell scope — fragility across samples/mechanisms untested

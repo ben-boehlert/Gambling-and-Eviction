@@ -442,6 +442,23 @@ run_adaptive_mde <- function(config_path, run_name = NULL, workers = NULL,
   if (nrow(mde) > 0L) {
     readr::write_csv(mde, .power_out_file(run_name, "mde_adaptive.csv"))
   }
+  # Run-level OC table over every visited cell (power per delta at ACHIEVED
+  # reps — early-stopped deltas appear with their n_reps < the full count).
+  if (!exhausted) {
+    partial_files <- file.path(partials_dir, paste0(grid$scenario_id, ".csv"))
+    partial_files <- partial_files[file.exists(partial_files)]
+    if (length(partial_files) > 0L) {
+      all_rows <- purrr::map_dfr(partial_files, function(f) {
+        readr::read_csv(f, col_types = .PARTIAL_COL_TYPES,
+                        show_col_types = FALSE, progress = FALSE)
+      })
+      if (nrow(all_rows) > 0L) {
+        oc <- summarize_oc(all_rows, alpha_vec = gate_alpha,
+                           sig_alpha = gate_alpha)
+        readr::write_csv(oc, .power_out_file(run_name, "oc_summary.csv"))
+      }
+    }
+  }
   if (!exhausted) {
     git_rev <- tryCatch(
       system2("git", c("-C", shQuote(root), "rev-parse", "HEAD"),

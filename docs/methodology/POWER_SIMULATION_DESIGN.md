@@ -406,6 +406,48 @@ The container holds at most `G × |estimators|` elements (≤33 on the primary g
 whose body runs `att_gt`; the growth is unmeasurable against a CS fit, and pre-allocating would
 touch the byte-identical flag-off path for no gain.
 
+### 16c. Adaptive MDE search (`R/power/adaptive_mde.R`, 2026-08-19)
+
+The 2026-08-18 shift-mode review barred synthesized CS MDEs for stochastic
+mechanisms. `run_adaptive_mde(config_path, ...)` is the replacement: an
+adaptive/sequential grid that concentrates GENUINE full estimation near the
+80% power crossing. Adaptivity only chooses WHICH (rep, δ) cells of the
+brute-force lattice get estimated — the per-cell call sequence is exactly
+run_scenario_grid's brute-force path, so every visited cell is bit-identical
+to a brute-force run of the same config (verified on real state CS: 130
+cells, 16,980 rows, exact match including genuine bootstrap p-values).
+
+Prespecified rules (plan + Amendment 1,
+`quality_reports/plans/2026-08-19_adaptive-cs-mde-search.md`):
+δ = 0 always runs the full n_reps first; the size criterion of §14 (rejection
+at nominal 5% in [2.5%, 10%]) plus its failure-rate criterion (≤5%) gates
+each inference arm; no surviving arm ⇒ no search, calibration-failure report.
+Surviving arms drive a grid-index bisection with Wilson-CI early stopping for
+interior points; the bracketing pair AND its flanking grid points are topped
+up to full n_reps before the MDE is interpolated (`.mde_from_curve`, same
+rule as brute force); boundary verdicts (never_crosses /
+at_or_below_smallest) require the boundary point at full n_reps; non-monotone
+classifications force full evaluation and an explicit anomalous verdict.
+Headline among multiple survivors: the LARGEST MDE (§15(2) worst reasonable
+case). Checkpoint/resume per cell (`.done_cells` sidecar, whitespace-
+normalized keys, refuse-to-discard guard); state in
+`adaptive_state_<id>.json`. Outputs: size_gate.csv, mde_adaptive.csv,
+oc_summary.csv, run_metadata.json.
+
+**First production result (county_cs_adaptive, 2026-08-19, 250 reps, county/
+S2/D1-panel/count_nb/step — ONE design cell):** size gate — analytic 61.2%
+FAIL (coverage 39%); boot 4.4% and boot_t 3.2% size-valid (0 failures) but
+NOT calibrated: SE/SD ≈ 1.74, 95–97% coverage at nominal 95%, mean CI width
+≈ 1.9–2.4 log points (≈ [−60%, +150%] in filings). Both size-valid arms:
+`never_crosses_target` with a FLAT power curve — power ≈ size at every
+evaluated δ (7.2% / 4.8% at δ = 0.20, full 250 reps) — so **no defensible
+finite CS MDE exists on the pre-registered grid** (not "MDE slightly above
+0.20"). CS point estimates carry a +0.10 upward bias under the null on this
+cell (t ≈ 4.7; measured under faster_mode = FALSE), which inflates power and
+so strengthens the never-crosses verdict a fortiori. Full report:
+`output_blinded_power/county_cs_adaptive/ADAPTIVE_CS_MDE_REPORT.md` (tracked
+copy: `quality_reports/adaptive_cs_mde_report_2026-08-19.md`).
+
 ## 17. Required tests (testthat)
 
 Blinded loader never returns treated/anticipation rows; zero imposed effect leaves outcomes
