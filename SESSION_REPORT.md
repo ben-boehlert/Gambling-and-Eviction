@@ -1147,3 +1147,39 @@ checkpoint at reduced concurrency (6 → 5 workers), no data lost.
   command); 6/13 scenarios
 - Pending: 7 scenarios (month/quarter/year `keep` + 4 complete-period variants); power/MDE
   not yet run (adaptive_mde, passing cells only — shift mode barred for CS)
+
+## 2026-08-19 ~19:10 — Long-differences arm, scope correction, and session handoff
+
+**Operations:**
+- Added `longdiff` estimator arm (cohort-specific long differences, audited design of
+  2026-08-03): baseline g-30..g-7, post g..g+11 (+dynamics), cohort-calendar controls,
+  equal-treated aggregation, delete-one-state jackknife. TDD; optimized 2.7s -> 0.072s
+  per cell via integer month indices (values bit-identical). Commit 949219e.
+- Ran `config/power_longdiff.yml`: 4 scenarios (drop/keep x all/excl-NY), 300 reps,
+  12-point grid. All 4 completed; run-level summaries not written (stopped before the
+  aggregation pass) — rerun with resume=TRUE to emit them.
+
+**Results (longdiff = estimator A):**
+- Well-calibrated everywhere (size 1.8-7.3%, SE/SD 1.14-1.25) but badly underpowered:
+  MDE 0.298 (ld_drop) / 0.323 (excl NY) / never-crosses (ld_keep) / 0.598 (ld_keep_exny)
+  vs LP-DiD 0.089 on identical draws. Only 7 treated cohorts survive on the spliced
+  window (the 30-month baseline requirement). Excluding NY does not help.
+
+**Scope correction (important):**
+- Ben's intended estimator is NOT the implemented one: he wants a binary "legalized by
+  2022" 2x2 with COMMON calendar windows, tau = (T_end - C_end) - (T_pre - C_pre),
+  county-level with weights, CRVE/RI/wild inference, plus Black-et-al Type S/M and a
+  Burlig-motivated averaging-window comparison. NOT yet built.
+- Blinding constraint diagnosed and explained: raw data is healthy (31 states with 2025
+  data, 26-31 observed monthly through 2025-09, NO 2026 data), but the blinded panel
+  truncates treated states at launch, leaving only 6 blind-usable states for a
+  2017-18 -> 2024-10..2025-09 window pair. The real analysis is unaffected; only the
+  simulation rehearsal is constrained. Agreed plan: estimate long-difference variance on
+  clean early windows (19-23 states), era-check on never-treated 2024-25 data, then MDE
+  at REAL cluster counts (~22 treated / ~12 control); the 6-state sim is a floor only.
+- Endpoint pinned by Ben to the 12 months ending 2025-09.
+
+**Status:**
+- Done: HANDOFF written to `quality_reports/HANDOFF_2026-08-19.md` (covers the whole
+  session incl. the long-differences discussion)
+- Pending: build the 2x2 estimator (B); open decision — RI primary vs CRVE+wild
