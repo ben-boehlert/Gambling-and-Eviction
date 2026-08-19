@@ -370,6 +370,33 @@ every cell is a genuine full estimate, bit-identical per (rep, δ) to brute forc
   narrative: `quality_reports/adaptive_sim_overnight_log.md`. The old shift-mode partial
   `output_blinded_power/county_cs/` is preserved untouched.
 
+### Time Aggregation Does NOT Fix CS; the COVID Splice Is What Breaks It (2026-08-19)
+
+Tested directly: `config/power_time_agg_covid_gates.yml` (state/S2/D1-panel/count_nb,
+delta=0, 300 reps, 13 cells) using the new `time_agg` axis (month/quarter/year) in
+`load_blinded_panel()`. Memo: `quality_reports/time_agg_covid_calibration_memo_2026-08-19.md`.
+
+- **Cohorts DO collapse as hypothesised** — 21 cohorts (max 2 states) monthly -> 17 (max 3)
+  quarterly -> **7 cohorts (max 6 states) annually** — **but CS size does not follow**:
+  spliced-window CS analytic 18.3% (month) -> 16.7% (quarter) -> **24.7% (year)**. The
+  singleton-cohort story is NOT the binding constraint.
+- **The COVID splice is the dominant factor.** On the clean post-COVID monthly window CS
+  PASSES the size gate for the first time in this project: 5.0% analytic / 6.0% boot /
+  3.3% boot_t, SE/SD 1.06-1.14. Every spliced cell fails for CS *and* did2s (26-42%),
+  generalising the 2026-08-17 did2s splice-artifact finding to CS.
+- **CS null bias is large and negative on post-COVID cells** (-0.20 monthly to -0.58
+  annual) even where size passes — size-valid is not unbiased; report both.
+- **Annual aggregation has a partial-period artifact:** the loader filters COVID months
+  BEFORE aggregating, so annual 2020 = 2 months of filings and 2021 = 5. Use
+  `complete_periods_only: true` to drop incomplete unit-periods — but note that on the
+  SPLICED window this makes coarse aggregation **D1-infeasible** (quarter 1/5 placements,
+  year 0/5, vs 5/5 with it off).
+- **LP-DiD is incompatible with coarse aggregation: 0/300 convergence** at quarterly and
+  annual (its lags run on calendar months by design); 300/300 monthly. Fix before any
+  quarterly LP-DiD spec.
+- **Speed:** CS costs 27.7 s/cell monthly, 3.4 s quarterly, 0.2 s annually (8-140x) — a
+  reusable speedup even though calibration is unchanged.
+
 ### Gambling Intensity Heterogeneity Analysis Does Not Work
 
 The `pretrends_statepanel_template.R` gambling intensity feature bins states by **pre-treatment average handle**. This always produces 0 states because gambling handle only exists AFTER legalization — there is no handle before a state legalizes (it's 0 by definition). The code at `filter(g > 0L, t < g, !is.na(gambling_amount))` correctly returns empty results.
