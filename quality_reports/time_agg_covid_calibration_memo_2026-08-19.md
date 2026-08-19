@@ -1,7 +1,8 @@
 # CS Calibration under Time Aggregation × COVID Handling
 
-**Date:** 2026-08-19 (state panel). **Status:** 6 of 13 scenarios complete;
-run in progress — see "Resuming" below.
+**Date:** 2026-08-19 (state panel). **Status:** 6 of 13 scenarios complete,
+1 in progress, 6 pending at handoff (16:40) — see §10 for the exact state and
+§6 for the resume command.
 **Question (user, 2026-08-19):** what do CS calibration and power look like
 using quarter- or year-of-legalization instead of month, examined across
 several ways of handling the COVID break?
@@ -233,3 +234,42 @@ cause is aggregation weights over identifiable (g,t) cells. Cost is trivial
 (~1.4 s/cell → ~2 min for 300 reps). Until then, **CS should not be described
 as "calibrated post-COVID"** — the defensible statement is "two-sided size is
 nominal at one cell, with a null distribution centred −0.18 away from truth".
+
+---
+
+## 10. Handoff state (2026-08-19 16:40, laptop closing)
+
+**Complete and on disk (6):** `month_drop`, `quarter_drop`, `year_drop`,
+`month_post`, `quarter_post`, `year_post`. All results in §2 and §9 come from
+these and are final.
+
+**In progress (1):** `month_keep` — was at batch 11 of 12 (reps 251–275).
+
+**Pending (6):** `quarter_keep`, `year_keep`, `quarter_post_completeperiods`,
+`year_post_completeperiods`, `quarter_keep_completeperiods`,
+`year_keep_completeperiods`. Estimated ~25 min of compute for all six.
+
+**To resume:** run the §6 command. It rereads each partial's `.done_reps`
+sidecar, discards any torn trailing batch, skips the 6 completed scenarios
+outright, and continues. Verified working twice today (after a furrr worker
+crash and after a deliberate stop). The run-level summaries
+(`oc_summary.csv`, `mde_table.csv`, `run_metadata.json`) are only written once
+all 13 scenarios finish — until then, read the partials directly, as §2 and §9
+did.
+
+**What the pending cells can and cannot change:** they add the
+no-COVID-handling (`keep`) baseline and isolate the partial-period artifact
+behind annual's −0.48/−0.58 null bias. They **cannot overturn** the headline
+findings, which rest entirely on the 6 completed cells: aggregation does not
+fix CS calibration; the COVID splice dominates; the single apparent pass
+(`month_post`) is a fragile net of an off-centre null.
+
+**Next actions, in priority order:**
+1. Finish the 6 pending cells (resume command, ~25 min).
+2. Run the §9.4 decisive test — `month_post` with
+   `control_group: nevertreated`, ~2 min — to attribute CS's off-centre null.
+3. Only then consider power/MDE, and only for cells that pass the gate, via
+   `R/power/adaptive_mde.R` (shift mode is barred for CS MDEs).
+4. Unrelated but flagged today: re-verify the "did2s is the calibrated county
+   workhorse" claim at 300 reps (it failed the pooled county spliced gate at
+   13.6% in `dose_tercile_gates`, vs 4.1% in a 50-rep smoke).
