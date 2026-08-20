@@ -4,37 +4,37 @@ n_straddling counts observations whose [t-PMD, t+h] window spans the dropped
 COVID months. Those comparisons difference across the pandemic.
 
  side event_time     att     se p_analytic p_wild n_obs n_switchers
-  pre        -12 -0.0005 0.0471     0.9916 0.9914   143          11
-  pre        -11  0.0404 0.0447     0.3757 0.3446   166          13
-  pre        -10  0.0056 0.0628     0.9292 0.9276   166          13
-  pre         -9  0.0408 0.0464     0.3886 0.3326   166          13
-  pre         -8  0.0272 0.0505     0.5953 0.5669   166          13
-  pre         -7  0.0140 0.0421     0.7421 0.7326   166          13
-  pre         -6 -0.0368 0.0396     0.3632 0.3380   166          13
-  pre         -5  0.0004 0.0422     0.9930 0.9924   166          13
-  pre         -4  0.0020 0.0348     0.9544 0.9540   166          13
-  pre         -3 -0.0098 0.0243     0.6912 0.6698   166          13
-  pre         -2  0.0013 0.0126     0.9169 0.8949   166          13
+  pre        -12 -0.0005 0.0471     0.9916 0.9912   143          11
+  pre        -11  0.0404 0.0447     0.3757 0.3451   166          13
+  pre        -10  0.0056 0.0628     0.9292 0.9265   166          13
+  pre         -9  0.0408 0.0464     0.3886 0.3349   166          13
+  pre         -8  0.0272 0.0505     0.5953 0.5672   166          13
+  pre         -7  0.0140 0.0421     0.7421 0.7336   166          13
+  pre         -6 -0.0368 0.0396     0.3632 0.3356   166          13
+  pre         -5  0.0004 0.0422     0.9930 0.9920   166          13
+  pre         -4  0.0020 0.0348     0.9544 0.9539   166          13
+  pre         -3 -0.0098 0.0243     0.6912 0.6682   166          13
+  pre         -2  0.0013 0.0126     0.9169 0.8934   166          13
   pre         -1  0.0000 0.0000         NA     NA    NA          NA
- post          0  0.0397 0.0457     0.3948 0.3746   166          13
- post          1  0.0792 0.0459     0.0984 0.0690   159          13
- post          2  0.0814 0.0489     0.1098 0.0839   156          13
- post          3  0.0834 0.0627     0.1971 0.2066   144          12
- post          4  0.0437 0.0589     0.4653 0.4947   133          11
- post          5  0.0816 0.0543     0.1472 0.1408   122          10
- post          6  0.1267 0.0601     0.0464 0.0581   108           8
- post          7  0.1002 0.0592     0.1049 0.1103   104           8
- post          8  0.1380 0.0619     0.0363 0.0182    97           8
- post          9  0.0654 0.0801     0.4229 0.4258    90           8
- post         10  0.1097 0.0735     0.1497 0.1605    87           8
- post         11  0.0760 0.0710     0.2961 0.3106    86           8
- post         12  0.0973 0.0633     0.1386 0.1308    75           7
- post         13  0.1068 0.0527     0.0549 0.0578    64           6
- post         14  0.1684 0.0689     0.0230 0.0352    53           5
- post         15  0.1978 0.0715     0.0113 0.0250    51           5
- post         16  0.2081 0.0956     0.0411 0.0297    47           5
- post         17  0.2276 0.1061     0.0444 0.0231    44           5
- post         18  0.1974 0.1022     0.0686 0.0809    41           5
+ post          0  0.0397 0.0457     0.3948 0.3795   166          13
+ post          1  0.0792 0.0459     0.0984 0.0735   159          13
+ post          2  0.0814 0.0489     0.1098 0.0830   156          13
+ post          3  0.0834 0.0627     0.1971 0.2122   144          12
+ post          4  0.0437 0.0589     0.4653 0.4942   133          11
+ post          5  0.0816 0.0543     0.1472 0.1449   122          10
+ post          6  0.1267 0.0601     0.0464 0.0598   108           8
+ post          7  0.1002 0.0592     0.1049 0.1140   104           8
+ post          8  0.1380 0.0619     0.0363 0.0156    97           8
+ post          9  0.0654 0.0801     0.4229 0.4199    90           8
+ post         10  0.1097 0.0735     0.1497 0.1568    87           8
+ post         11  0.0760 0.0710     0.2961 0.3073    86           8
+ post         12  0.0973 0.0633     0.1386 0.1321    75           7
+ post         13  0.1068 0.0527     0.0549 0.0549    64           6
+ post         14  0.1684 0.0689     0.0230 0.0337    53           5
+ post         15  0.1978 0.0715     0.0113 0.0267    51           5
+ post         16  0.2081 0.0956     0.0411 0.0250    47           5
+ post         17  0.2276 0.1061     0.0444 0.0215    44           5
+ post         18  0.1974 0.1022     0.0686 0.0766    41           5
  n_clean_controls n_straddling
               132            0
               153            0
@@ -70,8 +70,28 @@ COVID months. Those comparisons difference across the pandemic.
 
 === POOLED POST-TREATMENT ATT (horizons 0..18) ===
     att     se p_analytic p_wild n_obs n_straddling
- 0.0986 0.0514     0.0682 0.0515  1827            0
+ 0.0986 0.0514     0.0682 0.0516  1827            0
 In filings terms: 10.36% (95% CI -0.22% to 22.07%) 
+
+=== POOLED EFFECTS BY HORIZON WINDOW AND COHORT ERA ===
+Buildup window per NY Fed SR 1184: report only h >= 12 so markets have
+ramped. Era = switch-month cohort; the two eras are disjoint experiments.
+pct = effect in filings terms, exp(att) - 1.
+
+             window  era h_lo h_hi    att     se p_analytic p_wild   pct
+        full_pooled  all    0   18 0.0986 0.0514     0.0682 0.0517 10.36
+    buildup_e12plus  all   12   18 0.1627 0.0682     0.0260 0.0237 17.67
+  pre_covid_cohorts  pre    0   18     NA     NA         NA     NA    NA
+ post_covid_cohorts post    0   18 0.0986 0.0514     0.0682 0.0552 10.36
+        buildup_pre  pre   12   18     NA     NA         NA     NA    NA
+       buildup_post post   12   18 0.1627 0.0682     0.0260 0.0245 17.67
+ n_switch_states n_control_states n_cells                               note
+              13               21     114                               <NA>
+               7               18      24                               <NA>
+               0               NA      NA no switch cells in this era/window
+              13               21     114                               <NA>
+               0               NA      NA no switch cells in this era/window
+               7               18      24                               <NA>
 === JOINT PRE-TREND TEST (event time < -1) ===11 pre-period coefficients, 23 state clustersWald (full cross-horizon covariance, state-clustered) = 10.305p, wild cluster bootstrap (HEADLINE) = 0.8765p, F(11, 22)                        = 0.5255p, chi-sq(11)                          = 0.5032[superseded] naive sum(z^2), independence assumed = 0.9902stacking check: max |stacked coef - per-horizon ATT| = 5.2e-17  The naive statistic assumed independent horizons. Every horizon shares
   the same baseline (build_h: base does not depend on h), so they are
   positively correlated and the naive test over-rejects. Do not cite it.

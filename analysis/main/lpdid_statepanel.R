@@ -271,6 +271,65 @@ pooled <- if (nrow(pooled_dat) > 0) {
          n_obs = nobs(fit), n_straddling = sum(d$straddles))
 } else NULL
 
+# ── Pooled effects by horizon window and cohort era ──────────────────────────
+# NY Fed SR 1184 (Mangrum & Goss) buildup-window aggregation: their headline
+# averages post-treatment event-time coefficients "beginning four quarters
+# after legalization to allow credit outcomes to respond to the buildup in
+# betting activity", and their baseline uses post-pandemic cohorts. Analogue
+# here: (a) a buildup window pooling h >= 12 months only, and (b) an era split
+# on the SWITCH month (pre-COVID vs post-COVID cohorts) -- the honest unit of
+# analysis given that no LP-DiD comparison crosses the dropped COVID months,
+# so the two eras are separate experiments pooled by the full estimate.
+# Treatment dates are NOT shifted: early post-launch months stay coded treated
+# (and stay excluded from clean controls); the buildup average just does not
+# REPORT them. Era of a cell = era of its base period t (cells never straddle:
+# the 17-month gap exceeds every usable horizon, verified n_straddling = 0).
+pool_window <- function(dat, h_lo, h_hi, era, label) {
+  d <- dat %>% filter(h >= h_lo, h <= h_hi)
+  d <- switch(era,
+    all  = d,
+    pre  = d %>% filter(t <  G_DROP[1]),
+    post = d %>% filter(t >  G_DROP[2]))
+  base_row <- tibble(window = label, era = era, h_lo = h_lo, h_hi = h_hi,
+                     att = NA_real_, se = NA_real_, p_analytic = NA_real_,
+                     p_wild = NA_real_, n_switch_states = 0L,
+                     n_control_states = NA_integer_, n_cells = NA_integer_,
+                     n_obs = NA_integer_, note = NA_character_)
+  if (nrow(d) == 0 || sum(d$D_treat) == 0)
+    return(base_row %>% mutate(note = "no switch cells in this era/window"))
+  d <- d %>% mutate(time = factor(paste(t, h, sep = "_")))
+  aux <- feols(D_treat ~ 1 | time, data = d, warn = FALSE, notes = FALSE)
+  w  <- as.numeric(residuals(aux))^2
+  wt <- as.numeric(tapply(w, d$time, mean)[as.character(d$time)])
+  d$rw <- as.numeric(ifelse(is.finite(wt) & wt > 0, 1 / wt, NA_real_))
+  d <- d %>% filter(is.finite(rw))
+  if (nrow(d) == 0 || sum(d$D_treat) == 0 || n_distinct(d$D_treat) < 2)
+    return(base_row %>% mutate(note = "not identified after reweighting"))
+  fit <- tryCatch(feols(dy ~ D_treat | time, data = d, weights = ~rw,
+                        vcov = ~state_abb, warn = FALSE, notes = FALSE),
+                  error = function(e) NULL)
+  if (is.null(fit) || !("D_treat" %in% names(coef(fit))))
+    return(base_row %>% mutate(note = "fit failed"))
+  pw <- if (HAS_BOOT) tryCatch(
+    boottest(fit, param = "D_treat", clustid = "state_abb", B = BOOT_REPS,
+             type = "rademacher")$p_val, error = function(e) NA_real_) else NA_real_
+  base_row %>% mutate(
+    att = as.numeric(coef(fit)["D_treat"]), se = as.numeric(se(fit)["D_treat"]),
+    p_analytic = as.numeric(pvalue(fit)["D_treat"]), p_wild = as.numeric(pw),
+    n_switch_states  = n_distinct(d$state_abb[d$D_treat == 1]),
+    n_control_states = n_distinct(d$state_abb[d$D_treat == 0]),
+    n_cells = n_distinct(d$time), n_obs = nobs(fit))
+}
+
+cat("Estimating window/era pooled effects...\n")
+windows <- bind_rows(
+  pool_window(pooled_dat, 0L,  POST, "all",  "full_pooled"),
+  pool_window(pooled_dat, 12L, POST, "all",  "buildup_e12plus"),
+  pool_window(pooled_dat, 0L,  POST, "pre",  "pre_covid_cohorts"),
+  pool_window(pooled_dat, 0L,  POST, "post", "post_covid_cohorts"),
+  pool_window(pooled_dat, 12L, POST, "pre",  "buildup_pre"),
+  pool_window(pooled_dat, 12L, POST, "post", "buildup_post"))
+
 # ── Joint pre-trend test ─────────────────────────────────────────────────────
 # NOTE (2026-08-20). The original test was
 #     z <- att/se ; pchisq(sum(z^2), df = length(z))
@@ -405,6 +464,17 @@ if (!is.null(pooled)) {
            "{round(100 * (exp(pooled$att + 1.96 * pooled$se) - 1), 2)}%)"), "\n")
 }
 
+cat("\n=== POOLED EFFECTS BY HORIZON WINDOW AND COHORT ERA ===\n")
+cat("Buildup window per NY Fed SR 1184: report only h >= 12 so markets have\n")
+cat("ramped. Era = switch-month cohort; the two eras are disjoint experiments.\n")
+cat("pct = effect in filings terms, exp(att) - 1.\n\n")
+print(windows %>%
+        mutate(pct = ifelse(is.finite(att), round(100 * (exp(att) - 1), 2), NA),
+               across(c(att, se, p_analytic, p_wild), ~round(.x, 4))) %>%
+        select(window, era, h_lo, h_hi, att, se, p_analytic, p_wild, pct,
+               n_switch_states, n_control_states, n_cells, note) %>%
+        as.data.frame(), row.names = FALSE)
+
 cat(glue("\n=== JOINT PRE-TREND TEST (event time < -1) ===\n"))
 cat(glue("  {joint$k} pre-period coefficients, {joint$G} state clusters\n"))
 cat(glue("  Wald (full cross-horizon covariance, state-clustered) = ",
@@ -432,6 +502,7 @@ print(es %>% filter(side == "post") %>%
 sink()
 
 write_csv(es, file.path(OUT_DIR, glue("lpdid_event_study_{TREAT_DEF}.csv")))
+write_csv(windows, file.path(OUT_DIR, glue("lpdid_pooled_windows_{TREAT_DEF}.csv")))
 write_csv(tibble(k = joint$k, n_clusters = joint$G, wald = joint$W,
                  p_wild_bootstrap = joint$p_boot, p_F = joint$p_F,
                  p_chisq = joint$p_chisq, p_naive_superseded = pretrend_p_naive,
