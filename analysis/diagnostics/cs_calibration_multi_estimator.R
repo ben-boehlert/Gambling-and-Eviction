@@ -61,7 +61,10 @@ TREAT_FILE     <- "data/raw/sports_gambling_legalization_dates.csv"
 TREAT_DATE_COL <- "online_start_date"
 OUT_DIR        <- "data/output/cs_calibration_multi"
 
-EXCLUDE_STATES <- c("ME")
+EXCLUDE_STATES <- {  # ME repaired 2026-07-23; override with EXCLUDE_STATES=ME
+  v <- trimws(strsplit(getenv1("EXCLUDE_STATES", ""), ",")[[1]])
+  v[nzchar(v)]
+}
 MIN_DATE       <- as.Date("2016-01-01")
 MAX_DATE       <- as.Date("2024-12-31")
 DROP_START     <- as.Date("2020-03-01")
@@ -112,7 +115,10 @@ panel <- panel0 %>%
     y = log1p(pmax(filings_count, 0)),
     t = ym_index(month_date),
     g = ifelse(is.na(treat_start), 0L, ym_index(treat_start)),
-    g = as.integer(g),
+    # MUST be double: att_gt sets never-treated g==0 to Inf in place, and an
+    # integer column truncates that to NA, silently dropping every never-
+    # treated state. Verified 2026-08-20; see the pretrends template.
+    g = as.numeric(g),
     id = as.integer(as.factor(state_abb)),
     untreated_obs = (g == 0L) | (t < g),
     post_treat = (g > 0L) & (t >= g),
@@ -356,8 +362,15 @@ if (use_parallel) {
 
   parallel::clusterExport(
     cl,
+    # compute_t_p MUST be exported: the CS, didimputation and did2s branches
+    # all call it, so without it every one of those three fails on a worker
+    # with "could not find function" AFTER the estimator itself succeeded, and
+    # the tryCatch records it as an estimator failure. TWFE and Sun-Abraham
+    # take p from fixest and are unaffected -- which is exactly the historical
+    # "did2s/didimputation failed on the state panel" pattern. The county
+    # script has always exported it (hence its estimators "worked"). 2026-08-20.
     varlist = c("panel", "resid_pool_by_t", "global_pool", "n_states",
-                "DID_BITERS", "draw_errors", "one_sim",
+                "DID_BITERS", "draw_errors", "compute_t_p", "one_sim",
                 "HAS_DIDIMP", "HAS_DID2S"),
     envir = environment()
   )

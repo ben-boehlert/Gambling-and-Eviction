@@ -1,0 +1,112 @@
+Loading required package: data.table
+
+Attaching package: ‘data.table’
+
+The following objects are masked from ‘package:dplyr’:
+
+    between, first, last
+
+did2s (v1.2.1). For more information on the methodology, visit <https://www.kylebutts.github.io/did2s>
+
+To cite did2s in publications use:
+
+  Butts & Gardner, "The R Journal: did2s: Two-Stage
+  Difference-in-Differences", The R Journal, 2022
+
+A BibTeX entry for LaTeX users is
+
+  @Manual{,
+    title = {did2s: Two-Stage Difference-in-Differences Following Gardner (2021)},
+    author = {Kyle Butts and John Gardner},
+    year = {2021},
+    url = {https://journal.r-project.org/articles/RJ-2022-048/},
+  }
+
+
+
+Attaching package: ‘did2s’
+
+The following objects are masked from ‘package:didimputation’:
+
+    df_het, df_hom
+
+=== MULTI-ESTIMATOR CALIBRATION TEST ===
+N_SIMS=100, N_WORKERS=4, SEED=20260409 
+Estimators: TWFE, SunAb, CS-analytic, CS-bootstrap 
+  + didimputation
+  + did2s
+
+Building panel (matching pretrends pipeline)...
+Panel: 26 states (17 treated, 9 never-treated), 83 months, 2158 obs 
+Balanced: 83 obs per state 
+
+Sanity: real data estimates...
+  TWFE: ATT=-0.0038, SE=0.0669 
+  SunAb: ATT=-0.0534, SE=0.0624 
+You have a balanced panel. Setting allow_unbalanced_panel = FALSE.
+  CS:    ATT=0.0428, SE=0.0577 
+Warning messages:
+1: In did_standarization(data, args) :
+  Be aware that there are some small groups in your dataset.
+  Check groups: c(24267, 24261, 24262, 24289, 24288, 24238, 24273, 24285, 24275, 24287, 24291, 24277, 24233, 24251, 24253, 24224).
+2: In did::att_gt(yname = "y", tname = "t", idname = "id", gname = "g",  :
+  Not returning pre-test Wald statistic due to singular covariance matrix
+  didimputation: ATT=-0.0036, SE=0.0457 
+  did2s: ERROR - Failed to evaluate glue component {round(d2s_real$std.error[1], 4)}
+Caused by error in `round()`:
+! non-numeric argument to mathematical function 
+
+Residual pool: 1705 obs, 83 months 
+
+Running 100 simulations under the null... 
+Starting PSOCK cluster with 4 workers 
+  [10/100] elapsed=27s, ~242s remaining 
+  [20/100] elapsed=62s, ~250s remaining 
+  [30/100] elapsed=87s, ~202s remaining 
+  [40/100] elapsed=110s, ~165s remaining 
+  [50/100] elapsed=140s, ~140s remaining 
+  [60/100] elapsed=172s, ~115s remaining 
+  [70/100] elapsed=209s, ~90s remaining 
+  [80/100] elapsed=263s, ~66s remaining 
+  [90/100] elapsed=391s, ~43s remaining 
+  [100/100] elapsed=488s, ~0s remaining 
+Done in 488s (8.1 min) 
+
+
+============================================================
+  MULTI-ESTIMATOR CALIBRATION — NULL REJECTION DIAGNOSTICS
+============================================================
+=== TWFE (fixest) === 
+  Valid: 100/100 (fail: 0) 
+  Rejection at alpha=0.05: 4% (target: 5%) 
+  Mean ATT: -0.00367  SD(ATT): 0.0172 
+  Mean SE:  0.0173  SE/SD: 1.01 
+=== Sun-Abraham (fixest) === 
+  Valid: 100/100 (fail: 0) 
+  Rejection at alpha=0.05: 20% (target: 5%) 
+  Mean ATT: -0.01608  SD(ATT): 0.077 
+  Mean SE:  0.0534  SE/SD: 0.69 
+=== CS Analytic (did) === 
+  Valid: 100/100 (fail: 0) 
+  Rejection at alpha=0.05: 10% (target: 5%) 
+  Mean ATT: -0.01437  SD(ATT): 0.0581 
+  Mean SE:  0.0489  SE/SD: 0.84 
+=== didimputation (BJS) === 
+  Valid: 100/100 (fail: 0) 
+  Rejection at alpha=0.05: 23% (target: 5%) 
+  Mean ATT: -0.00337  SD(ATT): 0.018 
+  Mean SE:  0.0118  SE/SD: 0.66 
+=== did2s (Gardner) === 
+  Valid: 100/100 (fail: 0) 
+  Rejection at alpha=0.05: 5% (target: 5%) 
+  Mean ATT: -0.00337  SD(ATT): 0.018 
+  Mean SE:  0.0174  SE/SD: 0.97 
+
+
+=== NOISE RATIO vs TWFE ===
+  TWFE (fixest): SD(ATT)=0.0172, noise ratio vs TWFE = 1x 
+  Sun-Abraham (fixest): SD(ATT)=0.077, noise ratio vs TWFE = 4.5x 
+  CS Analytic (did): SD(ATT)=0.0581, noise ratio vs TWFE = 3.4x 
+  didimputation (BJS): SD(ATT)=0.018, noise ratio vs TWFE = 1x 
+  did2s (Gardner): SD(ATT)=0.018, noise ratio vs TWFE = 1x 
+Results saved to: data/output/cs_calibration_multi/ 
