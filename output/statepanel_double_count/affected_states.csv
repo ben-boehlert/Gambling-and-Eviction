@@ -1,0 +1,14 @@
+state_abb,source,n_double_counted_months,pct_exact_identity,first_month,last_month,median_inflation,n_cty_ever,counties_in_state,download_coverage,diagnosis
+DE,state_level,85,100,2016-01-01,2023-01-01,1.99,3,3,1,county download already statewide -> added series is a PURE DUPLICATE
+IN,state_level,85,100,2016-01-01,2023-01-01,1.99,92,92,1,county download already statewide -> added series is a PURE DUPLICATE
+MN,state_level,85,100,2016-01-01,2023-01-01,2.01,87,87,1,county download already statewide -> added series is a PURE DUPLICATE
+PA,state_level,85,100,2016-01-01,2023-01-01,2.14,67,67,1,county download already statewide -> added series is a PURE DUPLICATE
+VA,state_level,85,100,2016-01-01,2023-01-01,2.13,124,133,0.93,county download already statewide -> added series is a PURE DUPLICATE
+CT,state_level,73,100,2017-01-01,2023-01-01,2.36,8,8,1,county download already statewide -> added series is a PURE DUPLICATE
+AZ,cities_aggregated,69,100,2020-01-01,2025-09-01,1.86,2,15,0.13,"county download partial -> added series duplicates part, adds part"
+OH,cities_aggregated,69,100,2020-01-01,2025-09-01,2.44,4,88,0.05,"county download partial -> added series duplicates part, adds part"
+SC,cities_aggregated,69,100,2020-01-01,2025-09-01,1.2,46,46,1,county download already statewide -> added series is a PURE DUPLICATE
+TN,cities_aggregated,69,100,2020-01-01,2025-09-01,1.7,37,95,0.39,"county download partial -> added series duplicates part, adds part"
+TX,cities_aggregated,69,100,2020-01-01,2025-09-01,2.27,13,254,0.05,"county download partial -> added series duplicates part, adds part"
+FL,state_level,48,100,2016-01-01,2019-12-01,1.5,42,67,0.63,"county download partial -> added series duplicates part, adds part"
+WI,state_level,25,0,2021-01-01,2023-01-01,1.01,72,72,1,county download already statewide -> added series is a PURE DUPLICATE
