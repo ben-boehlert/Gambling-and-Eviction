@@ -21,6 +21,8 @@ cd "$SCRIPT_DIR/.."
 # ---- Core panel ----
 export PANEL_FILE="${PANEL_FILE:-data/raw/state_month_panel_with_treatment.csv}"
 export TREAT_SOURCE="${TREAT_SOURCE:-file}"
+export EXPECTED_TREAT_SOURCE="${EXPECTED_TREAT_SOURCE:-}"
+export REQUIRE_PANEL_TREATMENT="${REQUIRE_PANEL_TREATMENT:-FALSE}"
 export TREAT_FILE="${TREAT_FILE:-data/raw/sports_gambling_legalization_dates.csv}"
 export TREAT_DATE_COL="${TREAT_DATE_COL:-online_start_date}"
 # Maine repaired from the Maine Judicial Branch court source (2026-07-23); no
@@ -58,7 +60,10 @@ export PRE_WINDOW="${PRE_WINDOW:--12:-1}"
 export CS_ANALYTIC="${CS_ANALYTIC:-TRUE}"
 export CS_BOOTSTRAP="${CS_BOOTSTRAP:-TRUE}"
 export CS_BITERS="${CS_BITERS:-199}"
-export CS_FASTER_MODE="${CS_FASTER_MODE:-TRUE}"
+# Default FALSE: the installed patched did 2.3.0 flips att_gt's upstream
+# default to TRUE, and the faster path is the one that truncates integer g.
+# It is also not faster on this design (42s vs 45s full run).
+export CS_FASTER_MODE="${CS_FASTER_MODE:-FALSE}"
 
 # ---- Gambling (optional) ----
 export GAMBLING_FILE="${GAMBLING_FILE:-}"
@@ -79,6 +84,42 @@ export N_CORES="${N_CORES:-1}"
 # ---- Output ----
 export OUT_DIR="${OUT_DIR:-output/pretrends_statepanel_template}"
 
+# Fail before launching R when a caller requires panel-carried treatment dates.
+TREAT_SOURCE_LOWER="$(printf '%s' "${TREAT_SOURCE}" | tr '[:upper:]' '[:lower:]')"
+EXPECTED_TREAT_SOURCE_LOWER="$(
+  printf '%s' "${EXPECTED_TREAT_SOURCE}" | tr '[:upper:]' '[:lower:]'
+)"
+REQUIRE_PANEL_UPPER="$(
+  printf '%s' "${REQUIRE_PANEL_TREATMENT}" | tr '[:lower:]' '[:upper:]'
+)"
+
+if [[ "${TREAT_SOURCE_LOWER}" != "file" && \
+      "${TREAT_SOURCE_LOWER}" != "panel" ]]; then
+  echo "ERROR: TREAT_SOURCE must be 'file' or 'panel'; got '${TREAT_SOURCE}'."
+  exit 1
+fi
+
+if [[ -n "${EXPECTED_TREAT_SOURCE_LOWER}" && \
+      "${EXPECTED_TREAT_SOURCE_LOWER}" != "file" && \
+      "${EXPECTED_TREAT_SOURCE_LOWER}" != "panel" ]]; then
+  echo "ERROR: EXPECTED_TREAT_SOURCE must be 'file' or 'panel'; got '${EXPECTED_TREAT_SOURCE}'."
+  exit 1
+fi
+
+if [[ -n "${EXPECTED_TREAT_SOURCE_LOWER}" && \
+      "${TREAT_SOURCE_LOWER}" != "${EXPECTED_TREAT_SOURCE_LOWER}" ]]; then
+  echo "ERROR: Treatment-source contract failed: TREAT_SOURCE='${TREAT_SOURCE_LOWER}' but EXPECTED_TREAT_SOURCE='${EXPECTED_TREAT_SOURCE_LOWER}'."
+  exit 1
+fi
+
+if [[ "${REQUIRE_PANEL_UPPER}" == "TRUE" || \
+      "${REQUIRE_PANEL_UPPER}" == "1" ]]; then
+  if [[ "${TREAT_SOURCE_LOWER}" != "panel" ]]; then
+    echo "ERROR: REQUIRE_PANEL_TREATMENT=${REQUIRE_PANEL_TREATMENT} requires TREAT_SOURCE=panel."
+    exit 1
+  fi
+fi
+
 echo "========================================="
 echo "PRE-TRENDS DIAGNOSTICS (State Panel)"
 echo "========================================="
@@ -87,8 +128,15 @@ echo ""
 echo "Configuration:"
 echo "  PANEL_FILE:       $PANEL_FILE"
 echo "  TREAT_SOURCE:     $TREAT_SOURCE"
+echo "  EXPECTED_SOURCE:  ${EXPECTED_TREAT_SOURCE:-<none>}"
+echo "  REQUIRE_PANEL:    $REQUIRE_PANEL_TREATMENT"
 echo "  TREAT_FILE:       $TREAT_FILE"
 echo "  TREAT_DATE_COL:   $TREAT_DATE_COL"
+if [[ "${TREAT_SOURCE_LOWER}" == "panel" ]]; then
+  echo "  RESOLVED_DATE:    treat_start (embedded in panel)"
+else
+  echo "  RESOLVED_DATE:    $TREAT_DATE_COL (from treatment file)"
+fi
 echo "  EXCLUDE_STATES:   $EXCLUDE_STATES"
 echo "  MIN_DATE:         $MIN_DATE"
 echo "  MAX_DATE:         $MAX_DATE"

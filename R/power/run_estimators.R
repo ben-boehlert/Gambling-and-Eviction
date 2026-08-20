@@ -560,7 +560,11 @@ run_estimator <- function(panel_sim,
 
 .re_cs <- function(est, sp, cl, df_cluster) {
   dat <- as.data.frame(data.frame(
-    id = est$id, t = est$t, g = est$g_int, y = est$y_sim,
+    # g MUST be double: att_gt sets never-treated g==0 to Inf in place, and an
+    # integer column truncates that to NA, silently dropping every never-
+    # treated state (the real cause of CS's "not enough control units"
+    # failures under faster_mode=TRUE). Verified 2026-08-20.
+    id = est$id, t = est$t, g = as.numeric(est$g_int), y = est$y_sim,
     state_abb = est$state_abb, stringsAsFactors = FALSE
   ))
   z <- stats::qt(1 - sp$alpha / 2, df = max(1L, df_cluster))

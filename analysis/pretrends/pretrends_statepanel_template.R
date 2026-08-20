@@ -95,6 +95,11 @@ safe_write_csv <- function(df, path) {
 
 PANEL_FILE    <- getenv1("PANEL_FILE", "data/raw/state_month_panel_with_treatment.csv")
 TREAT_SOURCE  <- tolower(getenv1("TREAT_SOURCE", "file"))
+EXPECTED_TREAT_SOURCE <- tolower(getenv1("EXPECTED_TREAT_SOURCE", ""))
+REQUIRE_PANEL_TREATMENT <- parse_bool(
+  getenv1("REQUIRE_PANEL_TREATMENT", "FALSE"),
+  FALSE
+)
 TREAT_FILE    <- getenv1("TREAT_FILE", "data/raw/sports_gambling_legalization_dates.csv")
 TREAT_DATE_COL <- getenv1("TREAT_DATE_COL", "online_start_date")
 EXCLUDE_STATES <- parse_chr_list(getenv1("EXCLUDE_STATES", ""))  # ME repaired 2026-07-23; no longer excluded by default
@@ -138,6 +143,42 @@ if (!is.finite(req_cores) || req_cores < 1L) req_cores <- 1L
 N_CORES <- max(1L, req_cores)
 
 OUT_DIR       <- getenv1("OUT_DIR", "output/pretrends_statepanel_template")
+
+valid_treat_sources <- c("file", "panel")
+if (!(TREAT_SOURCE %in% valid_treat_sources)) {
+  stop(
+    "TREAT_SOURCE must be 'file' or 'panel'; got '", TREAT_SOURCE, "'.",
+    call. = FALSE
+  )
+}
+if (nzchar(EXPECTED_TREAT_SOURCE) &&
+    !(EXPECTED_TREAT_SOURCE %in% valid_treat_sources)) {
+  stop(
+    "EXPECTED_TREAT_SOURCE must be 'file' or 'panel'; got '",
+    EXPECTED_TREAT_SOURCE, "'.",
+    call. = FALSE
+  )
+}
+if (nzchar(EXPECTED_TREAT_SOURCE) &&
+    !identical(TREAT_SOURCE, EXPECTED_TREAT_SOURCE)) {
+  stop(
+    "Treatment-source contract failed: TREAT_SOURCE='", TREAT_SOURCE,
+    "' but EXPECTED_TREAT_SOURCE='", EXPECTED_TREAT_SOURCE, "'.",
+    call. = FALSE
+  )
+}
+if (REQUIRE_PANEL_TREATMENT && !identical(TREAT_SOURCE, "panel")) {
+  stop(
+    "REQUIRE_PANEL_TREATMENT=TRUE requires TREAT_SOURCE='panel'.",
+    call. = FALSE
+  )
+}
+RESOLVED_TREAT_DATE_COL <- if (identical(TREAT_SOURCE, "file")) {
+  TREAT_DATE_COL
+} else {
+  "treat_start"
+}
+
 dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
 
 LOG_FILE <- file.path(OUT_DIR, "run_log.txt")
@@ -151,6 +192,8 @@ fmt_date <- function(d) {
 known_outputs <- c(
   "README.md",
   "panel_summary.csv",
+  "treatment_schedule_resolved.csv",
+  "treatment_schedule_resolved.rds",
   "pretrends_summary.csv",
   "event_study_cs_analytic.csv",
   "event_study_cs_bootstrap.csv",
@@ -173,8 +216,8 @@ for (f in known_outputs) {
 log_msg <- function(msg) {
   ts <- format(Sys.time(), "%Y-%m-%d %H:%M:%S")
   line <- paste0("[", ts, "] ", msg)
-  cat(line, "\n")
-  cat(line, "\n", file = LOG_FILE, append = TRUE)
+  cat(line, "\n", sep = "")
+  cat(line, "\n", file = LOG_FILE, append = TRUE, sep = "")
 }
 
 # Initialize log
@@ -183,9 +226,16 @@ cat("", file = LOG_FILE)
 log_msg("=== Pre-trends diagnostics (state panel) ===")
 log_msg(glue("PANEL_FILE: {PANEL_FILE}"))
 log_msg(glue("TREAT_SOURCE: {TREAT_SOURCE}"))
+log_msg(glue(
+  "EXPECTED_TREAT_SOURCE: {ifelse(nzchar(EXPECTED_TREAT_SOURCE), EXPECTED_TREAT_SOURCE, '<none>')}"
+))
+log_msg(glue("REQUIRE_PANEL_TREATMENT: {REQUIRE_PANEL_TREATMENT}"))
 log_msg(glue("TREAT_FILE: {TREAT_FILE}"))
 log_msg(glue("TREAT_DATE_COL: {TREAT_DATE_COL}"))
-log_msg(glue("EXCLUDE_STATES: {paste(EXCLUDE_STATES, collapse=',')}"))
+log_msg(glue("RESOLVED_TREAT_DATE_COL: {RESOLVED_TREAT_DATE_COL}"))
+log_msg(glue(
+  "EXCLUDE_STATES: {ifelse(length(EXCLUDE_STATES) > 0L, paste(EXCLUDE_STATES, collapse=','), '<none>')}"
+))
 log_msg(glue("MIN_DATE: {MIN_DATE}  MAX_DATE: {MAX_DATE}"))
 log_msg(glue("DROP_START: {fmt_date(DROP_START)}  DROP_END: {fmt_date(DROP_END)}"))
 log_msg(glue("COVERAGE_THRESHOLD (requested): {ifelse(is.finite(COVERAGE_THRESHOLD), COVERAGE_THRESHOLD, 'auto')}"))
@@ -213,6 +263,43 @@ log_msg("Loading panel...")
 
 panel0_raw <- readr::read_csv(PANEL_FILE, show_col_types = FALSE)
 has_panel_treat <- "treat_start" %in% names(panel0_raw)
+has_handle_status <- "handle_treatment_status" %in% names(panel0_raw)
+has_control_eligible <- "control_eligible" %in% names(panel0_raw)
+has_analysis_eligible <- "analysis_eligible" %in% names(panel0_raw)
+has_exclusion_reason <- "exclusion_reason" %in% names(panel0_raw)
+
+panel_state_metadata <- panel0_raw %>%
+  transmute(
+    state_abb = as.character(state_abb),
+    handle_treatment_status = if (has_handle_status) {
+      as.character(handle_treatment_status)
+    } else {
+      NA_character_
+    },
+    control_eligible = if (has_control_eligible) {
+      as.logical(control_eligible)
+    } else {
+      NA
+    },
+    analysis_eligible = if (has_analysis_eligible) {
+      as.logical(analysis_eligible)
+    } else {
+      NA
+    },
+    exclusion_reason = if (has_exclusion_reason) {
+      as.character(exclusion_reason)
+    } else {
+      NA_character_
+    }
+  ) %>%
+  distinct()
+
+if (anyDuplicated(panel_state_metadata$state_abb) > 0L) {
+  stop(
+    "Panel treatment-classification metadata is not state-constant.",
+    call. = FALSE
+  )
+}
 
 panel0 <- panel0_raw %>%
   transmute(
@@ -261,7 +348,8 @@ treat_by_state <- resolve_eviction_treatment_schedule(
 ) %>%
   rename(treat_start_state = treat_start)
 
-if (TREAT_SOURCE == "file" && has_panel_treat) {
+panel_treat_by_state <- NULL
+if (has_panel_treat) {
   panel_treat_by_state <- resolve_eviction_treatment_schedule(
     panel_df = panel,
     treat_source = "panel",
@@ -269,13 +357,121 @@ if (TREAT_SOURCE == "file" && has_panel_treat) {
   ) %>%
     rename(panel_treat_start = treat_start)
 
-  treat_mismatch <- treat_by_state %>%
-    left_join(panel_treat_by_state, by = "state_abb") %>%
-    mutate(
-      mismatch = xor(is.na(treat_start_state), is.na(panel_treat_start)) |
-        (!is.na(treat_start_state) & !is.na(panel_treat_start) & treat_start_state != panel_treat_start)
-    ) %>%
-    filter(mismatch)
+  panel_treat_consistency <- panel %>%
+    group_by(state_abb) %>%
+    summarise(
+      n_distinct_panel_treat_dates = n_distinct(
+        panel_treat_start_raw,
+        na.rm = TRUE
+      ),
+      .groups = "drop"
+    )
+
+  inconsistent_panel_dates <- panel_treat_consistency %>%
+    filter(n_distinct_panel_treat_dates > 1L)
+
+  if (nrow(inconsistent_panel_dates) > 0L &&
+      identical(TREAT_SOURCE, "panel")) {
+    stop(
+      "Panel-carried treatment dates are not state-constant for: ",
+      paste(inconsistent_panel_dates$state_abb, collapse = ", "),
+      call. = FALSE
+    )
+  }
+}
+
+treatment_schedule_resolved <- treat_by_state %>%
+  rename(resolved_treat_start = treat_start_state) %>%
+  left_join(
+    if (is.null(panel_treat_by_state)) {
+      tibble(
+        state_abb = character(),
+        panel_treat_start = as.Date(character())
+      )
+    } else {
+      panel_treat_by_state
+    },
+    by = "state_abb"
+  ) %>%
+  left_join(panel_state_metadata, by = "state_abb") %>%
+  mutate(
+    treatment_source = TREAT_SOURCE,
+    treatment_date_column = RESOLVED_TREAT_DATE_COL,
+    expected_treatment_source = if_else(
+      nzchar(EXPECTED_TREAT_SOURCE),
+      EXPECTED_TREAT_SOURCE,
+      NA_character_
+    ),
+    require_panel_treatment = REQUIRE_PANEL_TREATMENT,
+    has_resolved_treatment_date = !is.na(resolved_treat_start),
+    resolved_matches_panel = if (has_panel_treat) {
+      xor(is.na(resolved_treat_start), is.na(panel_treat_start)) == FALSE &
+        (
+          is.na(resolved_treat_start) |
+            resolved_treat_start == panel_treat_start
+        )
+    } else {
+      NA
+    }
+  ) %>%
+  arrange(state_abb)
+
+if (identical(TREAT_SOURCE, "panel")) {
+  schedule_mismatch <- treatment_schedule_resolved %>%
+    filter(is.na(resolved_matches_panel) | !resolved_matches_panel)
+
+  if (nrow(schedule_mismatch) > 0L) {
+    stop(
+      "Resolved treatment dates do not match panel-carried dates for: ",
+      paste(schedule_mismatch$state_abb, collapse = ", "),
+      call. = FALSE
+    )
+  }
+  log_msg(
+    "Verified that every resolved treatment date matches the panel-carried schedule."
+  )
+
+  ineligible_panel_states <- treatment_schedule_resolved %>%
+    filter(!is.na(analysis_eligible) & !analysis_eligible)
+  if (nrow(ineligible_panel_states) > 0L) {
+    stop(
+      "Panel-treatment analysis contains explicitly ineligible states: ",
+      paste(ineligible_panel_states$state_abb, collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  invalid_controls <- treatment_schedule_resolved %>%
+    filter(
+      is.na(resolved_treat_start),
+      !is.na(control_eligible),
+      !control_eligible
+    )
+  if (nrow(invalid_controls) > 0L) {
+    stop(
+      "States with missing treatment dates are not eligible controls: ",
+      paste(invalid_controls$state_abb, collapse = ", "),
+      call. = FALSE
+    )
+  }
+}
+
+safe_write_csv(
+  treatment_schedule_resolved,
+  file.path(OUT_DIR, "treatment_schedule_resolved.csv")
+)
+saveRDS(
+  treatment_schedule_resolved,
+  file.path(OUT_DIR, "treatment_schedule_resolved.rds")
+)
+log_msg(glue(
+  "Exported resolved treatment schedule: {nrow(treatment_schedule_resolved)} states, ",
+  "{sum(treatment_schedule_resolved$has_resolved_treatment_date)} with dates"
+))
+
+if (TREAT_SOURCE == "file" && has_panel_treat) {
+  treat_mismatch <- treatment_schedule_resolved %>%
+    filter(!resolved_matches_panel)
 
   if (nrow(treat_mismatch) > 0) {
     log_msg(glue(
@@ -304,7 +500,15 @@ panel <- panel %>%
     id = as.integer(as.factor(state_abb)),
     t = ym_index(month_date),
     g = ifelse(is.na(treat_start_state), 0L, ym_index(treat_start_state)),
-    g = as.integer(g),
+    # MUST stay double. did::att_gt recodes never-treated g==0 to Inf via a
+    # data.table in-place assignment (did/R/pre_process_did2.R:131); with an
+    # INTEGER column Inf truncates to NA and every never-treated state is
+    # silently dropped ("Dropped N observations that had missing data", hidden
+    # by the suppressWarnings around att_gt). That inflated the 2026-08-20
+    # headline ATT from +0.029 to +0.080 and was also the true cause of the
+    # repo's "faster_mode changes the estimate" and "singular matrix due to not
+    # enough control units" mysteries. Verified 2026-08-20.
+    g = as.numeric(g),
     event_time = ifelse(g > 0L, t - g, NA_integer_),
     filings_per_1k_renters = if_else(
       is.finite(filings_per_1k_renters),
@@ -349,7 +553,15 @@ panel_summary <- tibble(
   n_cohorts = n_cohorts, n_months = n_t, n_obs = nrow(panel),
   min_date = min(panel$month_date), max_date = max(panel$month_date),
   coverage_threshold = COVERAGE_THRESHOLD, outcome = OUTCOME,
-  treat_source = TREAT_SOURCE, treat_date_col = TREAT_DATE_COL
+  treat_source = TREAT_SOURCE,
+  expected_treat_source = if_else(
+    nzchar(EXPECTED_TREAT_SOURCE),
+    EXPECTED_TREAT_SOURCE,
+    NA_character_
+  ),
+  require_panel_treatment = REQUIRE_PANEL_TREATMENT,
+  requested_treat_date_col = TREAT_DATE_COL,
+  resolved_treat_date_col = RESOLVED_TREAT_DATE_COL
 )
 safe_write_csv(panel_summary, file.path(OUT_DIR, "panel_summary.csv"))
 
@@ -1178,9 +1390,13 @@ readme_lines <- c(
   "## Configuration",
   glue("- Panel: `{PANEL_FILE}`"),
   glue("- Treatment source: `{TREAT_SOURCE}`"),
+  glue("- Expected treatment source: `{ifelse(nzchar(EXPECTED_TREAT_SOURCE), EXPECTED_TREAT_SOURCE, '<none>')}`"),
+  glue("- Require panel treatment: {REQUIRE_PANEL_TREATMENT}"),
+  "- Resolved schedule: `treatment_schedule_resolved.csv` and `.rds`",
   glue("- Treatment file: `{TREAT_FILE}`"),
-  glue("- Treatment date column: `{TREAT_DATE_COL}`"),
-  glue("- Excluded states: {paste(EXCLUDE_STATES, collapse=', ')}"),
+  glue("- Requested file-treatment date column: `{TREAT_DATE_COL}`"),
+  glue("- Resolved treatment date column: `{RESOLVED_TREAT_DATE_COL}`"),
+  glue("- Excluded states: {ifelse(length(EXCLUDE_STATES) > 0L, paste(EXCLUDE_STATES, collapse=', '), '<none>')}"),
   glue("- Date range: {MIN_DATE} to {MAX_DATE}"),
   glue("- Dropped window: {fmt_date(DROP_START)} to {fmt_date(DROP_END)}"),
   glue("- Coverage threshold: {COVERAGE_THRESHOLD}"),

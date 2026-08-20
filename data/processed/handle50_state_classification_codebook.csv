@@ -1,0 +1,15 @@
+variable_name,label,type,source,construction_notes
+state_abb,State abbreviation,character,Eviction panel,Unique state identifier in the estimator panel
+state_name,State name,character,R state crosswalk,Full state name derived from state_abb
+study_start,Study-window start,date,Configuration,States treated before this date are classified pre-sample treated
+study_cutoff,Study-window cutoff,date,Configuration,Legal launches after this date remain eligible not-yet-treated controls
+legal_online_start,Legal online betting start,date,sports_gambling_legalization_dates.csv,Verified online launch date; missing means no online launch in the schedule
+handle_threshold_fraction,Fraction of peak Handle,double,Configuration,Default 0.50; peak is calibrated through study_cutoff
+handle_threshold_start,First Handle threshold month,date,LSR monthly Handle data,First online-era month reaching the configured share of non-COVID peak
+handle_data_available,Online-era Handle observed by cutoff,logical,LSR monthly Handle data,True when at least one eligible Handle month is present by study_cutoff
+handle_threshold_observed,Handle threshold observed,logical,Derived,True when handle_threshold_start is nonmissing
+handle_treatment_status,Treatment/control classification,character,Derived,"One of observed_handle_threshold_treated, legally_online_missing_handle, pre_sample_treated, not_yet_online_after_cutoff, or never_online_in_window"
+control_eligible,Eligible untreated control,logical,Derived,True only for not-yet-online-after-cutoff and never-online-in-window states
+analysis_eligible,Eligible for Handle estimator panel,logical,Derived,False for pre-sample-treated states and legally treated states missing Handle
+exclusion_reason,Estimator-panel exclusion reason,character,Derived,Nonmissing when analysis_eligible is false
+treat_start,Estimator treatment date,date,Derived,Handle threshold date for observed treated states; missing for eligible controls

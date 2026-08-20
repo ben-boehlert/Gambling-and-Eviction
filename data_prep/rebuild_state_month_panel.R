@@ -68,6 +68,23 @@ source("utils/eviction_treatment_schedule.R")
 KEEP_OLD <- c("NH", "WI", "MD", "LA", "MA", "MO", "NM", "NV", "RI")
 NY_START <- as.Date("2019-01-01")
 
+# ---- Basket policy (decision 2026-08-20: FIXED BASKET) ---------------------
+# A county-sum state total is only comparable over time if the SAME counties
+# are in it every month. BASKET_MODE="fixed" (default) restricts each state to
+# the counties reporting in EVERY month of the basket window, then emits a
+# state-month only when the whole basket reports. This trades counties for a
+# well-defined estimand: FL drops Miami-Dade and Lee one month after its own
+# treatment date, TN falls 36 -> 12 -> 3 counties, TX loses Harris (-48%
+# denominator) — all pure composition, none of it eviction dynamics.
+# BASKET_MODE="as_reported" reproduces the pre-decision behaviour.
+BASKET_MODE  <- Sys.getenv("BASKET_MODE", "fixed")
+BASKET_START <- as.Date(Sys.getenv("BASKET_START", "2016-01-01"))
+BASKET_END   <- as.Date(Sys.getenv("BASKET_END",   "2024-12-01"))
+BASKET_DROP  <- c(as.Date(Sys.getenv("BASKET_DROP_START", "2020-03-01")),
+                  as.Date(Sys.getenv("BASKET_DROP_END",   "2021-07-31")))
+MIN_BASKET_COUNTIES <- as.integer(Sys.getenv("MIN_BASKET_COUNTIES", "1"))
+stopifnot(BASKET_MODE %in% c("fixed", "as_reported"))
+
 fips_xwalk <- tibble(
   state_fips = c(1L,2L,4L,5L,6L,8L,9L,10L,11L,12L,13L,15L,16L,17L,18L,19L,20L,
                  21L,22L,23L,24L,25L,26L,27L,28L,29L,30L,31L,32L,33L,34L,35L,
@@ -99,11 +116,39 @@ cty <- read_csv("data/raw/monthly_county_data_download.csv",
   inner_join(fips_xwalk, by = "state_fips") %>%
   filter(!is.na(filings_count))
 
+# ---- Fixed basket: counties reporting in EVERY basket-window month --------
+basket_months <- cty %>%
+  filter(month_date >= BASKET_START, month_date <= BASKET_END,
+         !(month_date >= BASKET_DROP[1] & month_date <= BASKET_DROP[2])) %>%
+  distinct(month_date) %>% nrow()
+
+basket <- cty %>%
+  filter(month_date >= BASKET_START, month_date <= BASKET_END,
+         !(month_date >= BASKET_DROP[1] & month_date <= BASKET_DROP[2])) %>%
+  count(state_abb, fips, name = "n_obs") %>%
+  filter(n_obs == basket_months) %>%
+  select(state_abb, fips)
+
+basket_size <- basket %>% count(state_abb, name = "basket_n")
+
+if (identical(BASKET_MODE, "fixed")) {
+  cty <- cty %>% semi_join(basket, by = c("state_abb", "fips")) %>%
+    semi_join(basket_size %>% filter(basket_n >= MIN_BASKET_COUNTIES),
+              by = "state_abb")
+}
+
 cty_state <- cty %>% group_by(state_abb, month_date) %>%
   summarise(filings_count = sum(filings_count),
             renter_occupied_housing_units =
               sum(renter_occupied_housing_units, na.rm = TRUE),
             n_counties = n_distinct(fips), .groups = "drop")
+
+if (identical(BASKET_MODE, "fixed")) {
+  # Emit a state-month ONLY when the entire fixed basket reports; a partial
+  # basket is exactly the artifact this mode exists to remove.
+  cty_state <- cty_state %>% inner_join(basket_size, by = "state_abb") %>%
+    filter(n_counties == basket_n) %>% select(-basket_n)
+}
 
 # Composition context: modal monthly basket size per state.
 modal_basket <- cty_state %>% group_by(state_abb) %>%
@@ -116,7 +161,9 @@ county_part <- cty_state %>%
   filter(!(state_abb == "NY" & month_date < NY_START)) %>%
   left_join(modal_basket, by = "state_abb") %>%
   mutate(basket_share = round(n_counties / modal_n, 3),
-         panel_source = "county_download_sum") %>%
+         panel_source = if (identical(BASKET_MODE, "fixed"))
+                          "county_download_fixed_basket" else
+                          "county_download_sum") %>%
   select(-modal_n, -max_n)
 
 keepold_part <- old %>%
@@ -151,6 +198,16 @@ new <- bind_rows(county_part, keepold_part) %>%
          renter_occupied_housing_units, filings_per_1k_renters,
          treat_start, treated, panel_source, n_counties, basket_share) %>%
   arrange(state_abb, month_date)
+
+if (identical(BASKET_MODE, "fixed")) {
+  # The point of the mode: within a state the basket must never move.
+  chk <- new %>% filter(grepl("fixed_basket", panel_source)) %>%
+    group_by(state_abb) %>% summarise(k_n = n_distinct(n_counties),
+                                      k_r = n_distinct(renter_occupied_housing_units),
+                                      .groups = "drop")
+  stopifnot("fixed basket is not fixed"        = max(chk$k_n) == 1,
+            "fixed basket denominator moved"   = max(chk$k_r) == 1)
+}
 
 # ---- Invariants: fail loudly rather than print a summary after the fact ----
 stopifnot(
