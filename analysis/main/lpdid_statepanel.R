@@ -52,7 +52,7 @@ theme_set(theme_minimal())
 source("utils/eviction_treatment_schedule.R")
 
 getenv1 <- function(k, d) { v <- Sys.getenv(k); if (nzchar(v)) v else d }
-TREAT_DEF       <- getenv1("TREAT_DEF", "raw")          # "raw" | "ramp75"
+TREAT_DEF       <- getenv1("TREAT_DEF", "raw")          # "raw" | "ramp75" | "shift12"
 POST            <- as.integer(getenv1("POST", "18"))    # months after treatment
 PRE             <- as.integer(getenv1("PRE",  "12"))    # months before (pre-trend)
 PMD             <- as.integer(getenv1("PMD",  "3"))     # pre-mean-difference baseline
@@ -105,7 +105,16 @@ lags <- read_csv("data/processed/cohort_ramp_lags.csv", show_col_types = FALSE) 
 
 treat_tbl <- tibble(state_abb = sort(unique(p$state_abb))) %>%
   left_join(sched, by = "state_abb") %>% left_join(lags, by = "state_abb") %>%
-  mutate(treat_date = if (TREAT_DEF == "ramp75") ramp75_date else treat_start,
+  mutate(treat_date = dplyr::case_when(
+           TREAT_DEF == "ramp75"  ~ ramp75_date,
+           # Uniform NY-Fed-style buildup shift: g* = launch + 12 months. The
+           # "pre-period" e in [-12,-2] then covers the state's own RAMP months,
+           # so the pre-trend test doubles as a placebo on immature-market
+           # effects. NOTE the shared caveat with ramp75: clean controls are
+           # judged by the SHIFTED date, so launched-but-<12-months states sit
+           # in the control pool (dirty-window contamination).
+           TREAT_DEF == "shift12" ~ treat_start %m+% months(12L),
+           TRUE                   ~ treat_start),
          g = ifelse(is.na(treat_date), NA_integer_, ym_index(treat_date)))
 
 panel <- p %>% left_join(treat_tbl %>% select(state_abb, g), by = "state_abb")
