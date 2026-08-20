@@ -317,6 +317,69 @@ Analysis of how quickly state gambling markets reach their peak monthly Handle (
 
 ## Known Issues and Limitations
 
+### STATE PANEL DOUBLE COUNT — REBUILT 2026-08-20 (read before using any pre-rebuild state-level result)
+
+`data/raw/state_month_panel_with_treatment.csv` was, until 2026-08-20, an exact double count
+for 12 states: `filings_count = (county download sum) + (merged_ets_combined.csv ETS series)`,
+verified to the unit on 891 of 916 overlap state-months (100% for all 12 affected states;
+the other 25 are WI, already repaired by 08c and therefore not an exact addition)
+(`analysis/diagnostics/statepanel_double_count_audit.R`; outputs in
+`output/statepanel_double_count/`). The two sources cover the SAME filings. Because each ETS
+series has its own span, the double count switched on/off mid-panel — a 1.2x-2.4x level break
+with no eviction content: cities series START 2020-01 (AZ OH SC TN TX -> jump up), state_level
+series END 2023-02 (CT DE IN MN PA VA -> drop), FL state series end 2020-01 (drop). No repo
+script ever built this file; only the NH/ME/MD/WI patch scripts touched it.
+
+**Rebuild** (`data_prep/rebuild_state_month_panel.R`): one consistent source per state —
+county-download sums for all states in the download except NH/WI (court-source repairs kept),
+MD carried as Judiciary monthly Landlord/Tenant COMPLAINT filings (NOT the superseded Socrata
+post-judgment warrant extract),
+NY trimmed to 2019+ (pre-2019 was a different-basket ETS series; NY now fails the 91-month
+balance and DROPS from the balanced pretrends panel), MD/LA/MA/MO/NM/NV/RI single-source rows
+carried over. `treat_start` recomputed from the repaired schedule. Old panel preserved at
+`data/raw/deprecated/state_month_panel_with_treatment_double_counted_2026-08-20.csv`.
+Provenance per state: `data/processed/state_panel_rebuild_source_table.csv`.
+
+**Bias mechanism**: constant multiplicative inflation cancels in log outcomes with state FE;
+only windows STRADDLING a break (2020-01 or 2023-02) are biased — which includes the standard
+2016-2024-excl-COVID window for all 12 states, and the post-COVID window for the 2023-02 six.
+This is what made TX (+0.785) and MN (-0.715) long differences fake (county file: -0.493/-0.024)
+and inflated the real-calendar sigma 0.592 -> 0.327.
+
+**Contaminated (state-panel-based; re-run before citing):** pretrends headline (re-run 2026-08-20,
+see below), state calibration table (CS 14%/SunAb 21% — residual-pool DGP contained the breaks),
+blinded-power STATE cells (did2s 23-29% Type I, TWFE-wild MDE>20%, time_agg/splice memo,
+LP-DiD spliced-state MDE 8.1% synthesis, longdiff_power, cheap_sims grid), TWFE staggered
+power sim (MDE=5% claim), handle50/post-COVID handle50 outputs (panel regenerated 2026-08-20;
+downstream outputs stale), era-variance state-panel sigmas (county fixed-basket numbers stand).
+**Immune:** everything county-download-based (county calibration incl. did2s 4%/0.97, county CS
+adaptive MDE verdict, border diagnostic, +9.1% did2s headline), mortgage delinquency, 2x2
+pseudo-power on the annual court panel, handle maturation stats.
+
+**REBUILT PANEL IS NOT YET ANALYSIS-READY — composition churn is unfixed (Codex review,
+2026-08-20).** The rebuild removes the double count but a county-sum state total is still a
+COMPOSITION-VARYING basket, and a state-month presence check does not catch it. Verified cases:
+FL drops Miami-Dade and Lee at 2024-01 — one month after FL's own 2023-12 treatment date;
+TN falls 36 -> 12 -> 3 reporting counties over 2024-03/04; TX loses Harris at 2024-05, cutting
+its renter denominator 48%. Measured effect on the 2016-19 -> 2022-24 change in log filings:
+artifacts of +1.02 (ID), -0.28 (FL), -0.16 (TX) log points; cross-state SD 0.249 as-reported vs
+0.207 on a fixed basket. Every row now carries `n_counties` and `basket_share`, and
+`data/processed/state_panel_coverage_qa.csv` grades each state — censor the tail or fix the
+basket before any state-level estimate is cited. Also fixed in the same pass: zero renter
+denominators were producing FABRICATED rates up to 6,934,000 per 1k renters (404 rows across
+LA MA MO NM NV RI); rates are now NA where no denominator exists. The rebuild is idempotent and
+the pre-fix panel is preserved once and never overwritten.
+
+**Post-rebuild pretrends headline — PROVISIONAL, do not cite (2026-08-20, `output/pretrends_rebuild_B_newpanel/`):**
+25 states (16 treated, 9 never-treated — schedule repair moved ME/VT/KY/FL to treated; NY out),
+15 cohorts, 91 months. CS overall ATT **+0.080 log points (SE 0.088 analytic, 0.088 bootstrap)**
+— not significant, CI ~[-0.09, +0.25]. Pre-trends NOT rejected (CS Holm p = 1.0; SunAb p = 1.0).
+Vs the old panel run at the same schedule (`output/pretrends_rebuild_A_oldpanel/`: ATT +0.074,
+SE 0.130): the fix leaves the point estimate nearly unchanged and cuts the CS SE by ~1/3;
+mean |pre-ATT| halves (0.047 -> 0.029). The pre-rebuild published numbers (ATT +0.011, SE 0.163,
+26 states 12 treated) are dead — they mixed the double count with the stale schedule.
+
+
 ### CS in the Blinded Power Framework: Two Execution Flags (2026-08-17)
 
 The CS arm of `R/power/` could not run at all until this date. Two run-level config keys
@@ -396,6 +459,77 @@ delta=0, 300 reps, 13 cells) using the new `time_agg` axis (month/quarter/year) 
   quarterly LP-DiD spec.
 - **Speed:** CS costs 27.7 s/cell monthly, 3.4 s quarterly, 0.2 s annually (8-140x) — a
   reusable speedup even though calibration is unchanged.
+
+### Binary 2x2 Long Difference: Pseudo-Treatment Power Verdict (2026-08-19)
+
+The binary long difference — `tau = (Ybar^T_end - Ybar^C_end) - (Ybar^T_pre -
+Ybar^C_pre)`, one common calendar, "online by 2022" as a binary group — is
+powered as a **pseudo-treatment experiment in the pre-treatment era** (Black,
+Hollingsworth, Nunes & Simon 2022), NOT by truncating each state at its own
+legalization date. Truncating leaves 6 usable states at the real calendar;
+shifting the whole experiment before 2018-06 (first-ever legalization) keeps
+every state, because nothing is treated there. Full memo:
+`quality_reports/longdiff_pseudo_treatment_memo_2026-08-19.md`.
+
+- **Substrate switch is forced.** The ETS monthly untreated era is only
+  2016-01..2018-05 = **29 months**, so a 24-month baseline + 12-month endpoint
+  cannot fit disjointly, let alone at the real ~70-month distance. The
+  **annual county court panel** (`data/raw/county_court-issued_2000_2023_ben_update_5_12.csv`)
+  does: **CY2008+2009 -> CY2016 = 37 states, 1,549 counties, 72-month distance,
+  22 online-ever / 15 never** — widths, distance, and counts all preserved.
+  Watch the DC case mismatch ("District Of Columbia"); a case-sensitive join
+  silently drops DC and changes the split.
+- **MDE-80 = 0.241 log points (+27% in filings)** under randomization
+  inference, 500 reps (`output/longdiff_2x2_pseudo/`). **This is a FLOOR** —
+  measured in the calm pre-2018 era.
+- **RI is exactly nominal (5.0%); CRVE FAILS the size gate** (7.8% main,
+  **12.4%** on the 12-month-baseline variant, SE/SD 0.88). At 37 unbalanced
+  clusters do not quote CRVE. WCB is fine (5.2%). Null bias -0.0008.
+- **Real-era MDE is +20% to +80%** — a RANGE, not a point: the era-inflated
+  pseudo route gives +77%, the corrected direct anchor +20-24%, and the two
+  disagree because the ETS inputs are coverage-unstable (see below). **The 2x2 cannot detect the 7.5-10% effects the credit literature
+  reports**, and is far weaker than LP-DiD spliced-state (MDE 8.1%). Keep it as
+  a transparent descriptive contrast; do not make it the powered spec.
+- **Type M is severe**: a significant estimate at delta = 0.05-0.10 overstates
+  the truth by **2-4x**; at delta = 0.02 under CRVE, 28% of significant
+  estimates have the WRONG SIGN.
+- **Selection check passes**: eventual online legalizers show no pre-treatment
+  divergence from never-legalizers (tau = -1.4%, RI p = 0.90;
+  `analysis/diagnostics/longdiff_2x2_selection_placebo.R`).
+
+### Era Variance: Pre-2018 Understates Post-COVID Noise by 2-4x (2026-08-19)
+
+`analysis/diagnostics/longdiff_era_variance.R` -> `output/longdiff_era_variance/`.
+sigma = SD across states of the state-level long difference (exactly what the
+clustered SE is built from), windows slid over every feasible placement at
+**matched geometry and matched distance**, on states untreated in BOTH eras.
+
+- **Median post/pre sigma ratio 2.67** (range 1.8-5.2); 3.86 on the strict
+  never-any-legalization set. Any pre-era MDE must be inflated accordingly.
+- **IDAHO TRAP:** with ID included the raw comparison *inverts* (pre looks
+  noisier). ID is the single most extreme state in **100%** of pre-era
+  placements. CLAUDE.md already excludes ID from annual analyses; exclude it
+  here too. Trimmed and MAD statistics were right all along.
+- **Never-treated states are ~1.5-1.6x noisier than the full state set** in the
+  pre era. The real control pool IS those states, so an all-states rehearsal
+  understates noise on that count as well.
+- **Real-calendar anchor — CONTAMINATED, revised down.** State panel gave
+  sigma = 0.472 (MDE +56%), but **two states (TX, MN) carry nearly all of it
+  and BOTH disagree with the county file** (TX: state panel +0.785 vs
+  county-aggregated -0.493; MN: -0.715 vs -0.024; the other five agree
+  exactly). A second artifact compounds it: reporting-county composition
+  changes between windows (TX 12.8 -> 8.5 counties), and fixing the basket
+  flips TX to +0.36. Corrected sigma **0.19-0.23 -> MDE-80 ~ +20% to +24%**.
+  Era factor survives but shrinks: **2.36x** on a fixed basket vs 3.89 from the
+  state panel at the same cell. **ACTION: reconcile the TX and MN state-panel
+  series against `monthly_county_data_download.csv` before reporting any long
+  difference.** Script: `analysis/diagnostics/longdiff_real_calendar_decomp.R`.
+- **Averaging is nearly inert (Burlig-Preonas-Woerman confirmed).** Measured
+  with the endpoint window's CENTRE fixed so averaging is separated from
+  distance: in the post-COVID era a 12-month endpoint average cuts sigma by
+  only **5-12%** vs the 71% independence would give. The 24-month baseline
+  likewise buys ~nothing over 12 months (MDE 0.241 vs 0.246). Do not spend
+  design freedom on window length.
 
 ### Gambling Intensity Heterogeneity Analysis Does Not Work
 

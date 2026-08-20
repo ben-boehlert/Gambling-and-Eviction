@@ -30,6 +30,12 @@
 suppressMessages({ library(tidyverse); library(lubridate); library(glue) })
 theme_set(theme_minimal())
 
+# Reads the PRE-FIX panel by default so the audit stays reproducible after the
+# 2026-08-20 rebuild. Point PANEL_AUDIT_FILE at the canonical file to confirm
+# the fix landed (expected: 0 exact identities).
+PANEL_AUDIT_FILE <- Sys.getenv("PANEL_AUDIT_FILE",
+  "data/raw/deprecated/state_month_panel_with_treatment_double_counted_2026-08-20.csv")
+
 OUT_DIR <- "output/statepanel_double_count"
 dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
 
@@ -62,8 +68,14 @@ cty_raw <- read_csv("data/raw/monthly_county_data_download.csv",
 cty <- cty_raw %>% group_by(state_abb, month_date) %>%
   summarise(cty = sum(filings_count), n_cty = n_distinct(fips), .groups = "drop")
 
-cty_ever <- cty_raw %>% group_by(state_abb) %>%
-  summarise(n_cty_ever = n_distinct(fips), .groups = "drop")
+# Coverage must be measured SIMULTANEOUSLY, not ever-observed: MN has all 87
+# counties at some point but only 54-75 in any single month. Using ever-seen
+# coverage would overstate how statewide the download is (audit finding, Codex
+# review 2026-08-20).
+cty_cov <- cty_raw %>% count(state_abb, month_date, name = "n_month") %>%
+  group_by(state_abb) %>%
+  summarise(n_cty_median_month = median(n_month),
+            n_cty_max_month = max(n_month), .groups = "drop")
 
 name_xwalk <- tibble(state_abb = state.abb,
                      nmz = tolower(gsub(" ", "", state.name)))
@@ -74,8 +86,7 @@ ets <- read_csv("data/raw/ets_merged/merged_ets_combined.csv",
   inner_join(name_xwalk, by = "nmz") %>%
   select(state_abb, month_date, ets = filings_count, source)
 
-sp <- read_csv("data/raw/state_month_panel_with_treatment.csv",
-               show_col_types = FALSE) %>%
+sp <- read_csv(PANEL_AUDIT_FILE, show_col_types = FALSE) %>%
   mutate(month_date = as.Date(month_date)) %>%
   select(state_abb, month_date, spf = filings_count)
 
@@ -97,18 +108,35 @@ ident_by_state <- overlap %>% group_by(state_abb, source) %>%
             first_month = min(month_date), last_month = max(month_date),
             median_inflation = round(median(spf / pmax(cty, 1)), 2),
             .groups = "drop") %>%
-  left_join(cty_ever, by = "state_abb") %>%
+  left_join(cty_cov, by = "state_abb") %>%
+  left_join(overlap %>% group_by(state_abb) %>%
+              summarise(ets_over_cty = round(median(ets / pmax(cty, 1)), 2),
+                        .groups = "drop"), by = "state_abb") %>%
   mutate(counties_in_state = n_counties[state_abb],
-         download_coverage = round(n_cty_ever / counties_in_state, 2),
-         diagnosis = if_else(download_coverage >= 0.90,
-           "county download already statewide -> added series is a PURE DUPLICATE",
-           "county download partial -> added series duplicates part, adds part")) %>%
+         median_month_coverage = round(n_cty_median_month / counties_in_state, 2),
+         # A duplicate label needs BOTH near-statewide simultaneous coverage AND
+         # a like-for-like level. Neither alone is sufficient: the exact
+         # `old = county + ETS` identity proves how the old panel was BUILT, not
+         # that the two components measure the same geography.
+         diagnosis = case_when(
+           median_month_coverage >= 0.85 & abs(ets_over_cty - 1) <= 0.40 ~
+             "near-statewide monthly coverage AND like-for-like level -> DUPLICATE",
+           median_month_coverage >= 0.85 ~
+             "near-statewide coverage but level differs -> duplicate + scope gap",
+           TRUE ~
+             "partial monthly coverage -> added series duplicates part, adds part")) %>%
   arrange(desc(n_double_counted_months))
 
 cat(glue("\n{nrow(overlap)} state-months carry an added ETS series; ",
-         "{round(mean(abs(overlap$resid) < 0.5) * 100, 1)}% match ",
-         "county-sum + ETS-series EXACTLY.\n\n"))
-print(as.data.frame(ident_by_state), digits = 3)
+         "{sum(abs(overlap$resid) < 0.5)} ",
+         "({round(mean(abs(overlap$resid) < 0.5) * 100, 1)}%) are an EXACT ",
+         "county-sum + ETS-series addition.\n",
+         "Panel audited: {PANEL_AUDIT_FILE}\n\n"))
+print(as.data.frame(ident_by_state %>%
+  select(state_abb, source, n_double_counted_months, pct_exact_identity,
+         first_month, last_month, median_inflation, n_cty_median_month,
+         counties_in_state, median_month_coverage, ets_over_cty, diagnosis)),
+  digits = 3)
 
 # ---- What it does to the real-calendar long difference ---------------------
 BASE <- c(as.Date("2017-01-01"), as.Date("2018-12-01"))
