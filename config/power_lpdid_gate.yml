@@ -1,0 +1,64 @@
+# =============================================================================
+# power_lpdid_gate.yml — SIZE GATE for the LP-DiD estimator (E5), state level.
+#
+# Purpose: LP-DiD (Dube, Girardi, Jorda & Taylor 2023) was added to
+# R/power/run_estimators.R on 2026-08-15 as a candidate estimator whose
+# identifying assumption is local in event time (long-differences from a
+# pre-mean baseline; no global unit-effect model). Before it can enter the
+# PAP's estimator-selection decision rule it must pass the same blinded size
+# gate as the incumbents: rejection rate at delta = 0 within the calibration
+# tolerance. twfe and did2s run alongside as calibrated benchmarks, on the
+# IDENTICAL simulated panels (same base_seed => rep-for-rep pairing with the
+# smoke/cheap/primary runs).
+#
+# One state-level scenario only: the state headline cell of power_cheap.yml.
+# delta = 0 for the gate itself plus 0.05 for a single paired power point.
+# 300 reps => MC SE on a 5% rejection rate ~ 1.3pp.
+#
+# Scenario count: 1 (no slurm array; run locally via run_scenario_grid()).
+# =============================================================================
+
+run_name: lpdid_gate
+
+# ---- Top-level defaults -----------------------------------------------------
+
+level:      state
+sample:     [S2]
+covid:      drop
+treat_def:  online_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+
+# Panel-restricted template, as in smoke/cheap/primary (2026-08-10 decision).
+template:   panel
+
+effect_grid:  [0, 0.05]
+
+estimators:   [twfe, did2s, lpdid]
+
+# ---- Execution --------------------------------------------------------------
+
+n_reps:     300
+base_seed:  20260723           # matches smoke/cheap/primary — pairing
+mde_boot:   50
+
+alpha:      [0.1, 0.05, 0.01]
+
+min_pre:    12
+min_post:   6
+
+anticipation_months: 6
+
+# ---- Scenario families ------------------------------------------------------
+
+scenarios:
+
+  # State headline cell (mirrors power_cheap.yml state_nb_step).
+  - name: lpdid_gate_state_nb_step
+    level: state

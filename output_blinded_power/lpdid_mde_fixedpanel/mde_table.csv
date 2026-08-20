@@ -1,0 +1,9 @@
+scenario_id,estimator,inference,estimand,alpha,power_target,mde,mde_reason,mde_90,mde_90_reason,mde_ci_lo,mde_ci_hi,n_boot_finite
+S1fc674c904_mde_spliced-state-s2-drop-d1-count_nb-step-y_log1p-a0-tpanel,did2s,analytic,simple,0.05,0.8,0.15645161290322585,interpolated,0.21071428571428574,interpolated,0.14385690789473685,0.17432251082251088,200
+S1fc674c904_mde_spliced-state-s2-drop-d1-count_nb-step-y_log1p-a0-tpanel,lpdid,analytic,simple,0.05,0.8,0.0546875,interpolated,0.06875,interpolated,0.049282504012841094,0.05962500000000001,200
+S1fc674c904_mde_spliced-state-s2-drop-d1-count_nb-step-y_log1p-a0-tpanel,twfe,analytic,simple,0.05,0.8,0.14,interpolated,0.18382352941176472,interpolated,0.12305555555555558,0.15791013437849946,200
+S1fc674c904_mde_spliced-state-s2-drop-d1-count_nb-step-y_log1p-a0-tpanel,twfe,wild,simple,0.05,0.8,0.16282051282051282,interpolated,0.20200000000000007,interpolated,0.14437500000000006,0.17619747899159666,200
+S4e1acdd7ec_mde_postcovid-state-s2-post-d1-count_nb-step-y_log1p-a0-tpanel,did2s,analytic,simple,0.05,0.8,0.14029850746268657,interpolated,0.17931034482758623,interpolated,0.13174603174603175,0.1485859564164649,200
+S4e1acdd7ec_mde_postcovid-state-s2-post-d1-count_nb-step-y_log1p-a0-tpanel,lpdid,analytic,simple,0.05,0.8,0.14725274725274726,interpolated,0.18125000000000002,interpolated,0.14065848214285714,0.15851215805471125,200
+S4e1acdd7ec_mde_postcovid-state-s2-post-d1-count_nb-step-y_log1p-a0-tpanel,twfe,analytic,simple,0.05,0.8,0.129746835443038,interpolated,0.1487341772151899,interpolated,0.12220942982456141,0.13488528382095524,200
+S4e1acdd7ec_mde_postcovid-state-s2-post-d1-count_nb-step-y_log1p-a0-tpanel,twfe,wild,simple,0.05,0.8,0.15,interpolated,0.17830188679245285,interpolated,0.14012758368392172,0.1595357142857143,200

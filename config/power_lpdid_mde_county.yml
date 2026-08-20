@@ -1,0 +1,80 @@
+# =============================================================================
+# power_lpdid_mde_county.yml — COUNTY-level size gate + MDE, both COVID windows.
+#
+# County companion to power_lpdid_mde.yml (state). Same estimators, same effect
+# grid, same base_seed (20260723) => rep-for-rep paired panels with every state
+# run, so state-vs-county differences are attributable to the level and not to
+# the draws.
+#
+# WHY COUNTY MATTERS HERE. CLAUDE.md records that county-level data rescued the
+# imputation estimators on the real panel (did2s 4% Type I at county vs failing
+# at state), because clustering is still at the state level but the within-state
+# noise averages down. The state runs disqualified did2s on the spliced window
+# (23.7% size) and put LP-DiD far ahead (8.9% size-adjusted MDE vs TWFE 23.3%).
+# This run tests whether either conclusion survives disaggregation — it is the
+# arm that can move the headline spec.
+#
+# DESIGN SIZES (verified 2026-08-17, S2 risk set, anticipation 6):
+#   covid drop -> 1,228 counties / 29 states / 100 months; D1 places 17 switcher states
+#   covid post ->   509 counties / 14 states /  50 months; D1 places  5 switcher states
+# The post-COVID county arm is very thin (5 treated states). Read it as a
+# robustness probe, not a candidate design.
+#
+# COST: ~3.8 s per (rep x delta) for twfe+did2s+lpdid on county/drop (local Mac,
+# ~6x faster per rep than a Della node). 300 reps x 13 deltas ~ 1h at 4 workers.
+# Workers held at 4 rather than 6: TWFE's boottest arm peaks ~0.6 GB per worker
+# even with fe = "id" absorption (the un-absorbed version OOM-killed Della job
+# 12223288), and county panels carry that cost on every rep.
+#
+# lpdid_wild stays OFF at county: boottest cannot do WLS with absorbed fixed
+# effects, so the wild arm would dummy-expand the stacked (t x h) cell factor —
+# thousands of levels on a county panel. See .re_lpdid in run_estimators.R.
+#
+# Scenario count: 2. Run locally.
+# =============================================================================
+
+run_name: lpdid_mde_county
+
+# ---- Top-level defaults -----------------------------------------------------
+
+level:      county
+sample:     [S2]
+covid:      drop
+treat_def:  online_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+
+template:   panel
+
+effect_grid:  [0, 0.02, 0.05, 0.08, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50, 0.60]
+
+estimators:   [twfe, did2s, lpdid]
+
+# ---- Execution --------------------------------------------------------------
+
+n_reps:     300
+base_seed:  20260723           # pairs with the state MDE run and both size gates
+mde_boot:   200
+
+alpha:      [0.1, 0.05, 0.01]
+
+min_pre:    12
+min_post:   6
+
+anticipation_months: 6
+
+# ---- Scenario families ------------------------------------------------------
+
+scenarios:
+
+  - name: mde_county_spliced
+    covid: drop
+
+  - name: mde_county_postcovid
+    covid: post

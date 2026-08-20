@@ -1,0 +1,121 @@
+# =============================================================================
+# power_county_cs.yml — county CS arm, first run that can actually estimate
+#
+# WHY THIS IS A SEPARATE CONFIG, not flags flipped in power_primary.yml:
+# `shift_mode` is hashed into the scenario id for EVERY scenario (unlike
+# cs_safe_patches / cs_faster_mode, which are gated on the scenario running
+# CS). Enabling it inside power_primary.yml would therefore move every id in
+# that config, orphaning the completed Della state scenarios (6-13h each) and
+# any county twfe/did2s partials. A dedicated config leaves power_primary.yml
+# byte-identical and its partials adoptable.
+#
+# All three axes below are non-default, so these scenarios carry their own
+# content-hash ids and can never be pooled with brute-force partials.
+#
+# Context (2026-08-17): the CS arm had never produced an estimate. Two
+# defects, both fixed and both required here — see
+# docs/methodology/POWER_SIMULATION_DESIGN.md §16a/§16b:
+#   * did::att_gt -> DRDID:::reg_did_rc -> fastglm ABORTS the R process on
+#     zero-row design matrices (~1 rep in 4); uncatchable, kills the worker.
+#   * faster_mode = TRUE returns "singular matrix ... not enough control
+#     units" on 100% of probed state cells.
+# With both corrected, state CS convergence went 0% -> 100%.
+#
+# Run:  N_WORKERS=6 bash scripts/run_power_county_cs.sh
+# =============================================================================
+
+run_name: county_cs
+
+# ---- Top-level defaults ------------------------------------------------------
+
+level:      county               # the headline unit (§2)
+sample:     [S2]                 # S3 is structurally infeasible under D1
+covid:      drop
+treat_def:  online_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb, deterministic]
+shapes:       [step, ramp]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+template:   panel
+
+# Primary grid, unchanged — this run must be comparable to power_primary.yml's
+# intent. Extends past the expected crossing so compute_mde() returns a defined
+# MDE rather than `never_crosses_target` (the CS probe's grid stopped at 0.10
+# and never crossed 80% power, which is why it could not produce an MDE).
+effect_grid:  [0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.08, 0.10, 0.15, 0.20]
+
+estimators:   [cs, twfe, did2s]
+
+# ---- CS execution flags (both REQUIRED for CS to run at all) -----------------
+
+cs_safe_patches: true
+cs_faster_mode:  false
+
+# ---- Shift mode --------------------------------------------------------------
+# Validated 2026-08-17 (analysis/diagnostics/validate_shift_sufficiency.R):
+# every estimator here is linear in the outcome, so a rep's delta=0 fit plus a
+# per-delta loading reproduces its whole grid. Exact under deterministic
+# injection; the delta=0 size gate is untouched at full n for every arm.
+# 25 calibration reps x 11 deltas + 225 reps x 1 delta = 500 fits per scenario
+# instead of 2,750 — 5.5x on estimator wall-clock, which for CS is all of it.
+shift_mode: true
+shift_calibration_reps: 25
+
+# ---- Execution ---------------------------------------------------------------
+
+n_reps:     250
+estimator_reps:
+  cs:     250
+  twfe:   250
+  did2s:  250
+base_seed:  20260723            # shared with primary/cheap: same rep -> same
+                                # simulated panel, so cross-run comparisons stay
+                                # paired
+mde_boot:   200
+
+alpha:      [0.05]              # single level ON PURPOSE. Stored CIs exist at
+                                # exactly one alpha (run_estimators.R .re_spec),
+                                # so the wild arm's CI-membership fallback is
+                                # determinate at 0.05 and returns NA elsewhere.
+                                # Asking for [0.1, 0.05, 0.01] would emit two
+                                # all-NA columns for synthesized wild rows.
+
+min_pre:    12
+min_post:   6
+
+anticipation_months: 6
+
+# ---- Scenarios ---------------------------------------------------------------
+
+scenarios:
+
+  # 1. HEADLINE. County, NB count augmentation, constant step. This is the cell
+  # the PAP's MDE is read off.
+  - name: headline_county_nb_step
+    level: county
+    sample: [S2]
+    mechanisms: [count_nb]
+    shapes: [step]
+
+  # 2. Deterministic benchmark (M2). Doubles as the shift-mode exactness check:
+  # loading must come back 1.000 and the discrepancy exactly 0, as it did at
+  # state level. If it does not, stop and investigate before trusting (1).
+  - name: county_det_benchmark
+    level: county
+    sample: [S2]
+    mechanisms: [deterministic]
+    shapes: [step]
+
+  # 3. Non-constant shape. At state level CS held its loading across shapes
+  # (1.12 step -> 1.09 ramp) while TWFE collapsed to 0.71; this checks whether
+  # that carries to county, which matters for pre-committing an estimator.
+  - name: county_nb_ramp
+    level: county
+    sample: [S2]
+    mechanisms: [count_nb]
+    shapes: [ramp]
+# =============================================================================

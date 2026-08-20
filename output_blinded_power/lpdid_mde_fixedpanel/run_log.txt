@@ -1,0 +1,31 @@
+[2026-08-20 01:48:42] run_scenario_grid: 2 of 2 scenario(s), workers = 6, run = lpdid_mde_fixedpanel
+[2026-08-20 01:48:42] S1fc674c904_mde_spliced-state-s2-drop-d1-count_nb-step-y_log1p-a0-tpanel START (300 reps x 13 deltas x {twfe,did2s,lpdid}; design D1, state/S2/count_nb)
+[2026-08-20 01:51:31]   S1fc674c904_mde_spliced-state-s2-drop-d1-count_nb-step-y_log1p-a0-tpanel batch 1/12 (reps 1-25): 1300 rows
+[2026-08-20 01:55:14]   S1fc674c904_mde_spliced-state-s2-drop-d1-count_nb-step-y_log1p-a0-tpanel batch 2/12 (reps 26-50): 1300 rows
+[2026-08-20 01:59:07]   S1fc674c904_mde_spliced-state-s2-drop-d1-count_nb-step-y_log1p-a0-tpanel batch 3/12 (reps 51-75): 1300 rows
+[2026-08-20 02:07:33]   S1fc674c904_mde_spliced-state-s2-drop-d1-count_nb-step-y_log1p-a0-tpanel batch 4/12 (reps 76-100): 1300 rows
+[2026-08-20 02:10:23]   S1fc674c904_mde_spliced-state-s2-drop-d1-count_nb-step-y_log1p-a0-tpanel batch 5/12 (reps 101-125): 1300 rows
+[2026-08-20 02:12:39]   S1fc674c904_mde_spliced-state-s2-drop-d1-count_nb-step-y_log1p-a0-tpanel batch 6/12 (reps 126-150): 1300 rows
+[2026-08-20 02:14:04]   S1fc674c904_mde_spliced-state-s2-drop-d1-count_nb-step-y_log1p-a0-tpanel batch 7/12 (reps 151-175): 1300 rows
+[2026-08-20 02:14:46]   S1fc674c904_mde_spliced-state-s2-drop-d1-count_nb-step-y_log1p-a0-tpanel batch 8/12 (reps 176-200): 1300 rows
+[2026-08-20 02:15:10]   S1fc674c904_mde_spliced-state-s2-drop-d1-count_nb-step-y_log1p-a0-tpanel batch 9/12 (reps 201-225): 1300 rows
+[2026-08-20 02:15:31]   S1fc674c904_mde_spliced-state-s2-drop-d1-count_nb-step-y_log1p-a0-tpanel batch 10/12 (reps 226-250): 1300 rows
+[2026-08-20 02:15:54]   S1fc674c904_mde_spliced-state-s2-drop-d1-count_nb-step-y_log1p-a0-tpanel batch 11/12 (reps 251-275): 1300 rows
+[2026-08-20 02:16:17]   S1fc674c904_mde_spliced-state-s2-drop-d1-count_nb-step-y_log1p-a0-tpanel batch 12/12 (reps 276-300): 1300 rows
+[2026-08-20 02:16:17] S1fc674c904_mde_spliced-state-s2-drop-d1-count_nb-step-y_log1p-a0-tpanel END (15600 rows -> S1fc674c904_mde_spliced-state-s2-drop-d1-count_nb-step-y_log1p-a0-tpanel.csv)
+[2026-08-20 02:16:17] S4e1acdd7ec_mde_postcovid-state-s2-post-d1-count_nb-step-y_log1p-a0-tpanel START (300 reps x 13 deltas x {twfe,did2s,lpdid}; design D1, state/S2/count_nb)
+[2026-08-20 02:16:36]   S4e1acdd7ec_mde_postcovid-state-s2-post-d1-count_nb-step-y_log1p-a0-tpanel batch 1/12 (reps 1-25): 1300 rows
+[2026-08-20 02:16:52]   S4e1acdd7ec_mde_postcovid-state-s2-post-d1-count_nb-step-y_log1p-a0-tpanel batch 2/12 (reps 26-50): 1300 rows
+[2026-08-20 02:17:07]   S4e1acdd7ec_mde_postcovid-state-s2-post-d1-count_nb-step-y_log1p-a0-tpanel batch 3/12 (reps 51-75): 1300 rows
+[2026-08-20 02:17:24]   S4e1acdd7ec_mde_postcovid-state-s2-post-d1-count_nb-step-y_log1p-a0-tpanel batch 4/12 (reps 76-100): 1300 rows
+[2026-08-20 02:17:42]   S4e1acdd7ec_mde_postcovid-state-s2-post-d1-count_nb-step-y_log1p-a0-tpanel batch 5/12 (reps 101-125): 1300 rows
+[2026-08-20 02:18:16]   S4e1acdd7ec_mde_postcovid-state-s2-post-d1-count_nb-step-y_log1p-a0-tpanel batch 6/12 (reps 126-150): 1300 rows
+[2026-08-20 02:18:42]   S4e1acdd7ec_mde_postcovid-state-s2-post-d1-count_nb-step-y_log1p-a0-tpanel batch 7/12 (reps 151-175): 1300 rows
+[2026-08-20 02:19:04]   S4e1acdd7ec_mde_postcovid-state-s2-post-d1-count_nb-step-y_log1p-a0-tpanel batch 8/12 (reps 176-200): 1300 rows
+[2026-08-20 02:19:29]   S4e1acdd7ec_mde_postcovid-state-s2-post-d1-count_nb-step-y_log1p-a0-tpanel batch 9/12 (reps 201-225): 1300 rows
+[2026-08-20 02:19:50]   S4e1acdd7ec_mde_postcovid-state-s2-post-d1-count_nb-step-y_log1p-a0-tpanel batch 10/12 (reps 226-250): 1300 rows
+[2026-08-20 02:20:14]   S4e1acdd7ec_mde_postcovid-state-s2-post-d1-count_nb-step-y_log1p-a0-tpanel batch 11/12 (reps 251-275): 1300 rows
+[2026-08-20 02:20:37]   S4e1acdd7ec_mde_postcovid-state-s2-post-d1-count_nb-step-y_log1p-a0-tpanel batch 12/12 (reps 276-300): 1300 rows
+[2026-08-20 02:20:37] S4e1acdd7ec_mde_postcovid-state-s2-post-d1-count_nb-step-y_log1p-a0-tpanel END (15600 rows -> S4e1acdd7ec_mde_postcovid-state-s2-post-d1-count_nb-step-y_log1p-a0-tpanel.csv)
+[2026-08-20 02:20:37] summarizing 31200 result rows
+[2026-08-20 02:20:38] DONE: 31200 rows, 0 failure rows -> /Users/bb1806/Documents/GitHub Doc/Gambling-and-Eviction/output_blinded_power/lpdid_mde_fixedpanel

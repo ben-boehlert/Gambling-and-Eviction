@@ -1,0 +1,1 @@
+estimator,inference,estimand,event_time,att,se,p,ci_lo,ci_hi,n_treated_clusters,n_control_clusters,converged,error_msg,runtime_s,truth,scenario_id,scenario_index,name,level,sample,covid,treat_def,design,mechanism,shape,outcome,est_anticipation,loader_anticipation,control_group,quarterly,time_agg,complete_periods_only,template,rep,delta,seed_rep

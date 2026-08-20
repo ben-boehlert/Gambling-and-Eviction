@@ -18,14 +18,31 @@
 
 run_name: primary
 
+# 2026-08-13 revision (mirrors power_cheap.yml, 2026-08-10 decisions):
+#   1. S3 sample blocks removed — D1 cohort-preserving reassignment is
+#      structurally infeasible on the never-treated sample (see CLAUDE.md
+#      "S3 x D1 infeasibility"); the never-treated comparison belongs to
+#      design D4 (sensitivity alt_designs). Scenario count 11 -> 9; update
+#      run_primary.slurm --array to match.
+#   2. template: panel — the national template is deterministically
+#      unplaceable on the county panel; the panel template matches the design
+#      the real estimation identifies (power_smoke.yml note, 2026-08-10).
+# NOTE: primary partials on Della from job 12114571 (2026-08-08) predate the
+# legalization-schedule repair (2be0bd0, 2026-08-10) and MUST be deleted
+# before resubmission — scenario hashes do not encode the data, so resume
+# would otherwise skip them as complete.
+
 # ---- Top-level defaults (inherited by every block) --------------------------
 
 level:      county             # county outcomes are the primary unit (§2)
-sample:     [S2, S3]           # state-specific risk set + never-treated (§7)
+sample:     [S2]               # per-state risk set; S3 removed (see header)
 covid:      drop               # drop the COVID window (config default dates)
 treat_def:  online_start_date  # T1 primary treatment definition (§3)
 
 designs:      [D1]             # cohort-preserving reassignment, primary (§8)
+
+# Panel-restricted cohort template — see power_smoke.yml note (2026-08-10).
+template:   panel
 mechanisms:   [count_nb, deterministic]  # M1 primary + M2 benchmark (§9)
 shapes:       [step, ramp, delayed]      # constant/maturation/delayed (§9)
 outcomes:     [y_log1p]        # Y1 primary transform (§6)
@@ -63,11 +80,11 @@ anticipation_months: 6         # loader-side blindness exclusion default (§4)
 
 scenarios:
 
-  # 1-2. HEADLINE: county panel, NB count augmentation, constant step, both
-  # calibration samples reported side-by-side (§7 comparison discipline).
+  # 1. HEADLINE: county panel, NB count augmentation, constant step.
+  # (S3 arm removed — see header; never-treated comparison lives in D4.)
   - name: headline_county_nb_step
     level: county
-    sample: [S2, S3]
+    sample: [S2]
     mechanisms: [count_nb]
     shapes: [step]
 
@@ -96,11 +113,11 @@ scenarios:
     shapes: [step]
     anticipation: [6]
 
-  # 7-8. State-aggregate comparison of the headline (secondary outcome unit,
+  # State-aggregate comparison of the headline (secondary outcome unit,
   # §2): quantifies what county disaggregation buys per §12.
   - name: state_nb_step
     level: state
-    sample: [S2, S3]
+    sample: [S2]
     mechanisms: [count_nb]
     shapes: [step]
 
