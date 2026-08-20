@@ -201,9 +201,13 @@ impose_effect <- function(panel, schedule,
   set.seed(seed)
 
   # Join the pseudo-treatment schedule (states not present -> never treated).
+  keep_cols <- intersect(c("state_abb", "pseudo_g", "pseudo_launch"),
+                         names(schedule))
   sched <- schedule %>%
-    distinct(.data$state_abb, .data$pseudo_g) %>%
+    distinct(dplyr::across(dplyr::all_of(keep_cols))) %>%
     mutate(pseudo_g = as.Date(.data$pseudo_g))
+  if ("pseudo_launch" %in% keep_cols)
+    sched$pseudo_launch <- as.Date(sched$pseudo_launch)
   out <- panel %>% left_join(sched, by = "state_abb")
 
   out$e <- .ie_event_time(out$month_date, out$pseudo_g)

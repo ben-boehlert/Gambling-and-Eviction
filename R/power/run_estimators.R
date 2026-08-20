@@ -999,12 +999,21 @@ run_estimator <- function(panel_sim,
     Y <- matrix(NA_real_, length(units), M)
     Y[cbind(match(as.character(d$unit_id), units), d$m - m_min + 1L)] <- d$y_sim
 
-    gtab <- d[!duplicated(d$unit_id),
-              c("unit_id", "state_abb", "pseudo_g"), drop = FALSE]
+    gcols <- intersect(c("unit_id", "state_abb", "pseudo_g", "pseudo_launch"),
+                       names(d))
+    gtab <- d[!duplicated(d$unit_id), gcols, drop = FALSE]
     ord  <- match(units, as.character(gtab$unit_id))
     st   <- as.character(gtab$state_abb)[ord]
     gm   <- ifelse(is.na(gtab$pseudo_g[ord]), NA_integer_,
                    m_of(gtab$pseudo_g[ord]) - m_min + 1L)
+    # HYBRID CONTROL CODING: control eligibility is gated on the LAUNCH month
+    # (pseudo_launch) when the schedule provides one; a pseudo-launched but
+    # not-yet-mature state is dirty, not a control. Falls back to the event
+    # month (historical behavior) when absent.
+    lm <- if ("pseudo_launch" %in% gcols) {
+      ifelse(is.na(gtab$pseudo_launch[ord]), NA_integer_,
+             m_of(gtab$pseudo_launch[ord]) - m_min + 1L)
+    } else gm
 
     # Baseline per base period: mean of the PMD months ending at t-1; NA if
     # any of them is absent (no na.rm — that is the gap guard).
@@ -1020,7 +1029,7 @@ run_estimator <- function(panel_sim,
         far <- tt + h
         dy  <- Y[, far] - B[, tt]
         sw  <- !is.na(gm) & gm == tt
-        ctl <- is.na(gm) | gm > far
+        ctl <- is.na(lm) | lm > far
         keep <- (sw | ctl) & is.finite(dy)
         if (!any(keep & sw) || !any(keep & ctl)) next
         k <- k + 1L

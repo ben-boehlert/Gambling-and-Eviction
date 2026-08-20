@@ -1325,6 +1325,46 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
           min_post = sc$min_post, seed = seed_rep, template = sc$template
         ),
         error = function(e) e)
+      # HYBRID CONTROL CODING (2026-08-20): under a redated treat_def
+      # (maturation/ramp75), each pseudo EVENT date corresponds to a template
+      # cohort whose real launch preceded it by a known lag. D1 places the
+      # template as anchor + cohort OFFSETS (make_pseudo_schedules.R
+      # place_template), so calendar dates shift but cohort RANK and SPACING
+      # are preserved -- the lag must therefore be attached by rank, not by
+      # date (a date match fails for every shifted placement). Estimators can
+      # then gate CONTROL eligibility on live gambling (pseudo_launch) rather
+      # than market maturity (mirrors lpdid_statepanel.R hybrid coding).
+      if (!inherits(sched, "condition") &&
+          !sc$treat_def %in% c("online_start_date", "first_start_date") &&
+          all(c("online_start_date", sc$treat_def, "state")
+              %in% names(real_schedule))) {
+        rs <- real_schedule
+        rs$._ev <- as.Date(rs[[sc$treat_def]])
+        rs$._on <- as.Date(rs$online_start_date)
+        rs$._ab <- c(state.abb, "DC")[match(rs$state,
+                                            c(state.name,
+                                              "District of Columbia"))]
+        rs <- rs[!is.na(rs$._ev) & !is.na(rs$._on), , drop = FALSE]
+        if (identical(sc$template, "panel")) {
+          rs <- rs[rs$._ab %in% unique(panel$state_abb), , drop = FALSE]
+        }
+        if (nrow(rs) > 0L) {
+          rs$._lag <- as.integer(round(as.numeric(
+            difftime(rs$._ev, rs$._on, units = "days")) / 30.44))
+          coh <- stats::aggregate(._lag ~ ._ev, data = rs, FUN = stats::median)
+          coh <- coh[order(coh$._ev), , drop = FALSE]
+          pd  <- sort(unique(as.Date(sched$pseudo_g)))
+          spacing_ok <- length(pd) == nrow(coh) &&
+            isTRUE(all(diff(.month_index(pd)) ==
+                         diff(.month_index(coh$._ev))))
+          lag_vec <- if (spacing_ok) as.integer(coh$._lag) else
+            rep(as.integer(stats::median(coh$._lag)), length(pd))
+          lag_by_date <- stats::setNames(pmax(lag_vec, 0L), as.character(pd))
+          sched$pseudo_launch <- as.Date(sched$pseudo_g) %m-%
+            months(lag_by_date[as.character(as.Date(sched$pseudo_g))])
+          attr(sched, "launch_lag_rank_matched") <- spacing_ok
+        }
+      }
       if (inherits(sched, "condition")) {
         msg <- paste0("schedule generation failed: ", conditionMessage(sched))
         out <- list()

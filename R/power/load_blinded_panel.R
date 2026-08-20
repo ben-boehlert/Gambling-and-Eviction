@@ -126,7 +126,10 @@ load_blinded_panel <- function(level = c("county", "state"),
                                              # maturation50_schedule.csv);
                                              # blindness cutoffs still use
                                              # first_start_date regardless.
-                                             "maturation50_start_date"),
+                                             "maturation50_start_date",
+                                             # handle reaches 75% of ramp
+                                             # (data/processed/ramp75_schedule.csv)
+                                             "ramp75_start_date"),
                                anticipation = 6L,
                                sample = c("S1", "S2", "S3"),
                                covid = c("drop", "pre", "covid", "post", "keep"),
