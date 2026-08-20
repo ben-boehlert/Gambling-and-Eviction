@@ -4,74 +4,74 @@ n_straddling counts observations whose [t-PMD, t+h] window spans the dropped
 COVID months. Those comparisons difference across the pandemic.
 
  side event_time     att     se p_analytic p_wild n_obs n_switchers
-  pre        -12 -0.0751 0.0810     0.3631 0.4613   179          10
-  pre        -11 -0.0033 0.0612     0.9576 0.9671   179          10
-  pre        -10 -0.0414 0.0457     0.3729 0.3535   179          10
-  pre         -9 -0.0443 0.0604     0.4702 0.4888   179          10
-  pre         -8 -0.0191 0.0637     0.7665 0.7789   179          10
-  pre         -7  0.0142 0.0458     0.7592 0.7571   179          10
-  pre         -6 -0.0015 0.0406     0.9699 0.9723   179          10
-  pre         -5  0.0404 0.0427     0.3526 0.4056   201          11
-  pre         -4 -0.0142 0.0397     0.7228 0.7327   201          11
-  pre         -3  0.0022 0.0194     0.9126 0.9117   224          12
-  pre         -2  0.0165 0.0162     0.3194 0.2948   224          12
+  pre        -12 -0.0759 0.0906     0.4103 0.5340   147          10
+  pre        -11 -0.0142 0.0678     0.8362 0.9158   147          10
+  pre        -10 -0.0454 0.0508     0.3797 0.3694   147          10
+  pre         -9 -0.0423 0.0640     0.5143 0.5518   147          10
+  pre         -8 -0.0264 0.0701     0.7102 0.7320   147          10
+  pre         -7  0.0025 0.0476     0.9584 0.9579   147          10
+  pre         -6 -0.0068 0.0464     0.8849 0.8796   147          10
+  pre         -5  0.0299 0.0441     0.5042 0.5336   167          11
+  pre         -4 -0.0210 0.0438     0.6360 0.6469   167          11
+  pre         -3 -0.0037 0.0202     0.8550 0.8559   187          12
+  pre         -2  0.0198 0.0155     0.2123 0.1761   187          12
   pre         -1  0.0000 0.0000         NA     NA    NA          NA
- post          0  0.0079 0.0173     0.6538 0.5510   224          12
- post          1  0.0525 0.0242     0.0394 0.0264   209          11
- post          2  0.0297 0.0526     0.5770 0.6083   192          10
- post          3  0.0420 0.0522     0.4286 0.4349   191          10
- post          4  0.0312 0.0620     0.6197 0.6336   177           9
- post          5  0.0062 0.0680     0.9283 0.9394   176           9
- post          6  0.0510 0.0996     0.6131 0.8226   174           9
- post          7  0.0943 0.1366     0.4973 0.6589   148           8
- post          8  0.1272 0.1216     0.3070 0.4424   145           8
- post          9  0.1427 0.1245     0.2640 0.3721   144           8
- post         10  0.1317 0.1181     0.2771 0.3987   140           8
- post         11  0.1324 0.1182     0.2748 0.3828   137           8
- post         12  0.1658 0.1225     0.1897 0.2186   121           7
- post         13  0.1842 0.0974     0.0720 0.0317   119           7
- post         14  0.2321 0.1244     0.0753 0.0832   103           6
- post         15  0.1984 0.1198     0.1119 0.1549   101           6
- post         16  0.1660 0.1554     0.2970 0.4535    86           5
- post         17  0.1619 0.1452     0.2770 0.4739    86           5
- post         18  0.1780 0.1492     0.2456 0.4033    85           5
+ post          0  0.0099 0.0214     0.6484 0.5703   187          12
+ post          1  0.0543 0.0290     0.0734 0.0672   175          11
+ post          2  0.0388 0.0553     0.4901 0.5287   158          10
+ post          3  0.0430 0.0561     0.4513 0.4524   156          10
+ post          4  0.0178 0.0607     0.7724 0.7772   141           9
+ post          5  0.0028 0.0714     0.9691 0.9794   141           9
+ post          6  0.0564 0.1077     0.6057 0.8742   139           9
+ post          7  0.1057 0.1508     0.4908 0.7413   115           8
+ post          8  0.1471 0.1302     0.2707 0.3896   113           8
+ post          9  0.1620 0.1375     0.2512 0.3530   112           8
+ post         10  0.1372 0.1288     0.2981 0.4422   108           8
+ post         11  0.1280 0.1288     0.3311 0.5071   107           8
+ post         12  0.1619 0.1261     0.2128 0.2893    93           7
+ post         13  0.1761 0.0999     0.0918 0.0561    92           7
+ post         14  0.2479 0.1373     0.0861 0.1141    79           6
+ post         15  0.2025 0.1314     0.1390 0.1940    76           6
+ post         16  0.1619 0.1731     0.3614 0.5685    64           5
+ post         17  0.1697 0.1624     0.3091 0.6170    63           5
+ post         18  0.1962 0.1627     0.2425 0.4198    62           5
  n_clean_controls n_straddling
-              169            0
-              169            0
-              169            0
-              169            0
-              169            0
-              169            0
-              169            0
-              190            0
-              190            0
-              212            0
-              212            0
-               NA           NA
-              212            0
-              198            0
-              182            0
-              181            0
-              168            0
-              167            0
-              165            0
-              140            0
               137            0
-              136            0
+              137            0
+              137            0
+              137            0
+              137            0
+              137            0
+              137            0
+              156            0
+              156            0
+              175            0
+              175            0
+               NA           NA
+              175            0
+              164            0
+              148            0
+              146            0
               132            0
-              129            0
-              114            0
-              112            0
-               97            0
-               95            0
-               81            0
-               81            0
-               80            0
+              132            0
+              130            0
+              107            0
+              105            0
+              104            0
+              100            0
+               99            0
+               86            0
+               85            0
+               73            0
+               70            0
+               59            0
+               58            0
+               57            0
 
 === POOLED POST-TREATMENT ATT (horizons 0..18) ===
-    att    se p_analytic p_wild n_obs n_straddling
- 0.0945 0.083     0.2653  0.397  2758            0
-In filings terms: 9.92% (95% CI -6.58% to 29.32%) 
+    att     se p_analytic p_wild n_obs n_straddling
+ 0.0962 0.0876     0.2832 0.4465  2181            0
+In filings terms: 10.1% (95% CI -7.28% to 30.73%) 
 
 === POOLED EFFECTS BY HORIZON WINDOW AND COHORT ERA ===
 Buildup window per NY Fed SR 1184: report only h >= 12 so markets have
@@ -79,20 +79,20 @@ ramped. Era = switch-month cohort; the two eras are disjoint experiments.
 pct = effect in filings terms, exp(att) - 1.
 
              window  era h_lo h_hi     att     se p_analytic p_wild   pct
-        full_pooled  all    0   18  0.0945 0.0830     0.2653 0.3950  9.92
-    buildup_e12plus  all   12   18  0.1844 0.1235     0.1496 0.1584 20.25
-  pre_covid_cohorts  pre    0   18 -0.0416 0.0093     0.0001 0.4355 -4.08
- post_covid_cohorts post    0   18  0.1042 0.0884     0.2512 0.3782 10.98
+        full_pooled  all    0   18  0.0962 0.0876     0.2832 0.4476 10.10
+    buildup_e12plus  all   12   18  0.1880 0.1316     0.1672 0.1978 20.68
+  pre_covid_cohorts  pre    0   18 -0.0423 0.0098     0.0002 0.4178 -4.14
+ post_covid_cohorts post    0   18  0.1079 0.0941     0.2640 0.4110 11.39
         buildup_pre  pre   12   18      NA     NA         NA     NA    NA
-       buildup_post post   12   18  0.1844 0.1235     0.1496 0.1693 20.25
+       buildup_post post   12   18  0.1880 0.1316     0.1672 0.1919 20.68
  n_switch_states n_control_states n_cells                               note
-              12               25     151                               <NA>
-               7               19      41                               <NA>
-               1               25       7                               <NA>
-              11               22     144                               <NA>
+              12               24     151                               <NA>
+               7               16      41                               <NA>
+               1               24       7                               <NA>
+              11               19     144                               <NA>
                0               NA      NA no switch cells in this era/window
-               7               19      41                               <NA>
-=== JOINT PRE-TREND TEST (event time < -1) ===11 pre-period coefficients, 26 state clustersWald (full cross-horizon covariance, state-clustered) = 12.877p, wild cluster bootstrap (HEADLINE) = 0.9405p, F(11, 25)                        = 0.3545p, chi-sq(11)                          = 0.3015[superseded] naive sum(z^2), independence assumed = 0.9537stacking check: max |stacked coef - per-horizon ATT| = 2.78e-17  The naive statistic assumed independent horizons. Every horizon shares
+               7               16      41                               <NA>
+=== JOINT PRE-TREND TEST (event time < -1) ===11 pre-period coefficients, 25 state clustersWald (full cross-horizon covariance, state-clustered) = 8.006p, wild cluster bootstrap (HEADLINE) = 0.983p, F(11, 24)                        = 0.7022p, chi-sq(11)                          = 0.7127[superseded] naive sum(z^2), independence assumed = 0.9523stacking check: max |stacked coef - per-horizon ATT| = 8.33e-17  The naive statistic assumed independent horizons. Every horizon shares
   the same baseline (build_h: base does not depend on h), so they are
   positively correlated and the naive test over-rejects. Do not cite it.
 
@@ -101,22 +101,22 @@ The clean-control pool shrinks as the horizon grows; this is the binding
 constraint on how far out LP-DiD can look with only 9 never-treated states.
 
  event_time n_switchers n_clean_controls n_straddling
-          0          12              212            0
-          1          11              198            0
-          2          10              182            0
-          3          10              181            0
-          4           9              168            0
-          5           9              167            0
-          6           9              165            0
-          7           8              140            0
-          8           8              137            0
-          9           8              136            0
-         10           8              132            0
-         11           8              129            0
-         12           7              114            0
-         13           7              112            0
-         14           6               97            0
-         15           6               95            0
-         16           5               81            0
-         17           5               81            0
-         18           5               80            0
+          0          12              175            0
+          1          11              164            0
+          2          10              148            0
+          3          10              146            0
+          4           9              132            0
+          5           9              132            0
+          6           9              130            0
+          7           8              107            0
+          8           8              105            0
+          9           8              104            0
+         10           8              100            0
+         11           8               99            0
+         12           7               86            0
+         13           7               85            0
+         14           6               73            0
+         15           6               70            0
+         16           5               59            0
+         17           5               58            0
+         18           5               57            0

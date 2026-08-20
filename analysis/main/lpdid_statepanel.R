@@ -115,7 +115,15 @@ treat_tbl <- tibble(state_abb = sort(unique(p$state_abb))) %>%
            # in the control pool (dirty-window contamination).
            TREAT_DEF == "shift12" ~ treat_start %m+% months(12L),
            TRUE                   ~ treat_start),
-         g = ifelse(is.na(treat_date), NA_integer_, ym_index(treat_date)))
+         # HYBRID CONTROL CODING (2026-08-20). Two dates, two roles:
+         #   g        (event date, ramp75/shift12/raw) times the SWITCH;
+         #   g_launch (actual online launch)           gates CONTROL status.
+         # Under redated specs a launched-but-not-yet-mature state is neither
+         # a valid switcher nor a valid counterfactual: it is DIRTY and must
+         # be excluded, not pooled with the controls. Under raw dating the two
+         # dates coincide and behavior is unchanged (regression-checked).
+         g        = ifelse(is.na(treat_date),  NA_integer_, ym_index(treat_date)),
+         g_launch = ifelse(is.na(treat_start), NA_integer_, ym_index(treat_start)))
 
 panel <- p %>% left_join(treat_tbl %>% select(state_abb, g), by = "state_abb")
 t_max <- max(panel$t)
@@ -159,12 +167,18 @@ build_h <- function(h, side = c("post", "pre")) {
   rows <- map_dfr(states, function(s) {
     g_s <- treat_tbl$g[treat_tbl$state_abb == s]
     g_s <- if (length(g_s) == 0 || is.na(g_s) || g_s > t_max) NA_integer_ else g_s
+    # launch date gates control eligibility; a launch beyond the panel never
+    # contaminates the sample window, so it stays NA (= control-eligible).
+    g_l <- treat_tbl$g_launch[treat_tbl$state_abb == s]
+    g_l <- if (length(g_l) == 0 || is.na(g_l) || g_l > t_max) NA_integer_ else g_l
     map_dfr(t_grid, function(tt) {
-      # switcher: this unit becomes treated exactly at t
+      # switcher: this unit's EVENT (maturity/shifted/launch date) is exactly t
       is_switch <- !is.na(g_s) && g_s == tt
-      # clean control: never treated, or not yet treated at the far end
       far <- if (side == "post") tt + h else tt - h
-      is_clean_ctrl <- is.na(g_s) || g_s > max(tt, far)
+      # clean control: no LIVE GAMBLING through the far end of the window.
+      # Judged by launch, not by the event date -- a live-but-immature market
+      # is dirty, excluded from the cell entirely.
+      is_clean_ctrl <- is.na(g_l) || g_l > max(tt, far)
       if (!is_switch && !is_clean_ctrl) return(NULL)
 
       base <- baseline_at(s, tt)
