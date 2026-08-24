@@ -119,7 +119,7 @@ test_that("returned columns match the fixed schema exactly", {
   inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",
                        shape = "step", delta = TRUTH, outcome = "y_log1p",
                        seed = 1L)
-  for (est in c("twfe", "did2s", "sunab", "cs")) {
+  for (est in c("twfe", "did2s", "sunab", "cs", "ldam")) {
     res <- run_estimator(inj, est)
     expect_identical(names(res), .RE_SCHEMA, info = est)
   }
@@ -180,4 +180,129 @@ test_that("longdiff failure is logged, not thrown (no never-treated controls)", 
   res <- expect_no_error(run_estimator(inj, "longdiff"))
   expect_gt(nrow(res), 0L)
   expect_true(any(!res$converged))
+})
+
+test_that("ldam recovers a known constant effect and returns both arms", {
+  toy <- build_toy_est(seed = 104L)
+  inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",
+                       shape = "step", delta = TRUTH, outcome = "y_log1p",
+                       seed = 1L)
+  ld <- run_estimator(inj, "ldam")
+  expect_identical(names(ld), .RE_SCHEMA)
+  ra <- ld[ld$inference == "analytic" & ld$estimand == "simple", ]
+  rj <- ld[ld$inference == "jack" & ld$estimand == "simple", ]
+  expect_true(ra$converged)
+  expect_true(rj$converged)
+  # same profiled point estimate on both rows; jack only changes the SE.
+  expect_identical(ra$att, rj$att)
+  expect_true(is.finite(ra$se) && ra$se > 0)
+  # Recovery is judged against the jack arm: the analytic SE conditions on
+  # theta-hat inside the lag adjustment and understates the sampling spread
+  # on this unit-FE toy (sampling SD ~0.08 across seeds vs analytic SE
+  # ~0.02) — which is what the blinded size gate exists to measure, not a
+  # unit-test failure. The jack arm resamples the full profiled NLS.
+  expect_lt(abs(rj$att - TRUTH), max(3 * rj$se, 0.03))
+})
+
+test_that("ldam failure is logged, not thrown (treatment constant after lag)", {
+  # Every state treated from month 1: A_it = 1 on every row that has a lag,
+  # so the treatment indicator is constant and theta is unidentified.
+  toy <- build_toy_est(seed = 301L,
+                       treat = setNames(rep(1L, 10L), sprintf("S%02d", 1:10)))
+  inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",
+                       shape = "step", delta = TRUTH, outcome = "y_log1p",
+                       seed = 1L)
+  res <- expect_no_error(run_estimator(inj, "ldam"))
+  expect_identical(names(res), .RE_SCHEMA)
+  expect_true(all(!res$converged))
+  expect_true(all(!is.na(res$error_msg)))
+})
+
+# ---- LP-DiD cell weighting (corrected 2026-08-24) ----------------------------
+# Frisch-Waugh-Lovell: a cell-FE regression of dy on D contributes each cell's
+# own DiD beta_c with weight  w_c * N_c * Var_c(D). The three schemes therefore
+# target three different convex combinations. This fixture makes the three
+# targets numerically distinct by varying the treated share across cells, and
+# is noiseless so each cell's DiD is exactly its assigned beta.
+.lpdid_w_fixture <- function() {
+  mk <- function(cell, n_tr, n_ct, b) {
+    data.frame(cell = cell, D = c(rep(1L, n_tr), rep(0L, n_ct)), b = b,
+               stringsAsFactors = FALSE)
+  }
+  d <- rbind(mk("c1", 1L, 20L, 1), mk("c2", 6L,  6L, 2),
+             mk("c3", 2L, 10L, 3), mk("c4", 4L,  4L, 4))
+  d$dy   <- d$b * d$D
+  d$cell <- factor(d$cell)
+  d
+}
+
+test_that(".re_lpdid_weights: each scheme hits its closed-form estimand", {
+  d <- .lpdid_w_fixture()
+  agg <- stats::aggregate(cbind(N = rep(1, nrow(d)), Ntr = d$D) ~ cell + b, d, sum)
+  p   <- agg$Ntr / agg$N
+  target_vwatt    <- weighted.mean(agg$b, agg$N * p * (1 - p))
+  target_cellsize <- weighted.mean(agg$b, agg$N)
+  target_ewatt    <- weighted.mean(agg$b, agg$Ntr)
+
+  # the fixture must actually discriminate, else the test proves nothing
+  expect_gt(abs(target_ewatt - target_cellsize), 0.1)
+  expect_gt(abs(target_ewatt - target_vwatt), 0.05)
+
+  fit <- function(scheme) {
+    d$rw <- .re_lpdid_weights(d$D, d$cell, scheme)
+    as.numeric(stats::coef(fixest::feols(dy ~ D | cell, data = d,
+                                         weights = ~rw, warn = FALSE,
+                                         notes = FALSE))["D"])
+  }
+  expect_equal(fit("ewatt"),    target_ewatt,    tolerance = 1e-10)
+  expect_equal(fit("cellsize"), target_cellsize, tolerance = 1e-10)
+  expect_equal(fit("vwatt"),    target_vwatt,    tolerance = 1e-10)
+})
+
+test_that(".re_lpdid_weights: vwatt is unweighted OLS, and ewatt is not cellsize", {
+  d <- .lpdid_w_fixture()
+  ols <- as.numeric(stats::coef(fixest::feols(dy ~ D | cell, data = d,
+                                              warn = FALSE, notes = FALSE))["D"])
+  d$rw <- .re_lpdid_weights(d$D, d$cell, "vwatt")
+  wls <- as.numeric(stats::coef(fixest::feols(dy ~ D | cell, data = d,
+                                              weights = ~rw, warn = FALSE,
+                                              notes = FALSE))["D"])
+  expect_equal(wls, ols, tolerance = 1e-12)
+  expect_false(isTRUE(all.equal(.re_lpdid_weights(d$D, d$cell, "ewatt"),
+                                .re_lpdid_weights(d$D, d$cell, "cellsize"))))
+})
+
+test_that("lpdid honors lpdid_weights and lpdid_pmd end to end", {
+  # Low noise and six cohorts: with a HOMOGENEOUS delta every weighting scheme
+  # targets the same number, so this test checks that the knobs are wired and
+  # that each scheme is unbiased -- NOT that they differ materially. They can
+  # only differ materially under cohort heterogeneity, which is what the
+  # closed-form .re_lpdid_weights tests above cover.
+  toy <- build_toy_est(seed = 321L, n_states = 16L, n_months = 60L,
+                       treat = c(S02 = 20L, S04 = 24L, S06 = 28L,
+                                 S08 = 32L, S10 = 36L, S12 = 40L),
+                       noise_sd = 0.02)
+  inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",
+                       shape = "step", delta = TRUTH, outcome = "y_log1p",
+                       seed = 7L)
+  run1 <- function(sp) {
+    r <- run_estimator(inj, estimator = "lpdid", spec = sp)
+    r$att[r$inference == "analytic"][1]
+  }
+  a_ewatt    <- run1(list(lpdid_weights = "ewatt"))
+  a_cellsize <- run1(list(lpdid_weights = "cellsize"))
+  a_vwatt    <- run1(list(lpdid_weights = "vwatt"))
+  a_pmd1     <- run1(list(lpdid_weights = "ewatt", lpdid_pmd = 1L))
+
+  for (a in list(a_ewatt, a_cellsize, a_vwatt, a_pmd1)) {
+    expect_true(is.finite(a))
+    expect_equal(a, TRUTH, tolerance = 0.02)
+  }
+  # the knobs are live: each names a distinct estimator, not an alias
+  expect_false(isTRUE(all.equal(a_ewatt, a_cellsize)))
+  expect_false(isTRUE(all.equal(a_ewatt, a_vwatt)))
+  expect_false(isTRUE(all.equal(a_ewatt, a_pmd1)))
+
+  # the default is the corrected EWATT scheme, not the pre-2026-08-24 one
+  expect_equal(run1(list()), a_ewatt, tolerance = 1e-12)
 })

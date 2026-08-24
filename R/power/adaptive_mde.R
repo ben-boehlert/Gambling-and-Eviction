@@ -634,7 +634,9 @@ run_adaptive_mde <- function(config_path, run_name = NULL, workers = NULL,
                    lpdid_wild     = isTRUE(sc$lpdid_wild %||% FALSE),
                    lpdid_anchor   = as.character(sc$lpdid_anchor %||% "event"),
                    lpdid_hmin     = as.integer(sc$lpdid_hmin %||% 0L),
-                   lpdid_post     = as.integer(sc$lpdid_post %||% 12L))
+                   lpdid_post     = as.integer(sc$lpdid_post %||% 12L),
+                   lpdid_pmd      = as.integer(sc$lpdid_pmd %||% 3L),
+                   lpdid_weights  = as.character(sc$lpdid_weights %||% "ewatt"))
       out <- list()
       for (est in sc$estimators) {
         if (rep > est_reps[[est]]) next

@@ -977,14 +977,47 @@ run_estimator <- function(panel_sim,
 
 # ------------------------------ LP-DiD (E5) -----------------------------------
 #
-# Dube, Girardi, Jorda & Taylor (2023, NBER w31184), pooled EWATT:
+# Dube, Girardi, Jorda & Taylor (2023, NBER w31184 / FRBSF WP 2023-12; JAE
+# 2025), pooled over horizons:
 #
 #   D_h y_it = y_{i,t+h} - mean(y_{i,t-PMD..t-1})   h = lpdid_hmin..lpdid_post
 #   sample:    switchers at t  +  units untreated through t+h (clean controls)
-#   feols(dy ~ D_treat | cell, weights = 1/Var_cell(D-resid), cluster = state)
+#   feols(dy ~ D_treat | cell, weights = rw, cluster = state)
 #
-# where cell = (base period t) x (horizon h). Reweighting converts the OLS
-# variance-weighted estimand into the equally-weighted ATT (paper section 3.3).
+# where cell = (base period t) x (horizon h).
+#
+# WEIGHTING (spec$lpdid_weights; CORRECTED 2026-08-24). By FWL, a cell-FE
+# regression of dy on D contributes each cell's own DiD beta_c with weight
+# w_c * N_c * Var_c(D), where Var_c(D) = Dbar_c (1 - Dbar_c). Writing N_tr,c
+# for the switchers in a cell:
+#
+#   w_c = 1              -> cell weight  N_c Var_c(D)  VWATT (paper 2.5.1;
+#                           numerically the Cengiz et al. 2019 stacked reg)
+#   w_c = 1/(1 - Dbar_c) -> cell weight  N_tr,c        EWATT (paper 2.5.2:
+#                           weight 1/(omega_g,h / N_g), and omega/N_g is the
+#                           D-residual of a TREATED unit, i.e. 1 - Dbar_c)
+#   w_c = 1/Var_c(D)     -> cell weight  N_c           NEITHER
+#
+# Until 2026-08-24 this function used 1/Var_c(D) while its comment and the
+# config knobs called the result EWATT. That weights each cell by its TOTAL
+# size (switchers + surviving clean controls), so it over-weights early
+# cohorts and short horizons, where the clean-control pool is largest. It is
+# still a convex combination of cell-specific DiDs -- unbiased under parallel
+# trends -- but it is a third estimand, and NOT the one the paper proves
+# numerically equal to Callaway & Sant'Anna. "cellsize" reproduces it exactly
+# for paired comparison against pre-fix partials; do not make it the default.
+#
+# BASE PERIOD (spec$lpdid_pmd, default 3). The paper's CS equivalence holds
+# only for FIRST-LAG differencing (pmd = 1) at h >= 0, without covariates,
+# with binary absorbing treatment, and using only not-yet-treated controls
+# (their footnote 23). With pmd > 1 this is the pre-mean-differenced variant,
+# which the paper places near the Borusyak-Jaravel-Spiess imputation estimator
+# instead. pmd = 1 + lpdid_weights = ewatt is therefore the arm that should
+# track CS's point estimate; no other setting should be expected to. The
+# equivalence is over POINT ESTIMATES only -- CS's analytic influence-function
+# SE and multiplier bootstrap are different objects from this regression's
+# cluster-robust SE, which is why the two can land on opposite sides of the
+# size gate.
 #
 # CELL ANCHOR (spec$lpdid_anchor, default "event" = historical). The schedule
 # can carry TWO dates per switcher: pseudo_launch (legalization) and pseudo_g
@@ -1031,6 +1064,32 @@ run_estimator <- function(panel_sim,
 # time-cell factor (~1-2k levels on the state panel; memory-unsafe on county
 # panels — the same failure mode as the fe-expansion OOM of Della job
 # 12223288). Enable only for state-level runs.
+#' Observation weights that select the LP-DiD estimand
+#'
+#' See the estimand block above for the FWL derivation. Every cell reaching
+#' this point has at least one switcher AND at least one clean control (the
+#' stack loop skips the rest), so Dbar lies strictly inside (0, 1) and neither
+#' denominator can vanish; the is.finite() guards are belt-and-braces.
+#'
+#' @param D Treatment indicator (0/1), one element per stacked observation.
+#' @param cell Cell key, same length as \code{D}.
+#' @param scheme "ewatt", "cellsize", or "vwatt".
+#' @return Numeric weight vector, same length as \code{D}.
+#' @keywords internal
+.re_lpdid_weights <- function(D, cell, scheme = "ewatt") {
+  scheme <- match.arg(scheme, c("ewatt", "cellsize", "vwatt"))
+  dbar <- as.numeric(tapply(as.numeric(D), cell,
+                            mean)[as.character(cell)])
+  switch(scheme,
+         ewatt    = as.numeric(ifelse(is.finite(dbar) & dbar < 1,
+                                      1 / (1 - dbar), NA_real_)),
+         cellsize = {
+           v <- dbar * (1 - dbar)
+           as.numeric(ifelse(is.finite(v) & v > 0, 1 / v, NA_real_))
+         },
+         vwatt    = rep(1, length(D)))
+}
+
 #' @keywords internal
 .re_lpdid <- function(panel_sim, sp, cl, df_cluster) {
   pmd  <- as.integer(sp$lpdid_pmd  %||% 3L)
@@ -1038,6 +1097,8 @@ run_estimator <- function(panel_sim,
   hmin <- as.integer(sp$lpdid_hmin %||% 0L)
   anchor <- match.arg(as.character(sp$lpdid_anchor %||% "event"),
                       c("event", "launch"))
+  wscheme <- match.arg(as.character(sp$lpdid_weights %||% "ewatt"),
+                       c("ewatt", "cellsize", "vwatt"))
   wild <- isTRUE(sp$lpdid_wild)
   z <- stats::qt(1 - sp$alpha / 2, df = max(1L, df_cluster))
 
@@ -1135,11 +1196,7 @@ run_estimator <- function(panel_sim,
 
   res <- tryCatch(suppressMessages(suppressWarnings({
     stack$cell <- factor(stack$cell)
-    aux <- fixest::feols(D_treat ~ 1 | cell, data = stack,
-                         warn = FALSE, notes = FALSE)
-    w  <- as.numeric(stats::residuals(aux))^2
-    wt <- as.numeric(tapply(w, stack$cell, mean)[as.character(stack$cell)])
-    stack$rw <- as.numeric(ifelse(is.finite(wt) & wt > 0, 1 / wt, NA_real_))
+    stack$rw <- .re_lpdid_weights(stack$D_treat, stack$cell, wscheme)
     stack <- stack[is.finite(stack$rw), , drop = FALSE]
     fit <- fixest::feols(dy ~ D_treat | cell, data = stack, weights = ~rw,
                          cluster = ~state_abb, warn = FALSE, notes = FALSE)

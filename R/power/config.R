@@ -148,6 +148,33 @@ read_power_config <- function(path = NULL) {
     # of pooled horizons starting a year after launch). Default 12 keeps
     # every existing run bit-identical.
     lpdid_post          = 12L,
+    # LP-DiD pre-mean-differencing window (run_estimators.R spec$lpdid_pmd):
+    # the base period is the mean of the k months ending at t-1. Default 3 =
+    # historical (it was hard-wired at the .re_lpdid default and never
+    # plumbed). k = 1 is FIRST-LAG differencing, the only setting under which
+    # the paper's numerical equivalence to Callaway & Sant'Anna holds; k > 1
+    # is the pre-mean-differenced variant, which sits near Borusyak-Jaravel-
+    # Spiess instead. Hashed into the scenario id only when non-default AND
+    # the scenario runs lpdid.
+    lpdid_pmd           = 3L,
+    # LP-DiD cell weighting (run_estimators.R spec$lpdid_weights):
+    #   "ewatt"    1/(1 - Dbar_cell) -- equally-weighted ATT, the paper's
+    #              reweighted LP-DiD (section 2.5.2). DEFAULT since the
+    #              2026-08-24 correction.
+    #   "cellsize" 1/Var_cell(D) -- what this framework actually ran before
+    #              2026-08-24 while calling it EWATT. Weights each cell by its
+    #              total size, so it is neither the paper's VWATT nor its
+    #              EWATT. Kept ONLY to reproduce pre-fix partials for paired
+    #              comparison.
+    #   "vwatt"    unweighted OLS -- the paper's variance-weighted LP-DiD,
+    #              numerically the Cengiz et al. (2019) stacked regression.
+    # NOTE the hashing rule for this key is INVERTED relative to every other
+    # conditional knob (see run_scenario_grid.R): the default is hashed and
+    # the legacy value is not, because here it is the DEFAULT whose behavior
+    # changed. That way new runs get new scenario ids and can never silently
+    # pool with a pre-fix partial, while `lpdid_weights: cellsize` still
+    # reproduces the old ids exactly.
+    lpdid_weights       = "ewatt",
     # Shift-mode shortcut (validated 2026-08-17: analysis/diagnostics/
     # validate_shift_sufficiency.R — every estimator here is linear in the
     # outcome, so a rep's delta=0 fit plus a fitted loading L_hat reproduces
@@ -211,6 +238,14 @@ read_power_config <- function(path = NULL) {
       cfg$lpdid_post < cfg$lpdid_hmin) {
     stop("lpdid_post must be a single integer >= lpdid_hmin.", call. = FALSE)
   }
+  cfg$lpdid_pmd <- suppressWarnings(as.integer(cfg$lpdid_pmd %||% 3L))
+  if (length(cfg$lpdid_pmd) != 1L || is.na(cfg$lpdid_pmd) ||
+      cfg$lpdid_pmd < 1L) {
+    stop("lpdid_pmd must be a single integer >= 1.", call. = FALSE)
+  }
+  cfg$lpdid_weights <- match.arg(
+    as.character(cfg$lpdid_weights %||% "ewatt"),
+    c("ewatt", "cellsize", "vwatt"))
 
   cfg$shift_mode <- isTRUE(as.logical(cfg$shift_mode %||% FALSE))
   # Left NULL when unset — the per-scenario 10%-of-n_reps default is computed

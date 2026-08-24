@@ -302,6 +302,23 @@ power_rep_seed <- function(base_seed, rep, scenario_offset) {
     hmx <- suppressWarnings(as.integer(g$lpdid_post[i] %||% 12L))
     if (length(hmx) != 1L || is.na(hmx)) hmx <- 12L
     if (hmx != 12L) id$lpdid_post <- hmx
+    # `lpdid_pmd` follows the usual rule: 3 was the hard-wired historical
+    # value, so it stays unhashed and existing partials keep their ids.
+    pmd <- suppressWarnings(as.integer(g$lpdid_pmd[i] %||% 3L))
+    if (length(pmd) != 1L || is.na(pmd)) pmd <- 3L
+    if (pmd != 3L) id$lpdid_pmd <- pmd
+    # `lpdid_weights` INVERTS the rule, deliberately. Every other conditional
+    # knob hashes its NON-default value because the default reproduces
+    # historical behavior. Here the default itself changed: before 2026-08-24
+    # this framework ran the "cellsize" weights (see the estimand block in
+    # run_estimators.R). Hashing the new default instead means a post-fix run
+    # lands on a NEW scenario id and can never silently pool with a pre-fix
+    # partial, while `lpdid_weights: cellsize` still reproduces the old id
+    # bit-for-bit for paired comparison. Same safe direction as `template`:
+    # a redundant re-run, never a silent pool of two different estimands.
+    wsc <- as.character(g$lpdid_weights[i] %||% "ewatt")
+    if (length(wsc) != 1L || is.na(wsc)) wsc <- "ewatt"
+    if (!identical(wsc, "cellsize")) id$lpdid_weights <- wsc
   }
   # `shift_mode` is hashed CONDITIONALLY, same principle as `template` /
   # `cs_safe_patches` above: FALSE reproduces pre-flag behavior bit-for-bit,
@@ -415,6 +432,10 @@ expand_scenario_grid <- function(cfg) {
                                      "event")
     g$lpdid_hmin <- as.integer(blk$lpdid_hmin %||% cfg$lpdid_hmin %||% 0L)
     g$lpdid_post <- as.integer(blk$lpdid_post %||% cfg$lpdid_post %||% 12L)
+    # LP-DiD base-period width and cell weighting; block may override.
+    g$lpdid_pmd <- as.integer(blk$lpdid_pmd %||% cfg$lpdid_pmd %||% 3L)
+    g$lpdid_weights <- as.character(blk$lpdid_weights %||% cfg$lpdid_weights %||%
+                                      "ewatt")
     # States dropped from the panel BEFORE schedule/template derivation —
     # neither treated-template members nor controls (dose-tercile
     # subdesigns, 2026-08-19). Block may override the run level.
@@ -1424,7 +1445,9 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
              lpdid_wild     = isTRUE(sc$lpdid_wild %||% FALSE),
              lpdid_anchor   = as.character(sc$lpdid_anchor %||% "event"),
              lpdid_hmin     = as.integer(sc$lpdid_hmin %||% 0L),
-             lpdid_post     = as.integer(sc$lpdid_post %||% 12L))
+             lpdid_post     = as.integer(sc$lpdid_post %||% 12L),
+             lpdid_pmd      = as.integer(sc$lpdid_pmd %||% 3L),
+             lpdid_weights  = as.character(sc$lpdid_weights %||% "ewatt"))
       }
 
       out <- list()

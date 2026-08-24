@@ -70,7 +70,16 @@ PMD             <- as.integer(getenv1("PMD",  "3"))     # pre-mean-difference ba
 DROP_STRADDLING <- toupper(getenv1("DROP_STRADDLING", "FALSE")) == "TRUE"
 BOOT_REPS       <- as.integer(getenv1("BOOT_REPS", "9999"))
 JOINT_SEED      <- as.integer(getenv1("JOINT_SEED", "20260820"))  # joint pre-trend bootstrap
-REWEIGHT        <- TRUE                                  # EWATT, not VWATT
+REWEIGHT        <- TRUE                                  # weight cells (see below)
+# Cell weighting scheme. CORRECTED 2026-08-24 -- this script previously used
+# 1/Var_cell(D) and called it EWATT; that weights each cell by its TOTAL size
+# (switchers + surviving clean controls), which is neither the equally-
+# weighted ATT nor the variance-weighted one. See lpdid_cell_weights() below.
+#   ewatt    (default) Dube-Girardi-Jorda-Taylor sec. 2.5.2 reweighted LP-DiD
+#   cellsize           the pre-2026-08-24 behavior, for paired comparison only
+#   vwatt              unweighted OLS = the paper's variance-weighted LP-DiD
+LPDID_WEIGHTS   <- match.arg(getenv1("LPDID_WEIGHTS", "ewatt"),
+                             c("ewatt", "cellsize", "vwatt"))
 
 # Output tag: the historical filenames are keyed on TREAT_DEF alone, so a
 # launch-anchored run must NOT reuse them (it would silently overwrite the
@@ -223,19 +232,46 @@ build_h <- function(h, side = c("post", "pre")) {
   rows %>% group_by(t) %>% filter(n_distinct(D_treat) == 2) %>% ungroup()
 }
 
+# ── Cell weights ─────────────────────────────────────────────────────────────
+# By Frisch-Waugh-Lovell, a cell-FE regression of dy on D contributes each
+# cell's own DiD with weight  w_c * N_c * Var_c(D), and Var_c(D) = Dbar(1-Dbar).
+# So the observation weight determines the estimand:
+#
+#   w = 1              -> cell weight  N_c Var_c(D)   VWATT (= Cengiz et al.
+#                         2019 stacked regression)
+#   w = 1/(1 - Dbar_c) -> cell weight  N_treated,c    EWATT (Dube, Girardi,
+#                         Jorda & Taylor 2023 sec. 2.5.2: the weight is
+#                         1/(omega_g,h / N_g), and omega/N_g is the D-residual
+#                         of a TREATED unit, which equals 1 - Dbar_c)
+#   w = 1/Var_c(D)     -> cell weight  N_c            NEITHER -- what this
+#                         script did before 2026-08-24 while labelling it EWATT
+#
+# All three are convex combinations of cell-specific DiDs and so are unbiased
+# under parallel trends; they differ in which cohorts and horizons get weight.
+# The old scheme over-weights early cohorts and short horizons, where the
+# clean-control pool is largest.
+lpdid_cell_weights <- function(D, cell, scheme = LPDID_WEIGHTS) {
+  dbar <- as.numeric(tapply(D, cell, mean)[as.character(cell)])
+  switch(scheme,
+         ewatt    = as.numeric(ifelse(is.finite(dbar) & dbar < 1,
+                                      1 / (1 - dbar), NA_real_)),
+         cellsize = {
+           v <- dbar * (1 - dbar)
+           as.numeric(ifelse(is.finite(v) & v > 0, 1 / v, NA_real_))
+         },
+         vwatt    = rep(1, length(D)),
+         stop("unknown LPDID_WEIGHTS: ", scheme, call. = FALSE))
+}
+
 # ── Estimate one horizon ─────────────────────────────────────────────────────
-# reweight: regress D_treat on time FE within the clean sample, invert the
-# implied OLS variance weights so each treated unit counts equally (EWATT).
+# Weight cells per lpdid_cell_weights() so the pooled coefficient targets the
+# scheme named by LPDID_WEIGHTS (default EWATT).
 estimate_h <- function(d, h, side) {
   if (nrow(d) == 0 || sum(d$D_treat) == 0) return(NULL)
   d <- d %>% mutate(time = factor(t))
 
   if (REWEIGHT) {
-    aux <- feols(D_treat ~ 1 | time, data = d, warn = FALSE, notes = FALSE)
-    w <- as.numeric(residuals(aux))^2
-    # as.numeric(): tapply returns an ARRAY, and fixest rejects array weights.
-    wt <- as.numeric(tapply(w, d$t, mean)[as.character(d$t)])
-    d$rw <- as.numeric(ifelse(is.finite(wt) & wt > 0, 1 / wt, NA_real_))
+    d$rw <- lpdid_cell_weights(d$D_treat, d$t)
     d <- d %>% filter(is.finite(rw))
   } else d$rw <- 1
 
@@ -306,10 +342,7 @@ cat("Estimating pooled effect...\n")
 pooled_dat <- map_dfr(0:POST, function(h) build_h(h, "post") %>% mutate(h = h))
 pooled <- if (nrow(pooled_dat) > 0) {
   d <- pooled_dat %>% mutate(time = factor(paste(t, h, sep = "_")))
-  aux <- feols(D_treat ~ 1 | time, data = d, warn = FALSE, notes = FALSE)
-  w <- as.numeric(residuals(aux))^2
-  wt <- as.numeric(tapply(w, d$time, mean)[as.character(d$time)])
-  d$rw <- as.numeric(ifelse(is.finite(wt) & wt > 0, 1 / wt, NA_real_))
+  d$rw <- lpdid_cell_weights(d$D_treat, d$time)
   d <- d %>% filter(is.finite(rw))
   fit <- feols(dy ~ D_treat | time, data = d, weights = ~rw, vcov = ~state_abb,
                warn = FALSE, notes = FALSE)
@@ -348,10 +381,7 @@ pool_window <- function(dat, h_lo, h_hi, era, label) {
   if (nrow(d) == 0 || sum(d$D_treat) == 0)
     return(base_row %>% mutate(note = "no switch cells in this era/window"))
   d <- d %>% mutate(time = factor(paste(t, h, sep = "_")))
-  aux <- feols(D_treat ~ 1 | time, data = d, warn = FALSE, notes = FALSE)
-  w  <- as.numeric(residuals(aux))^2
-  wt <- as.numeric(tapply(w, d$time, mean)[as.character(d$time)])
-  d$rw <- as.numeric(ifelse(is.finite(wt) & wt > 0, 1 / wt, NA_real_))
+  d$rw <- lpdid_cell_weights(d$D_treat, d$time)
   d <- d %>% filter(is.finite(rw))
   if (nrow(d) == 0 || sum(d$D_treat) == 0 || n_distinct(d$D_treat) < 2)
     return(base_row %>% mutate(note = "not identified after reweighting"))
@@ -410,17 +440,14 @@ pretrend_p_naive <- if (nrow(pre_rows) > 0) {
   stats::pchisq(sum(z^2), df = nrow(pre_rows), lower.tail = FALSE)
 } else NA_real_
 
-#' Stack all pre-horizons, replicating estimate_h()'s per-horizon EWATT weights
+#' Stack all pre-horizons, replicating estimate_h()'s per-horizon cell weights
 build_pre_stack <- function(hs) {
   map_dfr(hs, function(h) {
     d <- build_h(h, "pre")
     if (nrow(d) == 0 || sum(d$D_treat) == 0) return(NULL)
     d <- d %>% mutate(time = factor(t))
     if (REWEIGHT) {
-      aux <- feols(D_treat ~ 1 | time, data = d, warn = FALSE, notes = FALSE)
-      w  <- as.numeric(residuals(aux))^2
-      wt <- as.numeric(tapply(w, d$t, mean)[as.character(d$t)])
-      d$rw <- as.numeric(ifelse(is.finite(wt) & wt > 0, 1 / wt, NA_real_))
+      d$rw <- lpdid_cell_weights(d$D_treat, d$t)
       d <- d %>% filter(is.finite(rw))
     } else d$rw <- 1
     if (nrow(d) == 0 || sum(d$D_treat) == 0) return(NULL)
