@@ -427,8 +427,40 @@ to CS. Fixed in `run_estimators.R` (`.re_lpdid_weights`) and
 
 **Consequence: every LP-DiD size and MDE figure in the sections below —
 shift12 6.3%, ramp75 7.1%, all 7 gates, LDAM, `lpdid_statepanel.R` outputs —
-was computed on the `cellsize` estimand.** Re-runs under the corrected default
-are `lpdid_shift12_{gate,mde}_ewatt`.
+was computed on the `cellsize` estimand.**
+
+**Corrected shift12 re-runs (NV-free, gate 2,000 reps / MDE 300 reps × 13 δ,
+2026-08-24; `lpdid_shift12_{gate,mde}_ewatt`):**
+
+| window | inference | size cellsize → ewatt | SE/SD | MDE cellsize → ewatt |
+|---|---|---|---|---|
+| spliced | analytic | 0.087 → **0.145 FAIL** | 1.00 → 0.67 | 0.052 → 0.096 (n/a, fails gate) |
+| spliced | **wild** | 0.058 → **0.033 PASS** | 1.00 → 0.67 | **0.063 → 0.115** |
+| postcovid | analytic | 0.063 → **0.115 FAIL** | 0.98 → 0.81 | 0.209 → 0.221 |
+| postcovid | wild | 0.054 → 0.071 pass | 0.98 → 0.81 | 0.236 → 0.240 |
+
+TWFE unchanged within MC noise in every cell (0.14–0.17 MDE) — the check that
+only the LP-DiD knob moved. NOTE the runs are NOT rep-paired despite the shared
+base_seed (seed_rep includes the scenario-hash offset and `lpdid_weights` is
+hashed); TWFE's stability is the pairing check.
+
+**Why the correction HURTS: EWATT ≈ CS, so it inherits CS's miscalibration.**
+Equal weight per treated unit puts full weight on late cohorts and long
+horizons with thin clean-control pools; estimand SD jumps 2.3× (0.022 → 0.050
+spliced) and the analytic clustered SE does not track it. The accidental
+`cellsize` weighting had been down-weighting exactly those noisy cells — a
+quasi-variance-weighting that is why it looked so well calibrated. This is the
+estimand-vs-inference trade-off, now explicit.
+
+**Corrected headline state spec: shift12 + LP-DiD(ewatt) + wild bootstrap,
+spliced, NV-free — size 0.033, MDE 11.5% (CI 10.2–12.5%), not 6.3%.** The
+6.3% figure is dead: it was the mislabelled estimand. If 11.5% is too weak,
+the pre-registrable alternatives are (a) `vwatt` — the Cengiz-stack
+variance-weighted ATT, gate run queued as `lpdid_shift12_gate_vwatt` — which
+should recover cellsize-like calibration at the cost of an explicitly
+convenience-weighted estimand, or (b) TWFE (size-valid both windows, MDE
+~0.16). Choosing vwatt/TWFE for power is defensible pre-registration;
+relabelling cellsize as EWATT was not.
 
 **New config knobs**, both plumbed config → grid → spec → estimator:
 - `lpdid_weights`: `ewatt` (new default) | `cellsize` (pre-fix) | `vwatt`
