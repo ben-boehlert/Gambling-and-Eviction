@@ -454,13 +454,19 @@ estimand-vs-inference trade-off, now explicit.
 
 **Corrected headline state spec: shift12 + LP-DiD(ewatt) + wild bootstrap,
 spliced, NV-free — size 0.033, MDE 11.5% (CI 10.2–12.5%), not 6.3%.** The
-6.3% figure is dead: it was the mislabelled estimand. If 11.5% is too weak,
-the pre-registrable alternatives are (a) `vwatt` — the Cengiz-stack
-variance-weighted ATT, gate run queued as `lpdid_shift12_gate_vwatt` — which
-should recover cellsize-like calibration at the cost of an explicitly
-convenience-weighted estimand, or (b) TWFE (size-valid both windows, MDE
-~0.16). Choosing vwatt/TWFE for power is defensible pre-registration;
-relabelling cellsize as EWATT was not.
+6.3% figure is dead: it was the mislabelled estimand. If 11.5% is too weak, the
+pre-registrable alternatives are (a) `vwatt` or (b) TWFE (size-valid both
+windows, MDE ~0.16). Choosing vwatt/TWFE for power is defensible
+pre-registration; relabelling cellsize as EWATT was not.
+
+**vwatt gate (2,000 reps, `lpdid_shift12_gate_vwatt`): wild PASSES both
+windows** — spliced 0.0515, postcovid 0.0615; analytic 0.097/0.087 (fails
+spliced, borderline postcovid); SE/SD 1.14. Estimand SD 0.040, between
+cellsize (0.022) and ewatt (0.050), so its wild MDE should land ~0.09–0.10.
+MDE run: `lpdid_shift12_mde_vwatt`. The PAP choice is then EWATT-wild
+(MDE 11.5%, equally-weighted estimand, CS-comparable) vs VWATT-wild
+(smaller MDE, Cengiz-stack estimand, weights are a convenience of the
+design). Both are honest; pick by which estimand the PAP wants to defend.
 
 **New config knobs**, both plumbed config → grid → spec → estimator:
 - `lpdid_weights`: `ewatt` (new default) | `cellsize` (pre-fix) | `vwatt`
