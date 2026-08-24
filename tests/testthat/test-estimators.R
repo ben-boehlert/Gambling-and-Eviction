@@ -306,3 +306,59 @@ test_that("lpdid honors lpdid_weights and lpdid_pmd end to end", {
   # the default is the corrected EWATT scheme, not the pre-2026-08-24 one
   expect_equal(run1(list()), a_ewatt, tolerance = 1e-12)
 })
+
+# ---- LP-DiD <-> Callaway & Sant'Anna numerical equivalence -------------------
+# Dube, Girardi, Jorda & Taylor (2023) footnote 23: in a baseline setting
+# without covariates, with binary absorbing treatment, and using only
+# not-yet-treated observations as controls, REWEIGHTED LP-DiD with FIRST-LAG
+# differencing is numerically equivalent to CS at every post-treatment horizon
+# h >= 0. This test is the repo's check on both halves of that sentence: it
+# should hold for lpdid_weights = "ewatt" + lpdid_pmd = 1, and should NOT hold
+# for the pre-2026-08-24 "cellsize" weights or for pre-mean differencing.
+#
+# NOTE the CS call passes g as DOUBLE. did::att_gt recodes never-treated to
+# Inf, and an INTEGER g column truncates that to NA, silently dropping every
+# never-treated unit -- the same trap that inflated the 2026-08-20 pretrends
+# headline. .re_cs() does as.numeric(g_int) for exactly this reason.
+test_that("reweighted first-lag LP-DiD reproduces CS at each horizon", {
+  skip_if_not_installed("did")
+  toy <- build_toy_est(seed = 55L, n_states = 16L, n_months = 60L,
+                       treat = c(S02 = 20L, S04 = 24L, S06 = 28L,
+                                 S08 = 32L, S10 = 36L, S12 = 40L),
+                       noise_sd = 0.30)
+  inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",
+                       shape = "step", delta = TRUTH, outcome = "y_log1p",
+                       seed = 3L)
+
+  est <- .re_prep(inj)
+  dat <- data.frame(id = est$id, t = est$t, g = as.numeric(est$g_int),
+                    y = est$y_sim)
+  cs <- suppressWarnings(suppressMessages(
+    did::att_gt(yname = "y", tname = "t", idname = "id", gname = "g",
+                data = dat, control_group = "notyettreated",
+                est_method = "reg", bstrap = FALSE, cband = FALSE,
+                base_period = "varying", allow_unbalanced_panel = TRUE,
+                clustervars = NULL)))
+  dyn <- suppressWarnings(suppressMessages(
+    did::aggte(cs, type = "dynamic", na.rm = TRUE)))
+  hs <- 0:8
+  cs_att <- dyn$att.egt[match(hs, dyn$egt)]
+  expect_true(all(is.finite(cs_att)))
+
+  arm <- function(w, pmd) {
+    vapply(hs, function(h) {
+      r <- run_estimator(inj, estimator = "lpdid",
+                         spec = list(lpdid_pmd = pmd, lpdid_weights = w,
+                                     lpdid_hmin = h, lpdid_post = h))
+      r$att[r$inference == "analytic"][1]
+    }, numeric(1))
+  }
+
+  # the equivalence, to machine precision
+  expect_equal(arm("ewatt", 1L), cs_att, tolerance = 1e-10)
+
+  # and it is a real constraint: the other three arms are materially different
+  expect_gt(max(abs(arm("cellsize", 1L) - cs_att)), 1e-3)  # pre-fix weights
+  expect_gt(max(abs(arm("vwatt",    1L) - cs_att)), 1e-4)  # variance-weighted
+  expect_gt(max(abs(arm("ewatt",    3L) - cs_att)), 1e-3)  # pre-mean-differenced
+})
