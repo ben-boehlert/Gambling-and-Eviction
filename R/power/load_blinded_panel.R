@@ -129,7 +129,18 @@ load_blinded_panel <- function(level = c("county", "state"),
                                              "maturation50_start_date",
                                              # handle reaches 75% of ramp
                                              # (data/processed/ramp75_schedule.csv)
-                                             "ramp75_start_date"),
+                                             "ramp75_start_date",
+                                             # uniform online launch + 12 months
+                                             # (data/processed/shift12_schedule.csv).
+                                             # Unlike maturation50/ramp75 this
+                                             # uses NO outcome data: it is a
+                                             # fixed pre-specifiable lag, so it
+                                             # is blind by construction. See
+                                             # data_prep/build_shift12_schedule.R
+                                             # for why ramp75 is a data-vintage
+                                             # artifact (lag correlates 0.957
+                                             # with months observed).
+                                             "shift12_start_date"),
                                anticipation = 6L,
                                sample = c("S1", "S2", "S3"),
                                covid = c("drop", "pre", "covid", "post", "keep"),
@@ -185,7 +196,13 @@ load_blinded_panel <- function(level = c("county", "state"),
     sample,
     S1 = base_bl %>% filter(.data$month_date <= universal_cutoff),
     S2 = base_bl,
-    S3 = base_bl %>% filter(is.na(.data$g_first))
+    # S3 = never-treated states. Pre-PASPA sports-betting states are excluded:
+    # they are absent from the schedule because there was no post-PASPA
+    # legalization event, not because they never adopted, so treating them as
+    # never-treated puts an always-treated state in the control sample.
+    # See docs/methodology/ADOPTION_UNIVERSE_AUDIT.md.
+    S3 = base_bl %>% filter(is.na(.data$g_first),
+                            !.data$state_abb %in% PRE_PASPA_SPORTS_BETTING)
   )
 
   panel <- switch(
@@ -261,9 +278,13 @@ load_blinded_panel <- function(level = c("county", "state"),
   attr(panel, "n_periods_dropped_incomplete") <- n_dropped_incomplete
   # Never-treated = panel states with no first-any treatment date. Derived from
   # the panel (the schedule CSV lists treated states only), so states absent
-  # from the schedule correctly count as never-treated.
+  # from the schedule correctly count as never-treated -- EXCEPT the pre-PASPA
+  # sports-betting states, which are absent for the opposite reason (they were
+  # already treated) and are excluded here. Fixed 2026-08-21; previously NV
+  # appeared in this attribute at level="state".
   attr(panel, "never_treated")    <-
-    sort(unique(base$state_abb[is.na(base$g_first)]))
+    sort(setdiff(unique(base$state_abb[is.na(base$g_first)]),
+                 PRE_PASPA_SPORTS_BETTING))
 
   assert_blinded(panel, sched, anticipation, universal_cutoff)
 

@@ -1,0 +1,54 @@
+# =============================================================================
+# power_boundary_B_2022_08.yml — POST-COVID BOUNDARY TEST, arm B_2022_08.
+#
+# stabilization-based boundary: COVID window ends 2022-07-31, so covid: post begins the next day.
+#
+# Purpose: the framework's post-COVID boundary (2021-08) admits most states
+# BEFORE their filing series have stabilized. Stabilization analysis
+# (analysis/diagnostics/eviction_stabilization_timing.R, 2026-08-21) puts the
+# median plateau onset at 2022-07, IQR 2022-02..2023-03. This pair of configs
+# measures what moving the boundary to the median actually costs: treated
+# clusters, window length, and estimator size.
+#
+# Arms are identical in every other respect and share base_seed, so they are
+# paired rep-for-rep. Read SIZE (delta = 0) as primary; the power columns are
+# indicative only — both arms are small-cluster designs.
+#
+# lpdid_wild: LP-DiD analytic inference over-rejects with few treated clusters
+# (repo finding, county post-COVID gate 2026-08-19). Required here: arm B has
+# 4 treated clusters.
+# =============================================================================
+
+run_name: boundary_B_2022_08
+
+covid_drop: ["2020-03-01", "2022-07-31"]
+
+level:      state
+sample:     [S2]
+covid:      post
+treat_def:  online_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+template:   panel
+
+effect_grid:  [0, 0.05, 0.10, 0.20]
+estimators:   [twfe, did2s, lpdid]
+lpdid_wild:   true
+
+n_reps:     300
+base_seed:  20260723
+mde_boot:   50
+alpha:      [0.1, 0.05, 0.01]
+min_pre:    12
+min_post:   6
+anticipation_months: 6
+
+scenarios:
+  - name: boundary_B_2022_08_state_nb_step
+    level: state

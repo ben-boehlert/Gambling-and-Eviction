@@ -1,0 +1,123 @@
+# =============================================================================
+# power_lpdid_ramp75_anchor.yml — does the LP-DiD cell anchor change the MDE?
+#
+# Companion to power_lpdid_ramp75_mde.yml, which ran the ramp75 cell at the
+# historical settings (anchor = event, horizons 0..12) and produced the
+# published MDEs: spliced lpdid wild 0.093 / analytic 0.073; post-COVID wild
+# 0.242 / analytic 0.212.
+#
+# THE QUESTION. Under a redated spec the base period sits PMD months before
+# the EVENT month, so with ramp75 the switcher's own baseline is drawn from
+# the three months just before handle reaches 75% of peak — the steepest part
+# of the buildup ramp. Buildup exposure therefore enters the estimate with
+# NEGATIVE weight through the baseline instead of zero weight. Anchoring the
+# cell at the LAUNCH month instead puts the baseline pre-launch (clean, and
+# common to both arms, which LP-DiD requires) and pushes buildup exposure into
+# the low horizons, which lpdid_hmin then drops from the pool. That is the
+# LP-DiD transposition of did::aggte(min_e = 12).
+#
+# DESIGN. 2 windows x 2 anchors, everything else held fixed at the SAME
+# horizon window (12..24) so the anchor is the only moving part:
+#
+#   A  spliced   x anchor event    <- isolates the anchor against C
+#   B  spliced   x anchor launch
+#   C  postcovid x anchor event
+#   D  postcovid x anchor launch
+#
+# The A-vs-B and C-vs-D contrasts are the clean test. Comparing either against
+# power_lpdid_ramp75_mde.yml also folds in the horizon-window change (0..12 ->
+# 12..24), so read that contrast as "what the recommended spec costs in MDE",
+# not as an anchor effect.
+#
+# base_seed is unchanged, so every rep sees the identical simulated panel as
+# the published run and as each other — paired throughout.
+#
+# Scenario count: 4. Run locally.
+# =============================================================================
+
+run_name: lpdid_ramp75_anchor
+
+schedule:   data/processed/ramp75_schedule.csv
+
+# ---- Top-level defaults -----------------------------------------------------
+
+level:      state
+sample:     [S2]
+covid:      drop
+treat_def:  ramp75_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+
+template:   panel
+
+effect_grid:  [0, 0.02, 0.05, 0.08, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50, 0.60]
+
+estimators:   [twfe, lpdid]
+lpdid_wild:   true
+
+# Buildup window for BOTH anchors: horizons 12..24. Under anchor: launch that
+# is "one year of pooled horizons starting a year after legalization" (the NY
+# Fed SR 1184 aggregation). Under anchor: event it is the same window measured
+# from maturity — the comparison the A-vs-B contrast is built on.
+lpdid_hmin:   12
+lpdid_post:   24
+
+# ---- Execution --------------------------------------------------------------
+
+n_reps:     300
+base_seed:  20260723
+mde_boot:   200
+
+alpha:      [0.1, 0.05, 0.01]
+
+min_pre:    12
+min_post:   6
+
+anticipation_months: 6
+
+# ---- Scenario families ------------------------------------------------------
+
+scenarios:
+
+  - name: spliced_event
+    covid: drop
+    lpdid_anchor: event
+
+  - name: spliced_launch
+    covid: drop
+    lpdid_anchor: launch
+
+  - name: postcovid_event
+    covid: post
+    lpdid_anchor: event
+
+  - name: postcovid_launch
+    covid: post
+    lpdid_anchor: launch
+
+  # E/F. LAG-ALIGNED launch window. The DGP steps the effect on at pseudo_g
+  # (maturity), so a launch-time window of 12..24 straddles the ramp: the
+  # median lag75 is 18 months (data/processed/cohort_ramp_lags.csv, n = 30,
+  # p25 11 / p75 20 / max 23), meaning roughly half of scenario B's window has
+  # a TRUE effect of zero. B therefore measures dilution as well as precision.
+  # These two shift the launch-time window to 18..30 so it approximately
+  # covers maturity+0..12 for the median state, isolating precision. The
+  # residual spread in lag75 cannot be removed by any single global window --
+  # that irreducible mismatch is itself the finding.
+  - name: spliced_launch_aligned
+    covid: drop
+    lpdid_anchor: launch
+    lpdid_hmin: 18
+    lpdid_post: 30
+
+  - name: postcovid_launch_aligned
+    covid: post
+    lpdid_anchor: launch
+    lpdid_hmin: 18
+    lpdid_post: 30

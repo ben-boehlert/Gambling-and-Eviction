@@ -20,10 +20,28 @@
 #          data: comparisons never straddle the gap, and switchers whose
 #          baseline falls in the gap are excluded, not silently bridged.
 #          spec knobs: lpdid_pmd (baseline months, default 3), lpdid_post
-#          (pooled horizon window 0..H, default 12), lpdid_wild (wild cluster
-#          bootstrap arm, default FALSE in simulation - WLS forces boottest to
-#          dummy-expand the stacked time-cell factor, which is memory-unsafe
-#          on county panels; see .re_lpdid).
+#          (pooled horizon window hmin..H, default H = 12), lpdid_hmin
+#          (lowest horizon entering the pool, default 0), lpdid_anchor
+#          ("event" default / "launch" -- which schedule date the cell's base
+#          period sits before; see the LP-DiD block below), lpdid_wild (wild
+#          cluster bootstrap arm, default FALSE in simulation - WLS forces
+#          boottest to dummy-expand the stacked time-cell factor, which is
+#          memory-unsafe on county panels; see .re_lpdid).
+#   ldam   Debiased linear autoregression (Antonelli, Rubinstein, Agniel et
+#          al., AOAS 2026; arXiv:2408.09012 eq. 3), with calendar-month time
+#          effects: Y_it = a_t + b*(Y_{i,t-1} - theta*A_{i,t-1}) + theta*A_it.
+#          Identification is ignorability conditional on the prior CONTROL
+#          counterfactual (selection-on-lagged-outcomes), NOT parallel trends.
+#          theta enters two terms, so estimation iterates a profiled feols
+#          until theta converges. Lags on TRUE CALENDAR MONTHS (same guard as
+#          lpdid): a row whose t-1 falls in a covid: drop gap, a panel edge,
+#          or a coverage hole is dropped, never bridged. Inference arms:
+#          "analytic" (clustered SE from the final iteration — conditions on
+#          the estimated theta inside the lag adjustment, i.e. ignores the
+#          generated-regressor term; the size gate tests whether that matters)
+#          and "jack" (delete-one-STATE jackknife re-running the full
+#          profiled NLS; t with df = n_contributing_states - 1). spec
+#          knobs: ldam_k (lags, only 1 implemented), ldam_tol.
 #
 # INFERENCE ARMS (CS):
 #   analytic  : analytic influence-function SE, t(df = n_clusters - 1)
@@ -235,7 +253,8 @@ install_cs_safe_patches <- function(enable = TRUE, root = NULL) {
   defaults <- list(control_group = "notyettreated", est_method = "reg",
                    base_period = "varying", anticipation = 0L, biters = 199L,
                    cluster = "state_abb", alpha = 0.05,
-                   cs_jack = FALSE, cs_faster_mode = TRUE)
+                   cs_jack = FALSE, cs_faster_mode = TRUE,
+                   ldam_k = 1L, ldam_tol = 1e-9)
   out <- utils::modifyList(defaults, spec %||% list())
   # modifyList() DELETES any key the caller passes as NULL rather than leaving
   # the default in place. A dropped knob then reaches its estimator as a
@@ -304,7 +323,7 @@ install_cs_safe_patches <- function(enable = TRUE, root = NULL) {
 #' @export
 run_estimator <- function(panel_sim,
                           estimator = c("cs", "twfe", "did2s", "sunab",
-                                        "lpdid", "bjs", "longdiff"),
+                                        "lpdid", "bjs", "longdiff", "ldam"),
                           spec = list()) {
   estimator <- match.arg(estimator)
   sp  <- .re_spec(spec)
@@ -327,7 +346,9 @@ run_estimator <- function(panel_sim,
     # must run on calendar months so they cannot bridge a covid: drop gap.
     lpdid = .re_lpdid(panel_sim, sp, cl, df_cluster),
     # longdiff likewise works on calendar months and pseudo_g directly.
-    longdiff = .re_longdiff(panel_sim, sp, cl)
+    longdiff = .re_longdiff(panel_sim, sp, cl),
+    # ldam builds calendar-month lags itself, so it also bypasses .re_prep.
+    ldam  = .re_ldam(panel_sim, sp, cl, df_cluster)
   )
 }
 
@@ -958,12 +979,44 @@ run_estimator <- function(panel_sim,
 #
 # Dube, Girardi, Jorda & Taylor (2023, NBER w31184), pooled EWATT:
 #
-#   D_h y_it = y_{i,t+h} - mean(y_{i,t-PMD..t-1})        h = 0..lpdid_post
+#   D_h y_it = y_{i,t+h} - mean(y_{i,t-PMD..t-1})   h = lpdid_hmin..lpdid_post
 #   sample:    switchers at t  +  units untreated through t+h (clean controls)
 #   feols(dy ~ D_treat | cell, weights = 1/Var_cell(D-resid), cluster = state)
 #
 # where cell = (base period t) x (horizon h). Reweighting converts the OLS
 # variance-weighted estimand into the equally-weighted ATT (paper section 3.3).
+#
+# CELL ANCHOR (spec$lpdid_anchor, default "event" = historical). The schedule
+# can carry TWO dates per switcher: pseudo_launch (legalization) and pseudo_g
+# (the event that times the switch). They differ only under a shifted
+# treatment definition -- shift12, ramp75, maturation50 -- and are the same
+# month otherwise, so this knob is a no-op on every unshifted run.
+#
+#   "event"  : cell anchored at pseudo_g. The base period is then the pmd
+#              months ending just before the EVENT month, which under a
+#              shifted schedule lies INSIDE the buildup window (shift12 with
+#              pmd = 3: months launch+9..launch+11; ramp75: the three months
+#              before handle hits 75% of peak, i.e. the steepest part of the
+#              ramp). Buildup exposure therefore enters with NEGATIVE weight
+#              through the baseline rather than zero weight, biasing the
+#              pooled ATT toward zero whenever the effect is partly on before
+#              the event date. The hybrid control coding below fixes the
+#              CONTROL leg of this leak; it does not fix the baseline leg.
+#   "launch" : cell anchored at pseudo_launch. The base period is pre-launch
+#              and common to both arms (LP-DiD needs a shared base window or
+#              calendar-time effects stop cancelling -- do NOT move only the
+#              switcher's baseline), and buildup exposure is carried by the
+#              LOW horizons, which lpdid_hmin then drops from the pool. This
+#              is the LP-DiD transposition of did::aggte(min_e = ...):
+#              buildup horizons are estimated and given zero weight.
+#              lpdid_post must be raised to reach the same distance past the
+#              event date (launch anchor + hmin 12 + post 24 = one year of
+#              pooled horizons starting a year after launch).
+#
+# The anchor moves WHERE a switcher switches, never WHICH units switch: the
+# switcher set stays defined by a non-missing pseudo_g under both settings, so
+# a launched-but-never-matured state is still a dirty non-switcher, not a new
+# treated unit.
 #
 # CALENDAR-MONTH LAGS: all leads/lags index true calendar months built from
 # month_date. On a covid: drop panel the gap months are simply absent, so any
@@ -982,8 +1035,25 @@ run_estimator <- function(panel_sim,
 .re_lpdid <- function(panel_sim, sp, cl, df_cluster) {
   pmd  <- as.integer(sp$lpdid_pmd  %||% 3L)
   hmax <- as.integer(sp$lpdid_post %||% 12L)
+  hmin <- as.integer(sp$lpdid_hmin %||% 0L)
+  anchor <- match.arg(as.character(sp$lpdid_anchor %||% "event"),
+                      c("event", "launch"))
   wild <- isTRUE(sp$lpdid_wild)
   z <- stats::qt(1 - sp$alpha / 2, df = max(1L, df_cluster))
+
+  # Fail loudly rather than silently pooling nothing: an empty horizon window
+  # would otherwise reach feols() as a zero-row stack and surface as the
+  # generic "no identified (t, h) cells" message, which reads as a data
+  # problem instead of a config error.
+  if (!is.finite(hmin) || !is.finite(hmax) || hmin < 0L || hmin > hmax) {
+    return(.re_row("lpdid", "analytic", "simple",
+                   n_treated_clusters = cl$n_treated,
+                   n_control_clusters = cl$n_control, converged = FALSE,
+                   error_msg = sprintf(
+                     "empty lpdid horizon window: lpdid_hmin = %s, lpdid_post = %s",
+                     format(hmin), format(hmax)),
+                   runtime_s = 0))
+  }
 
   t0 <- Sys.time()
   stack <- tryCatch(suppressMessages(suppressWarnings({
@@ -1014,6 +1084,11 @@ run_estimator <- function(panel_sim,
       ifelse(is.na(gtab$pseudo_launch[ord]), NA_integer_,
              m_of(gtab$pseudo_launch[ord]) - m_min + 1L)
     } else gm
+    # CELL ANCHOR (see the block comment above): which month a switcher
+    # switches in, and hence which months its own baseline is drawn from.
+    # `lm` falls back to `gm` when the schedule carries no separate launch
+    # date, so "launch" is bit-identical to "event" on every unshifted run.
+    am <- if (identical(anchor, "launch")) lm else gm
 
     # Baseline per base period: mean of the PMD months ending at t-1; NA if
     # any of them is absent (no na.rm — that is the gap guard).
@@ -1022,13 +1097,19 @@ run_estimator <- function(panel_sim,
       B[, tt] <- rowMeans(Y[, (tt - pmd):(tt - 1L), drop = FALSE])
     }
 
-    out <- vector("list", (hmax + 1L) * M)
+    out <- vector("list", (hmax - hmin + 1L) * M)
     k <- 0L
-    for (h in 0:hmax) {
+    for (h in hmin:hmax) {
+      # `(pmd+1):(M-h)` would run DESCENDING, not empty, on a horizon longer
+      # than the panel can carry. Latent before lpdid_post was ever raised
+      # above 12; live now that a launch anchor needs post >= hmin + window.
+      if (M - h < pmd + 1L) next
       for (tt in (pmd + 1L):(M - h)) {
         far <- tt + h
         dy  <- Y[, far] - B[, tt]
-        sw  <- !is.na(gm) & gm == tt
+        # Switcher SET is `!is.na(gm)` under either anchor; only the switch
+        # MONTH moves. Control eligibility stays gated on the launch month.
+        sw  <- !is.na(gm) & !is.na(am) & am == tt
         ctl <- is.na(lm) | lm > far
         keep <- (sw | ctl) & is.finite(dy)
         if (!any(keep & sw) || !any(keep & ctl)) next
@@ -1113,6 +1194,183 @@ run_estimator <- function(panel_sim,
         n_treated_clusters = cl$n_treated, n_control_clusters = cl$n_control,
         converged = is.finite(p_w), runtime_s = rt1)
     }
+  }
+
+  bind_rows(rows)
+}
+
+# ------------------- Debiased linear autoregression (L-DAM) ------------------
+#
+# Antonelli, Rubinstein, Agniel, Smart, Stuart, Cefalu, Schell, Eagan, Stone,
+# Griswold & Griffin (AOAS 2026; arXiv:2408.09012), eq. (3) plus the
+# calendar-time intercepts their Assumption 6 allows:
+#
+#   Y_it = a_t + b * (Y_{i,t-1} - theta * A_{i,t-1}) + theta * A_it + e_it
+#
+# The lag adjustment subtracts the treatment effect from last month's outcome
+# so the regressor proxies Y_{i,t-1}(0), the prior CONTROL counterfactual —
+# the paper's fix for the collider bias of naive lagged-dependent-variable
+# regressions. theta appears in two terms, so the estimator is the NLS
+# minimizer of the paper's Proposition 1 objective. We PROFILE it: for fixed
+# theta the model is linear in (a_t, b) — regress (Y - theta*A) on
+# (Y_{t-1} - theta*A_{t-1}) with month effects — so SSR(theta) costs one
+# feols, and optimize() finds the 1-D minimizer exactly. Do NOT replace this
+# with the naive iteration "theta <- coef(A) given the adjusted lag": that
+# fixed point solves a different moment condition than the NLS first-order
+# condition and is badly biased toward zero when b is near 1 (caught by
+# tests/testthat/test-estimators.R on the unit-FE toy panel, where the naive
+# iteration converges to ~half the imposed effect).
+#
+# Under the framework's step-shape delta on y_log1p, theta IS the imposed
+# constant additive effect, so the "simple" row is correctly specified and
+# the size gate is a fair test. No unit fixed effects anywhere — that is the
+# point of the estimator (a state's own lag carries its level, including any
+# state-specific COVID shift a global alpha_i cannot).
+#
+# Gap guard: lags are computed on TRUE CALENDAR MONTHS. A row whose t-1 is
+# absent (covid: drop gap, panel edge, coverage hole) drops; A_{i,t-1} itself
+# is computed from the schedule (pseudo_g), not from panel presence, so a
+# treated state re-entering after the gap keeps the correct treatment lag.
+#' @keywords internal
+.re_ldam <- function(panel_sim, sp, cl, df_cluster) {
+  k   <- as.integer(sp$ldam_k %||% 1L)
+  tol <- as.numeric(sp$ldam_tol %||% 1e-9)
+  z <- stats::qt(1 - sp$alpha / 2, df = max(1L, df_cluster))
+  t0 <- Sys.time()
+
+  fail <- function(msg, inference = "analytic") {
+    .re_row("ldam", inference, "simple",
+            n_treated_clusters = cl$n_treated,
+            n_control_clusters = cl$n_control, converged = FALSE,
+            error_msg = msg,
+            runtime_s = as.numeric(difftime(Sys.time(), t0, units = "secs")))
+  }
+  if (k != 1L) return(fail("ldam_k > 1 not implemented (v1 is the paper's k = 1 main spec)"))
+
+  dat <- tryCatch(suppressMessages(suppressWarnings({
+    m_of <- function(dd) as.integer(format(dd, "%Y")) * 12L +
+      as.integer(format(dd, "%m"))
+    d <- panel_sim
+    d$m <- m_of(d$month_date)
+    units <- sort(unique(as.character(d$unit_id)))
+    m_min <- min(d$m)
+    M <- max(d$m) - m_min + 1L
+
+    # Y[unit, calendar month]; absent months (covid gap, coverage) stay NA.
+    Y <- matrix(NA_real_, length(units), M)
+    Y[cbind(match(as.character(d$unit_id), units), d$m - m_min + 1L)] <- d$y_sim
+
+    gcols <- intersect(c("unit_id", "state_abb", "pseudo_g"), names(d))
+    gtab <- d[!duplicated(d$unit_id), gcols, drop = FALSE]
+    ord  <- match(units, as.character(gtab$unit_id))
+    st   <- as.character(gtab$state_abb)[ord]
+    gm   <- ifelse(is.na(gtab$pseudo_g[ord]), NA_integer_,
+                   m_of(gtab$pseudo_g[ord]) - m_min + 1L)
+
+    out <- vector("list", M - 1L)
+    for (tt in 2:M) {
+      y  <- Y[, tt]
+      yl <- Y[, tt - 1L]                 # true calendar lag — the gap guard
+      keep <- is.finite(y) & is.finite(yl)
+      if (!any(keep)) next
+      a  <- as.integer(!is.na(gm) & tt >= gm)          # absorbing from pseudo_g
+      al <- as.integer(!is.na(gm) & (tt - 1L) >= gm)   # schedule-based, not row-based
+      out[[tt - 1L]] <- data.frame(
+        state_abb = st[keep], y = y[keep], ylag = yl[keep],
+        a = a[keep], alag = al[keep], m = tt, stringsAsFactors = FALSE)
+    }
+    dd <- do.call(rbind, out[!vapply(out, is.null, logical(1))])
+    if (is.null(dd) || nrow(dd) == 0L) stop("no rows with an observed calendar lag")
+    if (length(unique(dd$a)) < 2L) stop("treatment indicator constant after lag construction")
+    dd$m <- factor(dd$m)
+    dd
+  })), error = function(e) structure(NA, err = conditionMessage(e)))
+
+  if (isTRUE(is.na(dat[1])) && !is.null(attr(dat, "err"))) return(fail(attr(dat, "err")))
+
+  # Profiled NLS: SSR(theta) from the theta-conditional linear fit; 1-D
+  # minimization over a wide bracket (log-scale effects; |theta| < 3 is
+  # generous). A minimizer pinned to the bracket edge means the profile has
+  # no interior minimum — treated as non-convergence, never reported.
+  TH_LO <- -3; TH_HI <- 3
+  fit_theta <- function(dd) {
+    ssr <- function(theta) {
+      dd$yt  <- dd$y    - theta * dd$a
+      dd$ylt <- dd$ylag - theta * dd$alag
+      f <- tryCatch(fixest::feols(yt ~ ylt | m, data = dd,
+                                  warn = FALSE, notes = FALSE),
+                    error = function(e) NULL)
+      if (is.null(f)) return(Inf)
+      sum(stats::residuals(f)^2)
+    }
+    opt <- tryCatch(stats::optimize(ssr, interval = c(TH_LO, TH_HI), tol = tol),
+                    error = function(e) NULL)
+    if (is.null(opt) || !is.finite(opt$objective)) return(NULL)
+    theta <- opt$minimum
+    if (theta < TH_LO + 1e-4 || theta > TH_HI - 1e-4) return(NULL)
+    # Final theta-conditional linear fit: source of the "analytic" clustered
+    # SE for A (conditions on theta-hat in the lag adjustment). If A is
+    # collinear with the month effects (e.g. every state treated the same
+    # month), the profile was flat and nothing is identified.
+    dd$ylag_adj <- dd$ylag - theta * dd$alag
+    fit <- tryCatch(fixest::feols(y ~ ylag_adj + a | m, data = dd,
+                                  cluster = ~state_abb,
+                                  warn = FALSE, notes = FALSE),
+                    error = function(e) NULL)
+    if (is.null(fit) || !is.finite(as.numeric(stats::coef(fit)["a"]))) return(NULL)
+    list(theta = theta, fit = fit)
+  }
+
+  res <- fit_theta(dat)
+  rt <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
+  if (is.null(res)) return(fail("ldam profiling did not converge"))
+
+  att <- res$theta
+  se_a <- tryCatch(as.numeric(fixest::se(res$fit)["a"]), error = function(e) NA_real_)
+  ok_a <- is.finite(att) && is.finite(se_a) && se_a > 0
+
+  rows <- list(.re_row(
+    "ldam", "analytic", "simple", att = att, se = se_a,
+    p = .re_tp(att, se_a, df_cluster),
+    ci_lo = if (ok_a) att - z * se_a else NA_real_,
+    ci_hi = if (ok_a) att + z * se_a else NA_real_,
+    n_treated_clusters = cl$n_treated, n_control_clusters = cl$n_control,
+    converged = ok_a,
+    error_msg = if (ok_a) NA_character_ else "ldam analytic se not identified",
+    runtime_s = rt))
+
+  # Delete-one-state jackknife over the FULL profiled NLS, so the
+  # generated-regressor step is inside the resampling (unlike "analytic").
+  t1 <- Sys.time()
+  states <- sort(unique(dat$state_abb))
+  th_jack <- vapply(states, function(s) {
+    r <- fit_theta(dat[dat$state_abb != s, , drop = FALSE])
+    if (is.null(r)) NA_real_ else r$theta
+  }, numeric(1))
+  th_jack <- th_jack[is.finite(th_jack)]
+  nj <- length(th_jack)
+  rt1 <- as.numeric(difftime(Sys.time(), t1, units = "secs"))
+  if (nj >= 3L) {
+    se_j <- sqrt((nj - 1L) / nj * sum((th_jack - mean(th_jack))^2))
+    dfj  <- nj - 1L
+    zj   <- stats::qt(1 - sp$alpha / 2, df = dfj)
+    ok_j <- is.finite(se_j) && se_j > 0
+    rows[[2L]] <- .re_row(
+      "ldam", "jack", "simple", att = att, se = se_j,
+      p = .re_tp(att, se_j, dfj),
+      ci_lo = if (ok_j) att - zj * se_j else NA_real_,
+      ci_hi = if (ok_j) att + zj * se_j else NA_real_,
+      n_treated_clusters = cl$n_treated, n_control_clusters = cl$n_control,
+      converged = ok_j,
+      error_msg = if (ok_j) NA_character_ else "ldam jackknife se degenerate",
+      runtime_s = rt1)
+  } else {
+    rows[[2L]] <- .re_row(
+      "ldam", "jack", "simple", att = att,
+      n_treated_clusters = cl$n_treated, n_control_clusters = cl$n_control,
+      converged = FALSE,
+      error_msg = sprintf("ldam jackknife: only %d finite leave-one-state fits", nj),
+      runtime_s = rt1)
   }
 
   bind_rows(rows)

@@ -53,6 +53,17 @@ source("utils/eviction_treatment_schedule.R")
 
 getenv1 <- function(k, d) { v <- Sys.getenv(k); if (nzchar(v)) v else d }
 TREAT_DEF       <- getenv1("TREAT_DEF", "raw")          # "raw" | "ramp75" | "shift12"
+# CELL ANCHOR: which of the two dates times the SWITCH (and therefore which
+# months the PMD baseline is drawn from). "event" is historical: under a
+# redated spec (ramp75/shift12) the baseline is the PMD months ending just
+# before MATURITY, i.e. inside the buildup window, so buildup exposure enters
+# with negative weight through the baseline. "launch" anchors the cell at the
+# online launch, so the baseline is pre-launch and clean, buildup exposure is
+# carried by the LOW horizons, and the existing h >= 12 buildup window
+# (pool_window) is what gives those horizons zero weight. Under TREAT_DEF=raw
+# the two dates coincide and the setting is inert.
+ANCHOR          <- getenv1("ANCHOR", "event")           # "event" | "launch"
+stopifnot(ANCHOR %in% c("event", "launch"))
 POST            <- as.integer(getenv1("POST", "18"))    # months after treatment
 PRE             <- as.integer(getenv1("PRE",  "12"))    # months before (pre-trend)
 PMD             <- as.integer(getenv1("PMD",  "3"))     # pre-mean-difference baseline
@@ -60,6 +71,11 @@ DROP_STRADDLING <- toupper(getenv1("DROP_STRADDLING", "FALSE")) == "TRUE"
 BOOT_REPS       <- as.integer(getenv1("BOOT_REPS", "9999"))
 JOINT_SEED      <- as.integer(getenv1("JOINT_SEED", "20260820"))  # joint pre-trend bootstrap
 REWEIGHT        <- TRUE                                  # EWATT, not VWATT
+
+# Output tag: the historical filenames are keyed on TREAT_DEF alone, so a
+# launch-anchored run must NOT reuse them (it would silently overwrite the
+# 2026-08-20 event-anchored results). Non-default anchors get their own suffix.
+TAG <- if (identical(ANCHOR, "event")) TREAT_DEF else paste0(TREAT_DEF, "_launch")
 
 OUT_DIR <- "output/lpdid_statepanel"
 dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
@@ -123,7 +139,12 @@ treat_tbl <- tibble(state_abb = sort(unique(p$state_abb))) %>%
          # be excluded, not pooled with the controls. Under raw dating the two
          # dates coincide and behavior is unchanged (regression-checked).
          g        = ifelse(is.na(treat_date),  NA_integer_, ym_index(treat_date)),
-         g_launch = ifelse(is.na(treat_start), NA_integer_, ym_index(treat_start)))
+         g_launch = ifelse(is.na(treat_start), NA_integer_, ym_index(treat_start))) %>%
+  # Anchor = the month a switcher switches. The switcher SET stays defined by
+  # a non-missing `g` under either setting (see build_h), so a launched-but-
+  # never-mature state remains a dirty non-switcher rather than becoming a new
+  # treated unit -- only the switch month, and hence the baseline, moves.
+  mutate(g_anchor = if (identical(ANCHOR, "launch")) g_launch else g)
 
 panel <- p %>% left_join(treat_tbl %>% select(state_abb, g), by = "state_abb")
 t_max <- max(panel$t)
@@ -131,7 +152,8 @@ t_max <- max(panel$t)
 panel <- panel %>% mutate(g = ifelse(!is.na(g) & g > t_max, NA_integer_, g))
 
 n_treat <- n_distinct(panel$state_abb[!is.na(panel$g)])
-cat(glue("LP-DiD | treatment definition: {TREAT_DEF} | PMD baseline: {PMD} month(s)"), "\n")
+cat(glue("LP-DiD | treatment definition: {TREAT_DEF} | cell anchor: {ANCHOR} ",
+         "| PMD baseline: {PMD} month(s)"), "\n")
 cat(glue("Panel: {n_distinct(panel$state_abb)} states ({n_treat} treated, ",
          "{n_distinct(panel$state_abb) - n_treat} never-treated), {n_distinct(panel$t)} months"), "\n")
 cat(glue("Dropped COVID window in calendar index: [{G_DROP[1]}, {G_DROP[2]}]"), "\n\n")
@@ -171,9 +193,14 @@ build_h <- function(h, side = c("post", "pre")) {
     # contaminates the sample window, so it stays NA (= control-eligible).
     g_l <- treat_tbl$g_launch[treat_tbl$state_abb == s]
     g_l <- if (length(g_l) == 0 || is.na(g_l) || g_l > t_max) NA_integer_ else g_l
+    # ANCHOR month: event date (historical) or launch date. Gated on g_s being
+    # a real switcher either way.
+    g_a <- treat_tbl$g_anchor[treat_tbl$state_abb == s]
+    g_a <- if (length(g_a) == 0 || is.na(g_a) || g_a > t_max) NA_integer_ else g_a
     map_dfr(t_grid, function(tt) {
-      # switcher: this unit's EVENT (maturity/shifted/launch date) is exactly t
-      is_switch <- !is.na(g_s) && g_s == tt
+      # switcher: this unit's ANCHOR month is exactly t (and it is a switcher
+      # at all, i.e. it has an event date inside the panel).
+      is_switch <- !is.na(g_s) && !is.na(g_a) && g_a == tt
       far <- if (side == "post") tt + h else tt - h
       # clean control: no LIVE GAMBLING through the far end of the window.
       # Judged by launch, not by the event date -- a live-but-immature market
@@ -260,7 +287,7 @@ cat(glue("  Excluded (no pre-treatment baseline in panel): ",
 cat(glue("  ...of which legalized INSIDE the dropped COVID window: ",
          "{paste(sort(usable$state_abb[usable$g_in_gap]), collapse=', ')}"), "\n\n")
 write_csv(usable %>% select(state_abb, g, has_baseline, g_in_gap),
-          file.path(OUT_DIR, glue("treated_eligibility_{TREAT_DEF}.csv")))
+          file.path(OUT_DIR, glue("treated_eligibility_{TAG}.csv")))
 
 cat("Estimating event study...\n")
 es <- bind_rows(
@@ -466,7 +493,7 @@ if (!is.null(stk) && nrow(stk) > 0) {
 pretrend_p <- dplyr::coalesce(joint$p_boot, joint$p_F, joint$p_chisq)
 
 # ── Report ───────────────────────────────────────────────────────────────────
-sink(file.path(OUT_DIR, glue("lpdid_report_{TREAT_DEF}.txt")), split = TRUE)
+sink(file.path(OUT_DIR, glue("lpdid_report_{TAG}.txt")), split = TRUE)
 cat(glue("LP-DiD — Dube, Girardi, Jorda & Taylor (2023)\n"))
 cat(glue("Treatment: {TREAT_DEF} | PMD baseline: {PMD} | drop straddling horizons: {DROP_STRADDLING}\n"))
 cat(glue("Panel: {n_distinct(panel$state_abb)} states, {n_treat} treated, ",
@@ -524,14 +551,14 @@ print(es %>% filter(side == "post") %>%
         as.data.frame(), row.names = FALSE)
 sink()
 
-write_csv(es, file.path(OUT_DIR, glue("lpdid_event_study_{TREAT_DEF}.csv")))
-write_csv(windows, file.path(OUT_DIR, glue("lpdid_pooled_windows_{TREAT_DEF}.csv")))
+write_csv(es, file.path(OUT_DIR, glue("lpdid_event_study_{TAG}.csv")))
+write_csv(windows, file.path(OUT_DIR, glue("lpdid_pooled_windows_{TAG}.csv")))
 write_csv(tibble(k = joint$k, n_clusters = joint$G, wald = joint$W,
                  p_wild_bootstrap = joint$p_boot, p_F = joint$p_F,
                  p_chisq = joint$p_chisq, p_naive_superseded = pretrend_p_naive,
                  max_coef_gap = joint$max_coef_gap),
-          file.path(OUT_DIR, glue("lpdid_pretrend_joint_{TREAT_DEF}.csv")))
-if (!is.null(pooled)) write_csv(pooled, file.path(OUT_DIR, glue("lpdid_pooled_{TREAT_DEF}.csv")))
+          file.path(OUT_DIR, glue("lpdid_pretrend_joint_{TAG}.csv")))
+if (!is.null(pooled)) write_csv(pooled, file.path(OUT_DIR, glue("lpdid_pooled_{TAG}.csv")))
 
 # ── Figure ───────────────────────────────────────────────────────────────────
 pl <- es %>% filter(is.finite(att)) %>%
@@ -545,7 +572,7 @@ p1 <- ggplot(pl, aes(event_time, att)) +
   scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 1), guide = "none") +
   labs(x = "Months since treatment", y = "ATT (log filings)",
        subtitle = str_wrap(glue("LP-DiD, {TREAT_DEF} dates, PMD baseline {PMD}. Hollow points have comparisons differencing across the dropped COVID window."), 95))
-ggsave(file.path(OUT_DIR, glue("lpdid_event_study_{TREAT_DEF}.png")), p1,
+ggsave(file.path(OUT_DIR, glue("lpdid_event_study_{TAG}.png")), p1,
        width = 8, height = 4.5, dpi = 150)
 
 cat(glue("\nWrote {OUT_DIR}/\n"))

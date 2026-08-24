@@ -1,0 +1,92 @@
+# =============================================================================
+# power_lpdid_gate_postcovid_noNV.yml — paired NV-free arm, auto-generated 2026-08-21.
+#
+# Nevada has had legal sports betting since 1949 and is ABSENT from
+# sports_gambling_legalization_dates.csv for that reason, not because it never
+# adopted. At level=state the S2 panel contains NV, and under D1 any unassigned
+# state is a CONTROL; the hybrid launch-date control gate can never exclude a
+# state that has no launch date, so NV is a permanently eligible control.
+# See docs/methodology/ADOPTION_UNIVERSE_AUDIT.md.
+#
+# `exclude_states` is hashed conditionally (run_scenario_grid.R:266-271), so this
+# arm gets distinct scenario ids and cannot collide with the NV arm's partials.
+# Generated from power_lpdid_gate_postcovid.yml; only run_name and exclude_states differ.
+# =============================================================================
+# =============================================================================
+# power_lpdid_gate_postcovid.yml — SIZE GATE on the POST-COVID window.
+#
+# Companion to power_lpdid_gate.yml (which uses covid: drop, the standard
+# spliced panel). Here the calibration window is the clean post-COVID era only:
+# 2021-08-01 .. 2025-11-01, 52 months, no splice anywhere in the panel.
+#
+# WHY THIS ALSO ANSWERS "ONLY STATES THAT RAMPED POST-COVID" (verified
+# 2026-08-15): the S2 risk-set rule truncates every treated state at its own
+# treatment date minus the anticipation window, so any state treated before
+# ~2022-02 contributes ZERO post-gap months. Early legalization and an early
+# handle ramp are the same thing, so the post-COVID window automatically drops
+# all six early-ramp states (NJ 2020-06, WV 2020-07, PA 2021-02, IA 2021-05,
+# OR 2021-06, RI 2021-07 by ramp75) and retains only late legalizers:
+#
+#   treated present (7): FL, KS, KY, MA, MO, OH, VT  — all legalized 2022-09+
+#                        (6 of 7 carry a post-gap ramp75; FL has no handle-
+#                         derived ramp75 but legalized 2023-12)
+#   never-treated (10):  AK, GA, HI, ID, MN, NV, OK, SC, TX, UT
+#
+# The two requested windows therefore coincide; this single config covers both.
+#
+# COST: the design shrinks from 23 treated / 15 control (covid: drop) to
+# 7 treated / 10 control. Read SIZE from this run, not power — the MDE here is
+# for a 17-state design and is not comparable to the spliced-window gate.
+#
+# ramp75 provenance and blindness: cohort ramp lags are derived from betting
+# handle DATES ONLY (data/processed/cohort_ramp_lags.csv), never merged against
+# eviction outcomes — allowed as design information under
+# POWER_SIMULATION_BLINDNESS_PROTOCOL.md §2.
+#
+# Scenario count: 1 (run locally via run_scenario_grid()).
+# =============================================================================
+
+run_name: lpdid_gate_postcovid_noNV
+
+exclude_states: [NV]
+
+# ---- Top-level defaults -----------------------------------------------------
+
+level:      state
+sample:     [S2]
+covid:      post              # <- the only substantive change vs the drop gate
+treat_def:  online_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+
+template:   panel
+
+effect_grid:  [0, 0.05]
+
+estimators:   [twfe, did2s, lpdid]
+
+# ---- Execution --------------------------------------------------------------
+
+n_reps:     300
+base_seed:  20260723           # matches every other run — rep-for-rep pairing
+mde_boot:   50
+
+alpha:      [0.1, 0.05, 0.01]
+
+min_pre:    12
+min_post:   6
+
+anticipation_months: 6
+
+# ---- Scenario families ------------------------------------------------------
+
+scenarios:
+
+  - name: lpdid_gate_postcovid_state_nb_step
+    level: state

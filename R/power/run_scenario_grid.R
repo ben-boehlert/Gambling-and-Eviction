@@ -279,6 +279,30 @@ power_rep_seed <- function(base_seed, rep, scenario_offset) {
       "lpdid" %in% as.character(unlist(g$estimators[[i]]))) {
     id$lpdid_wild <- TRUE
   }
+  # `lpdid_anchor` / `lpdid_hmin` are hashed CONDITIONALLY, same principle and
+  # estimator gating as `lpdid_wild`: the defaults ("event", 0) reproduce
+  # pre-flag behavior bit-for-bit, so every existing partial keeps its id.
+  # Non-default values change the LP-DiD estimate itself -- the anchor moves
+  # each switcher's base period, the floor drops low horizons from the pool --
+  # so those runs must land in their own scenario ids and can never be pooled
+  # with anchor-"event" partials. A scenario with no lpdid is provably
+  # unaffected and must keep its id.
+  #
+  # NOTE the anchor is a no-op on schedules with no separate launch date, so a
+  # run that sets it there gets a NEW id for a bit-identical result. That is
+  # the safe direction of the trade (a redundant re-run, never a silent pool
+  # of two different estimands), and it matches how `template` is handled.
+  if ("lpdid" %in% as.character(unlist(g$estimators[[i]]))) {
+    anch <- as.character(g$lpdid_anchor[i] %||% "event")
+    if (length(anch) != 1L || is.na(anch)) anch <- "event"
+    if (!identical(anch, "event")) id$lpdid_anchor <- anch
+    hmn <- suppressWarnings(as.integer(g$lpdid_hmin[i] %||% 0L))
+    if (length(hmn) != 1L || is.na(hmn)) hmn <- 0L
+    if (hmn != 0L) id$lpdid_hmin <- hmn
+    hmx <- suppressWarnings(as.integer(g$lpdid_post[i] %||% 12L))
+    if (length(hmx) != 1L || is.na(hmx)) hmx <- 12L
+    if (hmx != 12L) id$lpdid_post <- hmx
+  }
   # `shift_mode` is hashed CONDITIONALLY, same principle as `template` /
   # `cs_safe_patches` above: FALSE reproduces pre-flag behavior bit-for-bit,
   # so every existing partial must keep its id. TRUE changes what a
@@ -386,6 +410,11 @@ expand_scenario_grid <- function(cfg) {
                                  TRUE)
     # Per-fit boottest arm for LP-DiD; block may override, same principle.
     g$lpdid_wild <- isTRUE(blk$lpdid_wild %||% cfg$lpdid_wild %||% FALSE)
+    # LP-DiD cell anchor and pooled-horizon floor; block may override.
+    g$lpdid_anchor <- as.character(blk$lpdid_anchor %||% cfg$lpdid_anchor %||%
+                                     "event")
+    g$lpdid_hmin <- as.integer(blk$lpdid_hmin %||% cfg$lpdid_hmin %||% 0L)
+    g$lpdid_post <- as.integer(blk$lpdid_post %||% cfg$lpdid_post %||% 12L)
     # States dropped from the panel BEFORE schedule/template derivation —
     # neither treated-template members nor controls (dose-tercile
     # subdesigns, 2026-08-19). Block may override the run level.
@@ -1392,7 +1421,10 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
              # lacking the column must fall back to the historical default
              # rather than error.
              cs_faster_mode = isTRUE(sc$cs_faster_mode %||% TRUE),
-             lpdid_wild     = isTRUE(sc$lpdid_wild %||% FALSE))
+             lpdid_wild     = isTRUE(sc$lpdid_wild %||% FALSE),
+             lpdid_anchor   = as.character(sc$lpdid_anchor %||% "event"),
+             lpdid_hmin     = as.integer(sc$lpdid_hmin %||% 0L),
+             lpdid_post     = as.integer(sc$lpdid_post %||% 12L))
       }
 
       out <- list()

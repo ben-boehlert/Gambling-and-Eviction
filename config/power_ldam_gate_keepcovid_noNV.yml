@@ -1,0 +1,81 @@
+# =============================================================================
+# power_ldam_gate_keepcovid_noNV.yml — paired NV-free arm, auto-generated 2026-08-21.
+#
+# Nevada has had legal sports betting since 1949 and is ABSENT from
+# sports_gambling_legalization_dates.csv for that reason, not because it never
+# adopted. At level=state the S2 panel contains NV, and under D1 any unassigned
+# state is a CONTROL; the hybrid launch-date control gate can never exclude a
+# state that has no launch date, so NV is a permanently eligible control.
+# See docs/methodology/ADOPTION_UNIVERSE_AUDIT.md.
+#
+# `exclude_states` is hashed conditionally (run_scenario_grid.R:266-271), so this
+# arm gets distinct scenario ids and cannot collide with the NV arm's partials.
+# Generated from power_ldam_gate_keepcovid.yml; only run_name and exclude_states differ.
+# =============================================================================
+# =============================================================================
+# power_ldam_gate_keepcovid.yml — SIZE GATE for the L-DAM estimator (debiased linear
+# autoregression; Antonelli et al., AOAS 2026, arXiv:2408.09012).
+#
+# L-DAM was added to R/power/run_estimators.R on 2026-08-21 (.re_ldam) as a
+# candidate whose identifying assumption is ignorability conditional on the
+# prior control counterfactual (selection-on-lagged-outcomes) — NOT parallel
+# trends. In the paper's 51-state simulations CS-DiD and synthetic control had
+# ~no power against small effects while L-DAM detected them in >half of
+# datasets; this project's binding constraint is exactly that power regime.
+# Per the PAP decision rule it enters only through the blinded ladder:
+# size gate first (this config), MDE only for survivors.
+#
+# Cell: NOVEL CELL: full panel including COVID months. The AR-specific hypothesis: conditioning on each state's own lagged outcome absorbs state-specific COVID paths that break did2s's global alpha_i. First keep-COVID calibration for ALL four estimators; the count_nb DGP built on this panel carries COVID-era noise in its residual process — deliberately.
+#
+# twfe, did2s and lpdid run alongside on the IDENTICAL simulated panels
+# (same base_seed => rep-for-rep pairing with the smoke/cheap/primary and
+# lpdid_gate runs). Scenario count: 1 (run locally via run_scenario_grid()).
+#
+# Plan: quality_reports/plans/2026-08-21_ldam-estimator-size-gate.md
+# =============================================================================
+
+run_name: ldam_gate_keepcovid_noNV
+
+exclude_states: [NV]
+
+# ---- Top-level defaults -----------------------------------------------------
+
+level:      state
+sample:     [S2]
+covid:      keep
+treat_def:  online_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+
+# Panel-restricted template, as in smoke/cheap/primary (2026-08-10 decision).
+template:   panel
+
+effect_grid:  [0, 0.05]
+
+estimators:   [twfe, did2s, lpdid, ldam]
+
+# ---- Execution --------------------------------------------------------------
+
+n_reps:     300
+base_seed:  20260723           # matches every other run — rep-for-rep pairing
+mde_boot:   50
+
+alpha:      [0.1, 0.05, 0.01]
+
+min_pre:    12
+min_post:   6
+
+anticipation_months: 6
+
+# ---- Scenario families ------------------------------------------------------
+
+scenarios:
+
+  - name: ldam_gate_keepcovid_state_nb_step
+    level: state

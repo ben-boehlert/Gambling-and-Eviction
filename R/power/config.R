@@ -128,6 +128,26 @@ read_power_config <- function(path = NULL) {
     # scenarios. Needed when analytic lpdid over-rejects with few treated
     # clusters (county post-COVID gate, 2026-08-19).
     lpdid_wild          = FALSE,
+    # LP-DiD cell anchor (run_estimators.R spec$lpdid_anchor): "event"
+    # (default, historical) puts the base period immediately before the
+    # schedule's EVENT month; "launch" puts it immediately before the LAUNCH
+    # month. They differ ONLY under a shifted treatment definition (shift12,
+    # ramp75, maturation50), where "event" draws the switcher's own baseline
+    # from inside the buildup window. Hashed into the scenario id only when
+    # non-default AND the scenario runs lpdid.
+    lpdid_anchor        = "event",
+    # Lowest horizon entering the pooled LP-DiD EWATT (default 0 =
+    # historical). `lpdid_anchor: launch` + `lpdid_hmin: 12` is the LP-DiD
+    # transposition of did::aggte(min_e = 12): buildup horizons are estimated
+    # and given zero weight, rather than folded into the baseline. Raise
+    # lpdid_post alongside it -- the pool is hmin..lpdid_post.
+    lpdid_hmin          = 0L,
+    # Highest horizon in the pooled LP-DiD EWATT. Was hard-wired at the
+    # .re_lpdid default (12) because it was never plumbed through the config;
+    # a launch anchor needs it raised (launch + hmin 12 + post 24 = one year
+    # of pooled horizons starting a year after launch). Default 12 keeps
+    # every existing run bit-identical.
+    lpdid_post          = 12L,
     # Shift-mode shortcut (validated 2026-08-17: analysis/diagnostics/
     # validate_shift_sufficiency.R — every estimator here is linear in the
     # outcome, so a rep's delta=0 fit plus a fitted loading L_hat reproduces
@@ -175,6 +195,22 @@ read_power_config <- function(path = NULL) {
   } else as.logical(cfg$cs_faster_mode)
 
   cfg$lpdid_wild <- isTRUE(as.logical(cfg$lpdid_wild))
+
+  # NULL/NA fall back to the documented defaults so a config that omits either
+  # key keeps historical behavior. match.arg() rejects a typo here rather than
+  # letting it reach .re_lpdid and silently resolve to "event".
+  cfg$lpdid_anchor <- match.arg(as.character(cfg$lpdid_anchor %||% "event"),
+                                c("event", "launch"))
+  cfg$lpdid_hmin <- suppressWarnings(as.integer(cfg$lpdid_hmin %||% 0L))
+  if (length(cfg$lpdid_hmin) != 1L || is.na(cfg$lpdid_hmin) ||
+      cfg$lpdid_hmin < 0L) {
+    stop("lpdid_hmin must be a single non-negative integer.", call. = FALSE)
+  }
+  cfg$lpdid_post <- suppressWarnings(as.integer(cfg$lpdid_post %||% 12L))
+  if (length(cfg$lpdid_post) != 1L || is.na(cfg$lpdid_post) ||
+      cfg$lpdid_post < cfg$lpdid_hmin) {
+    stop("lpdid_post must be a single integer >= lpdid_hmin.", call. = FALSE)
+  }
 
   cfg$shift_mode <- isTRUE(as.logical(cfg$shift_mode %||% FALSE))
   # Left NULL when unset — the per-scenario 10%-of-n_reps default is computed

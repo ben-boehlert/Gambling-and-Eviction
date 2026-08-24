@@ -1,0 +1,67 @@
+# =============================================================================
+# power_boundary_A0_2021_08.yml — SIZE GATE at anticipation A = 0.
+#
+# Current post-COVID boundary (covid window ends 2021-07-31, post begins
+# 2021-08), with the loader's blindness anticipation-exclusion window set to
+# ZERO instead of the default 6 months.
+#
+# WHY (2026-08-21). Two distinct parameters share the name "anticipation":
+#   * est_anticipation  — the ECONOMETRIC assumption (CS `anticipation` arg).
+#     Already 0 in every config: no anticipation is assumed in estimation.
+#   * anticipation_months — the LOADER's blindness buffer (protocol §4), which
+#     refuses outcomes within A months of launch. Default 6.
+# The 6-month buffer is a don't-peek rule, not an economic claim, and sports
+# betting cannot be wagered before it is legal — so months in [g-6, g-1] are
+# genuinely gambling-free. Eviction filings additionally LAG the underlying
+# nonpayment, so an anticipation channel would have to run backward through
+# that lag. POWER_SIMULATION_BLINDNESS_PROTOCOL.md §4 already pre-registers
+# A in {0, 3, 12} as sensitivity values, so this is inside the committed space.
+#
+# COST/BENEFIT measured before running (composition sweep, same loader):
+#   boundary 2021-07: A=0 -> 12 treated / 8 never   (A=6 -> 7 / 8)
+#   boundary 2022-07: A=0 ->  7 treated / 8 never   (A=6 -> 4 / 8)
+# A=0 recovers AZ, CT, LA, MD, WI at the current boundary — no contaminated
+# months, unlike the +4Q redating route (which hands every treated state 12
+# post-launch months coded as control; see lpdid_statepanel.R:113).
+#
+# PAIRING: base_seed matches boundary_A_2021_08 (A=6) rep-for-rep, so the two
+# runs are directly comparable. Read SIZE (delta = 0) as primary.
+#
+# KEY PLACEMENT MATTERS: anticipation_months is a RUN-level key mapping to
+# loader_anticipation. A SCENARIO-level key named `anticipation` would alias to
+# est_anticipation instead (run_scenario_grid.R:140) — do not move it.
+# =============================================================================
+
+run_name: boundary_A0_2021_08
+
+covid_drop: ["2020-03-01", "2021-07-31"]
+anticipation_months: 0          # <- the only substantive change vs boundary_A
+
+level:      state
+sample:     [S2]
+covid:      post
+treat_def:  online_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+template:   panel
+
+effect_grid:  [0, 0.05, 0.10, 0.20]
+estimators:   [twfe, did2s, lpdid]
+lpdid_wild:   true
+
+n_reps:     300
+base_seed:  20260723
+mde_boot:   50
+alpha:      [0.1, 0.05, 0.01]
+min_pre:    12
+min_post:   6
+
+scenarios:
+  - name: boundary_A0_2021_08_state_nb_step
+    level: state

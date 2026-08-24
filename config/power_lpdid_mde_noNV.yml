@@ -1,0 +1,90 @@
+# =============================================================================
+# power_lpdid_mde_noNV.yml — paired NV-free arm, auto-generated 2026-08-21.
+#
+# Nevada has had legal sports betting since 1949 and is ABSENT from
+# sports_gambling_legalization_dates.csv for that reason, not because it never
+# adopted. At level=state the S2 panel contains NV, and under D1 any unassigned
+# state is a CONTROL; the hybrid launch-date control gate can never exclude a
+# state that has no launch date, so NV is a permanently eligible control.
+# See docs/methodology/ADOPTION_UNIVERSE_AUDIT.md.
+#
+# `exclude_states` is hashed conditionally (run_scenario_grid.R:266-271), so this
+# arm gets distinct scenario ids and cannot collide with the NV arm's partials.
+# Generated from power_lpdid_mde.yml; only run_name and exclude_states differ.
+# =============================================================================
+# =============================================================================
+# power_lpdid_mde.yml — MDE curves for the post-COVID vs spliced windows.
+#
+# The two size gates (power_lpdid_gate.yml, power_lpdid_gate_postcovid.yml)
+# established SIZE with a 2-point grid (delta = 0, 0.05). They cannot locate an
+# MDE. This config runs both windows on one wide effect grid so the MDEs are
+# directly comparable, with identical seeds (base_seed 20260723) => rep-for-rep
+# paired panels across both windows and with every earlier run.
+#
+# GRID RANGE. The post-COVID design is small (7 treated / 10 control) and its
+# LP-DiD sampling SD is ~0.115 log points, so 80% power needs roughly
+# 2.8 x SE ~ 0.28 log points. A grid stopping at 0.20 (as in power_primary)
+# would return "never_crosses_target" for every estimator in that window, so it
+# is extended to 0.60. The spliced window will cross far earlier; the shared
+# grid is what makes the two windows comparable.
+#
+# Deltas are proportional changes in filings (impose_effects.R), so 0.30 = a
+# 30% increase — report these in real-world filings terms in the PAP per AV
+# guidance, not as raw log points.
+#
+# Scenario count: 2 (A = spliced/covid drop, B = post-COVID). Run locally.
+# =============================================================================
+
+run_name: lpdid_mde_noNV
+
+exclude_states: [NV]
+
+# ---- Top-level defaults -----------------------------------------------------
+
+level:      state
+sample:     [S2]
+covid:      drop
+treat_def:  online_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+
+template:   panel
+
+# Dense where the spliced window's MDE is expected, extended far enough that
+# the small post-COVID design can actually cross 80% power.
+effect_grid:  [0, 0.02, 0.05, 0.08, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50, 0.60]
+
+estimators:   [twfe, did2s, lpdid]
+
+# ---- Execution --------------------------------------------------------------
+
+n_reps:     300
+base_seed:  20260723           # pairs with both size gates and smoke/cheap/primary
+mde_boot:   200                # bootstrap CI on the interpolated MDE
+
+alpha:      [0.1, 0.05, 0.01]
+
+min_pre:    12
+min_post:   6
+
+anticipation_months: 6
+
+# ---- Scenario families ------------------------------------------------------
+
+scenarios:
+
+  # A. Spliced panel (the standard framework window).
+  - name: mde_spliced
+    covid: drop
+
+  # B. Clean post-COVID window. Also the "states that only ramped post-COVID"
+  #    design — S2 truncation removes every early-ramp state automatically
+  #    (see power_lpdid_gate_postcovid.yml header for the verification).
+  - name: mde_postcovid
+    covid: post
