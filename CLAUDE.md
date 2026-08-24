@@ -271,7 +271,7 @@ Ported the same calibration test to the all-county panel via `analysis/diagnosti
 - **Sun-Abraham pretrends**: NO LONGER rejects after the repairs (joint Holm min p = 0.357) — the prior rejection was partly driven by the NH/ME data artifacts
 - **Overall ATT (CS-DiD)**: +0.011 log points (SE = 0.163 analytic, 0.162 bootstrap) — **not statistically significant** (was −0.225 pre-repair; the shift is mostly the NH −57% artifact removal)
 - **Interpretation**: No detectable effect of online gambling legalization on eviction filings
-- **TWFE power**: 80% power to detect 5% effect (MDE = 5 log points) — **unchanged by ME inclusion** (power 0.828 with ME vs 0.835 without at 5%; 38-state raw panel). Adding one never-treated control does not move the MDE.
+- **TWFE power**: 80% power to detect 5% effect (MDE = 5 log points) — **unchanged by ME inclusion** (power 0.828 with ME vs 0.835 without at 5%; 38-state raw panel). Adding one never-treated control does not move the MDE. **Not double-count contaminated** (county-sourced outcome — see the state-panel section), but the saved run is 2026-07-23 and uses the PRE-repair schedule (16 never-treated, incl. ME/VT/KY/FL): re-run before citing.
 - **Prior spec (pre-repair, for reference)**: 24 states (14 treated, 10 never-treated), overall ATT −0.225, SunAb rejected pre-trends
 
 ### Mortgage Delinquency (Alternative Outcome)
@@ -349,12 +349,36 @@ and inflated the real-calendar sigma 0.592 -> 0.327.
 **Contaminated (state-panel-based; re-run before citing):** pretrends headline (re-run 2026-08-20,
 see below), state calibration table (CS 14%/SunAb 21% — residual-pool DGP contained the breaks),
 blinded-power STATE cells (did2s 23-29% Type I, TWFE-wild MDE>20%, time_agg/splice memo,
-LP-DiD spliced-state MDE 8.1% synthesis, longdiff_power, cheap_sims grid), TWFE staggered
-power sim (MDE=5% claim), handle50/post-COVID handle50 outputs (panel regenerated 2026-08-20;
+LP-DiD spliced-state MDE 8.1% synthesis, longdiff_power, cheap_sims grid),
+handle50/post-COVID handle50 outputs (panel regenerated 2026-08-20;
 downstream outputs stale), era-variance state-panel sigmas (county fixed-basket numbers stand).
 **Immune:** everything county-download-based (county calibration incl. did2s 4%/0.97, county CS
 adaptive MDE verdict, border diagnostic, +9.1% did2s headline), mortgage delinquency, 2x2
-pseudo-power on the annual court panel, handle maturation stats.
+pseudo-power on the annual court panel, handle maturation stats, **TWFE staggered power sim
+(MDE=5% claim)** — this entry was listed as contaminated until 2026-08-20; that was WRONG, see
+below.
+
+**TWFE staggered power sim is NOT double-count contaminated (corrected 2026-08-20).**
+`analysis/main/power_simulation_twfe_statepanel_staggered_parallel_fixed.R` takes its OUTCOME
+from `combined_monthly_panel.csv` via `build_state_panel()`, which aggregates county rows to
+state totals and falls back to `geo_level == "state"` rows ONLY for states absent from the
+county file (`filter(!(state_abb %in% county_states))`). Verified by replicating the build:
+32 states enter by county aggregation; exactly 6 by fallback — LA, MA, MO, NM, NV, RI, which
+are the legitimately single-source states. All 12 double-counted states (AZ OH SC TN TX /
+CT DE IN MN PA VA / FL) have county rows and are therefore taken from the county path, so
+their ETS state series is never added. Zero duplicate state-months.
+`state_month_panel_with_treatment.csv` is read only as `TREAT_FILE` and is transmuted down to
+`state_abb, month_date, treat_start, treated` — the schedule, never the filing counts.
+**Lesson: this entry was added to the contaminated list by pattern-matching the file name, not
+by reading the loader. Trace the actual data path before declaring a result contaminated —
+same class of error as the 2026-08-10 "reproducibility anomaly."**
+
+**It IS stale, for a different and narrower reason — the treatment schedule.** The saved run
+(`data/output/twfe_power_out_2024_with_me/`, 2026-07-23) predates the 2026-08-10 schedule
+repair. Its panel is 38 states / 22 switchers / **16 never-treated**, but the repair moved ME,
+VT, KY and FL out of the never-treated pool, so the switcher-vs-control composition the power
+calculation rests on has changed. Re-run against the repaired schedule before citing the MDE;
+there is no known direction of bias, so do not describe the old number as inflated or deflated.
 
 **REBUILT PANEL IS NOT YET ANALYSIS-READY — composition churn is unfixed (Codex review,
 2026-08-20).** The rebuild removes the double count but a county-sum state total is still a
@@ -379,6 +403,388 @@ SE 0.130): the fix leaves the point estimate nearly unchanged and cuts the CS SE
 mean |pre-ATT| halves (0.047 -> 0.029). The pre-rebuild published numbers (ATT +0.011, SE 0.163,
 26 states 12 treated) are dead — they mixed the double count with the stale schedule.
 
+
+### LP-DiD REWEIGHTING WAS WRONG — EVERY LP-DiD NUMBER BELOW IS ON A THIRD ESTIMAND (2026-08-24)
+
+`.re_lpdid` weighted stacked cells by `1/Var_cell(D)` and called the result an
+equally-weighted ATT. It is neither of the paper's two estimands. By
+Frisch-Waugh-Lovell a cell-FE regression of `dy` on `D` contributes each cell's
+own DiD with weight `w_c * N_c * Var_c(D)`, so:
+
+| observation weight | cell weight | estimand |
+|---|---|---|
+| `1` | `N_c Var_c(D)` | VWATT — the Cengiz et al. (2019) stacked regression |
+| `1/(1 - Dbar_c)` | `N_treated,c` | **EWATT — Dube, Girardi, Jordà & Taylor §2.5.2** |
+| `1/Var_c(D)` | `N_c` | **neither — what this repo actually ran** |
+
+The old scheme weights each cell by its TOTAL size (switchers + surviving clean
+controls), over-weighting early cohorts and short horizons where the
+clean-control pool is largest. All three are convex combinations of
+cell-specific DiDs, so nothing was BIASED under parallel trends — but the
+reported estimand was mislabelled, and it is not the one the paper proves equal
+to CS. Fixed in `run_estimators.R` (`.re_lpdid_weights`) and
+`analysis/main/lpdid_statepanel.R` (`lpdid_cell_weights`).
+
+**Consequence: every LP-DiD size and MDE figure in the sections below —
+shift12 6.3%, ramp75 7.1%, all 7 gates, LDAM, `lpdid_statepanel.R` outputs —
+was computed on the `cellsize` estimand.** Re-runs under the corrected default
+are `lpdid_shift12_{gate,mde}_ewatt`.
+
+**New config knobs**, both plumbed config → grid → spec → estimator:
+- `lpdid_weights`: `ewatt` (new default) | `cellsize` (pre-fix) | `vwatt`
+- `lpdid_pmd`: base-period width, default 3 (was hard-wired, never plumbed)
+
+`lpdid_weights` **inverts** the usual conditional-hash rule — the new default is
+hashed, `cellsize` is not — because here the DEFAULT changed behavior. Post-fix
+runs land on new scenario ids and cannot silently pool with pre-fix partials;
+`lpdid_weights: cellsize` still reproduces the old ids bit-for-bit. Verified:
+`Se4ad20df56` → `Sdc1ca7a0b5` on the shift12 spliced cell.
+
+### THE CS EQUIVALENCE IS REAL, BUT NEEDS A CONTIGUOUS PANEL (2026-08-24)
+
+DGJT footnote 23: with no covariates, binary absorbing treatment, and only
+not-yet-treated controls, **reweighted FIRST-LAG LP-DiD is numerically
+equivalent to CS at every h ≥ 0** — point estimates only, and the paper says
+explicitly it does not extend to pre-trends. Confirmed here to machine
+precision, and it is the independent proof the weighting fix was right
+(`tests/testthat/test-estimators.R`), max |LP-DiD − CS| over h = 0..8:
+
+| arm | diff | |
+|---|---|---|
+| `ewatt` + `pmd 1` | **2.2e-16** | the equivalence |
+| `vwatt` + `pmd 1` | 1.7e-03 | variance-weighted |
+| `cellsize` + `pmd 1` | 2.1e-02 | **the pre-fix weights** |
+| `ewatt` + `pmd 3` | 2.3e-02 | pre-mean-differenced (the BJS-ish variant) |
+
+2.1e-02 against an imposed 0.20 is a 10% relative error — the old weighting was
+not a rounding matter.
+
+**But it breaks on our panel, and balance is not why.** Controlled
+decomposition (`analysis/diagnostics/lpdid_cs_equivalence.R`):
+
+| toy design | max diff | |
+|---|---|---|
+| A. balanced, contiguous | 2.2e-16 | holds |
+| B. unbalanced, staggered entry | 7.8e-16 | **holds** |
+| C. balanced but a 7-month interior hole | 1.1e-01 | **BREAKS** |
+
+**An interior TIME GAP breaks it; unbalancedness does not.** Mechanism:
+`.re_prep()` hands `did::att_gt` a CONSECUTIVE rank index
+(`t_c <- match(month_date, months)`), collapsing every hole — so CS treats the
+month before the COVID splice and the month after as adjacent. `.re_lpdid`
+indexes true calendar months and refuses to bridge, by design.
+
+Not a corner case here: the S2 state panel has **8 states with interior holes
+(84 months) on covid-keep and 19 states with 360 on covid-drop**, on top of the
+25-month splice. Real-panel results track the toy: on the near-contiguous keep
+window `ewatt`+`pmd 1` is the closest arm (median |diff| 0.0097, max 0.090); on
+the spliced window the ordering dissolves (all arms 0.26–0.32).
+
+**Two consequences.** (1) For the PAP: on this panel LP-DiD and CS are NOT
+numerically identical — first-lag reweighted LP-DiD is only the closest arm; do
+not claim the equivalence without the contiguity caveat. (2) **Wider and
+unresolved: every CS run in this framework differences across the COVID hole as
+though it were one month.** That is independent of LP-DiD and needs its own
+investigation — it may be part of why CS calibration is so much worse on
+spliced windows than post-COVID ones (see the time-aggregation memo, which
+reached the same "splice is the problem" conclusion from the size side).
+
+**Also relevant and unused:** DGJT's Simulation 2 shows LP-DiD beating CS/SA/BJS
+only because it adds **one lag of Δy as a control**, which the regression form
+permits and the others do not. `.re_lpdid` fits `dy ~ D_treat | cell` with no
+covariates, so we are not using the feature the paper sells.
+
+
+### SHIFT12 BEATS RAMP75 — NEW RECOMMENDED STATE SPEC (2026-08-21)
+
+`shift12` (online launch + 12 months, uniform) is now a valid `treat_def` in
+`load_blinded_panel`. Schedule: `data/processed/shift12_schedule.csv`, built by
+`data_prep/build_shift12_schedule.R`. **It uses no outcome data at all.**
+
+**The question this answered:** does ramp75's size-gate advantage over raw online
+dating come from the LAG or from the handle-specific timing? **Answer: the lag.**
+Raw online LP-DiD fails size (0.103 spliced); BOTH lagged definitions pass under
+wild inference. So the handle-based dating buys nothing the uniform lag does not.
+
+**Size gate, shift12, NV-free, 2,000 reps** (authoritative; the 300-rep runs
+cannot classify near 0.075):
+
+| cell | estimator | inference | size | 95% CI | verdict |
+|---|---|---|---|---|---|
+| spliced | lpdid | **wild** | **0.0580** | [0.0482, 0.0692] | **PASS** |
+| spliced | lpdid | analytic | 0.0865 | [0.0745, 0.0997] | borderline/fail |
+| spliced | twfe | analytic | 0.0465 | [0.0377, 0.0567] | PASS |
+| postcovid | lpdid | analytic | 0.0630 | [0.0527, 0.0746] | PASS |
+| postcovid | lpdid | wild | 0.0535 | [0.0440, 0.0643] | PASS |
+
+**LP-DiD MDE by treatment definition, NV-free, spliced, wild inference:**
+
+| treat_def | size (gate) | MDE | blind? |
+|---|---|---|---|
+| **shift12** | **0.0580** | **0.0628** | **YES — no outcome data** |
+| ramp75 | 0.0367 | 0.0707 | NO — handle-based, vintage artifact |
+| online (raw) | 0.1033 analytic | 0.0487 (artifact) | yes, but FAILS size |
+
+**shift12 dominates ramp75: better MDE (6.3% vs 7.1%), better SE/SD (1.003 vs
+0.979 at 2,000 reps), passes the post-COVID cell where ramp75's analytic arm did
+not (0.053 vs 0.073), and it is blind.** Recommended state spec: **shift12 +
+LP-DiD + wild bootstrap, spliced window, NV excluded — MDE 6.3%.**
+
+Caveat: the MDE itself is a 300-rep estimate and carries MC noise; the size
+figures above are the 2,000-rep gate and are the reliable ones.
+
+**Why ramp75 should not be the headline** (`data_prep/build_shift12_schedule.R`
+header): its lag past launch correlates **0.957** with months of post-launch
+handle observed (slope 0.257 months per month, t = 17.4). Median lag by
+observation window: <2yr 0.0mo, 2-4yr 10.1, 4-6yr 18.0, 6yr+ 22.0. Observation
+length is a deterministic function of launch date, so ramp75 redates early
+cohorts later and late cohorts earlier — contaminating event time along the
+cohort dimension the design identifies from.
+
+### NV-FREE LP-DiD QUEUE COMPLETE — HEADLINE MDE IS 7.1%, NOT 6.0% (2026-08-21)
+
+7 gates + `lpdid_mde` re-run NV-free. **Correction to the earlier entry: the
+state LP-DiD MDE to quote is the WILD arm at 0.0707, not the analytic 0.0597.**
+Under size-gate-first the analytic arm does not qualify.
+
+**ramp75 / spliced / LP-DiD size, pooling the gate and MDE runs (600 reps each):**
+
+| inference | NV in | NV out | verdict |
+|---|---|---|---|
+| analytic | 0.0667 CI [0.048, 0.090] | 0.0733 CI [0.054, 0.097] | **BORDERLINE — CI straddles 0.075 either way** |
+| wild | 0.0367 CI [0.023, 0.055] | 0.0367 CI [0.023, 0.055] | **PASS decisively** |
+
+**300 reps cannot classify a cell near the 0.075 line** (MC SE = 0.0147 at p=0.07).
+The gate and MDE runs of the IDENTICAL ramp75 config returned 0.083 and 0.063 —
+independent draws, both consistent with ~0.073. Gate decisions on borderline
+cells need ~2,000+ reps; do not classify off a single 300-rep run.
+
+**Treatment definition matters more than NV.** `online_start_date` LP-DiD fails
+size everywhere (spliced 0.103, postcovid 0.092 NV-free) and its low MDE (0.0487)
+is the SEs-too-small artifact. Only `ramp75` yields a size-valid LP-DiD arm.
+
+**LDAM: analytic inference is catastrophically miscalibrated** — size 0.67-0.71
+with SE/SD 0.18-0.27 across all three gates. **LDAM+jackknife passes** (0.037,
+0.030, 0.010; SE/SD ~1.0). Never quote LDAM analytic.
+
+**Two gates still unpairable** (pre-rebuild baselines): `lpdid_gate`,
+`lpdid_gate_postcovid`. `config/power_*_newpanel.yml` staged as queue B.
+
+**shift12 has NO power run and is not a valid `treat_def`** in
+`load_blinded_panel` (accepts only online/maturation50/ramp75). See the ramp75
+vintage-artifact finding below — shift12 is the blind alternative worth testing.
+
+### PANEL-ERA TRAP WHEN PAIRING POWER ARMS (2026-08-21)
+
+**Before comparing any two blinded-power runs, check they were run on the same
+panel.** The state panel was rebuilt 2026-08-20 01:26. Runs before that report
+**38/17** treated+control clusters; runs after report **33/15**. Pairing across
+the boundary attributes a panel change to whatever else differs.
+
+| pre-rebuild (do NOT pair with new arms) | post-rebuild (safe to pair) |
+|---|---|
+| `lpdid_gate` (08-15), `lpdid_gate_postcovid` (08-17), `lpdid_mde` (08-17) | `lpdid_ramp75_mde`, `lpdid_wild_gate`, `lpdid_ramp75_gate_v2`, `lpdid_mde_fixedpanel` (08-20); `ldam_gate{,_keepcovid,_postcovid}` (08-21) |
+
+**A plain resume does NOT fix a stale run.** Scenario ids hash the scenario
+SETTINGS, not the data, so re-running an old config under its original run_name
+reuses the pre-rebuild partials. Use a fresh `run_name` (see
+`config/power_*_newpanel.yml`).
+
+**The ramp75 MDE NV comparison above is unaffected** — both arms are post-rebuild
+(33 vs 32 clusters) — and stands as reported. The `lpdid_gate` NV comparison is
+NOT valid and is being re-based.
+
+### LP-DiD POWER TESTS ARE NV-CONTAMINATED — AND NV WAS HURTING THEM (2026-08-21)
+
+**Every completed LP-DiD/LDAM power result in this repo is state-level, hence
+NV-contaminated.** 9 of 10 configs are `level: state` (`power_lpdid_{gate,
+gate_postcovid,mde,ramp75_gate,ramp75_mde,wild_gate}.yml`, `power_ldam_gate*.yml`).
+At state level the S2 panel carries NV (33 states) and under D1 any unassigned
+state is a CONTROL — and NV, having no launch date, can never be gated out by the
+hybrid launch-date control coding, so it is a permanently eligible control.
+The only NV-free arm, `power_lpdid_mde_county.yml`, **was never finished**: it
+stopped at batch 5/12 (spliced) and 7/30 (postcovid) on 2026-08-17 and has
+`partials/` but no `mde_table.csv`/`oc_summary.csv`.
+
+**Paired re-run of the headline ramp75 cell** (`power_lpdid_ramp75_mde_noNV.yml`,
+300 reps x 13 deltas; `exclude_states` is conditionally hashed so ids do not
+collide): **removing NV IMPROVES the state spliced cell materially.**
+
+| cell / estimator | with NV | no NV |
+|---|---|---|
+| spliced LP-DiD analytic MDE | 0.0733 | **0.0597** |
+| spliced LP-DiD wild MDE | 0.0933 | **0.0707** |
+| spliced LP-DiD SE/SD | 0.860 | **0.979** |
+| spliced LP-DiD size | 0.063 | 0.063 (still passes) |
+| spliced TWFE analytic MDE | 0.1269 | **0.0797** |
+| postcovid LP-DiD analytic MDE | 0.2120 | 0.2144 (flat) |
+| postcovid TWFE analytic size | 0.040 | **0.097 — now FAILS the gate** |
+
+Mechanism: an always-treated state in the control pool adds heterogeneity to the
+controls, inflating estimator SD and depressing SE/SD. Dropping it tightens
+calibration (0.86 -> 0.98) and shrinks the MDE ~19%. **The headline state LP-DiD
+MDE should be ~6.0%, not 7.3%** — and NV was MASKING TWFE's post-COVID
+miscalibration (size 4.0% -> 9.7% once removed).
+
+**Correction to the 2026-08-21 note above:** state D1 is NOT generally infeasible
+without NV. Placement succeeds 40/40 on both the spliced (32 states) and
+post-COVID (14 states) panels. The 3,600/3,600 failure was specific to the
+`boundary_A0` cell (loader anticipation A=0, 2021-08 boundary), not to state D1.
+
+**Still to re-run NV-free:** `lpdid_gate`, `lpdid_gate_postcovid`, `lpdid_mde`,
+`lpdid_wild_gate`, `lpdid_ramp75_gate`, `ldam_gate{,_keepcovid,_postcovid}`, and
+the abandoned county arm.
+
+### NV FOOTPRINT SWEEP — TWO MORE AFFECTED (2026-08-21)
+
+Full sweep in `ADOPTION_UNIVERSE_AUDIT.md` (addendum). Two estimation samples were
+missed by the first audit:
+
+- **TWFE staggered power sim — the MDE = 5% claim.** NV is one of the **16
+  never-treated** states in its 38-state panel (`data/output/twfe_power_out_*/
+  treatment_schedule.csv`: `NV, g=0, ever_treated=FALSE`). Already flagged stale
+  for the schedule repair; now also NV-contaminated.
+- **Mortgage delinquency pretrends.** 51 states, NV necessarily one of the 27
+  never-treated; full coverage means no balance rule drops it.
+
+**How NV gets in, and why a fips check misses it.** `monthly_county_data_download.csv`
+genuinely has no NV (FIPS 32 absent) — that is why all county work is immune. But
+`combined_monthly_panel.csv` carries a **state-level** NV series of 71 months as
+`geo_level=state, geo_id=nevada, geo_name=nevada` — **lowercase, no fips**.
+`build_state_panel()` uses `geo_level=="state"` as the fallback for states absent
+from the county file, so NV enters there. Also note `fips 05099` = **Nevada County,
+Arkansas** — a false positive that looks like the state.
+
+**Magnitude is not uniform** (measured): era variance large (2.67 -> 2.04), state
+D1 fatal (infeasible), LOO influence small (TWFE 0.51%, SunAb 3.81%), 2x2 MDE
+negligible (0.241 -> 0.2401). NV matters where the control pool is thin or NV is an
+outlier; nearly inert where it is one control among many.
+
+**Legitimately includes NV, do not "fix":** `market_maturation`,
+`handle_cohort_support`, `postcovid_handle_ramp_support` — NV is a real betting
+market. Caveat: it is mature since 1949, so it distorts new-market maturation stats.
+
+### NV-AFFECTED RE-RUNS COMPLETE (2026-08-21)
+
+All four analyses flagged in `ADOPTION_UNIVERSE_AUDIT.md` re-run with NV removed
+from the control pool via `PRE_PASPA_SPORTS_BETTING`. Pre-fix scripts preserved in
+`analysis/diagnostics/deprecated/` and `R/power/deprecated/`.
+
+| Analysis | Before | After | Verdict |
+|---|---|---|---|
+| 2x2 pseudo-power MDE-80 (main, RI) | 0.241 (+27%) | **0.2401 (+27.1%)** | unchanged |
+| 2x2 selection placebo (main) | tau -1.4%, RI p 0.90 | **tau -0.30%, RI p 0.976** | holds, cleaner |
+| Era variance, overall median ratio | 2.67 | **2.04** | materially lower |
+| Era variance, strict never-any-exid | 3.86 | **2.73** | materially lower |
+| State blinded-power cells | — | **INFEASIBLE** | see below |
+
+**Era inflation is smaller than documented.** NV was the flagged `outlier_state`
+inflating post-era sigma; without it the post/pre ratio drops ~25%. Pre-era MDEs
+therefore need LESS upward adjustment than the 2.67/3.86 figures implied. Sample
+sizes shrink by one (never_any 8 -> 7, never_any_exid 7 -> 6), so these remain thin.
+
+**2x2 conclusions stand.** CRVE still fails the size gate (8.4% main, 10.6% b12);
+RI is nominal (5.4%); WCB fine (4.4%). Main design now 36 states / 1,532 counties.
+
+**State power cells are NOT re-runnable, and my audit's mechanism was partly wrong.**
+`never_treated` is consumed ONLY in the D4 branch of `make_pseudo_schedules.R:279`,
+and every state-bearing config uses D1 — so no completed state run ever read that
+attribute. NV's real route was simply being an unassigned control in the D1 panel
+pool (it IS in the S2 state panel: 33 states). Excluding it makes state D1
+**structurally infeasible** at the post-COVID boundary: 3,600/3,600 reps fail with
+"D1 infeasible: no template placement within the panel window yields enough
+eligible states (min_pre = 12, min_post = 6)"
+(`output_blinded_power/boundary_A0_noNV_2021_08/failures.csv`). Same class as the
+documented S3 x D1 infeasibility. The honest PAP statement is that the state cell
+is not estimable once NV is correctly excluded — NOT a corrected MDE.
+
+**Loader fix applied anyway** (`R/power/load_blinded_panel.R`): S3 and the
+`never_treated` attribute now exclude `PRE_PASPA_SPORTS_BETTING`. State
+never_treated 8 -> 7; county unchanged at 9 (never contained NV).
+
+**CONCURRENT SESSION.** `config/power_boundary_A0*.yml` were created 2026-08-21
+13:28/13:30 by another session, not this one; `_noNV` is still untracked. Its
+`exclude_states: [NV]` IS honored (`run_scenario_grid.R:1108`). Check `git log`
+and file mtimes before attributing any boundary result.
+
+**PROCESS MISS:** `output/longdiff_era_variance/` was overwritten in place. It is
+untracked, so no git copy exists and the pre-fix CSVs are gone; only the headline
+2.67/3.86 figures survive here. Preserve untracked outputs before re-running.
+
+### PRETRENDS RE-RUN + LOTTERY-VINTAGE CONDITIONING (2026-08-21)
+
+**The `+0.080` provisional headline is DEAD — it was a bug, not an estimate.** The
+template's own comment (`analysis/pretrends/pretrends_statepanel_template.R:503`)
+records that an INTEGER `g` column let `did::att_gt` truncate the never-treated
+`Inf` recode to NA, silently dropping every never-treated state, and that this
+"inflated the 2026-08-20 headline ATT from +0.029 to +0.080". Fresh runs confirm
+it. Current baseline on the rebuilt panel, 26 states (17 treated, 9 never), 16
+cohorts, 91 months, 2,366 obs:
+
+| spec | CS ATT | SE | joint pre-trend p | mean abs pre-ATT | max abs pre-ATT |
+|---|---|---|---|---|---|
+| A unconditional | **+0.020** | 0.057 | 0.170 | 0.0285 | 0.0689 |
+| C conditional, lottery BINARY | +0.048 | 0.055 | 0.914 | 0.0285 | 0.0648 |
+| B conditional, lottery vintage CONTINUOUS | +0.136 | 0.128 | 0.449 | 0.0602 | 0.2308 |
+
+Outputs: `output/pretrends_lottery_{A_baseline,B_conditional,C_binary}/`.
+
+**Conditioning support added** to the pretrends template: `COVARIATES` (+
+`COVARIATE_FILE`) env vars feed `did::att_gt(xformla=)` and, for Sun-Abraham,
+covariate-by-period interactions `i(t, X)` (a time-invariant X is otherwise
+absorbed by the unit FE). Pre-run copy in `analysis/pretrends/deprecated/`.
+
+**Do NOT condition on lottery vintage as a CONTINUOUS covariate on this panel.**
+The damage is not uniform — it is concentrated at e=-2 and e=-1, the event times
+with the thinnest not-yet-treated control pools (e=-2 goes +0.021/SE 0.065 ->
+-0.231/SE 0.242). Median SE inflation across the rest of the pre-window is only
+1.19x. The BINARY indicator conditions stably: mean abs pre-ATT identical to
+unconditional (0.0285), max slightly better, ATT +0.048 (SE 0.055). Classic
+conditional-PT-with-thin-cells failure, not a reason to abandon conditioning.
+
+**Substantive conclusion is unchanged across all three: no detectable effect.**
+
+**Watch the Sun-Abraham coefficient mask.** `grepl("::")` also matches `i(t, X)`
+interaction names (`t::<period>:<var>`), which would sweep 90 interaction
+coefficients into the event study and corrupt every pre-trend test. The mask is
+now `^[^:]+::-?[0-9]+$`.
+
+### ADOPTION UNIVERSE: absent-row trap + Nevada (2026-08-21)
+
+Full audit: `docs/methodology/ADOPTION_UNIVERSE_AUDIT.md`. Canonical helpers at the
+bottom of `utils/eviction_treatment_schedule.R` (della copy kept identical):
+`EVICTION_STATE_UNIVERSE`, `PRE_PASPA_SPORTS_BETTING`, `eviction_adoption_outcomes()`,
+`eviction_control_states()`, `assert_no_pre_paspa_controls()`. Use them; do not
+re-derive the universe or the NV rule in a script.
+
+**Trap 1 — absent rows.** `sports_gambling_legalization_dates.csv` has a row ONLY for
+states that legalized something; never-legalizers are ABSENT, not NA. So
+`inner_join(features, schedule)` and `schedule %>% pull(state_abb)` silently delete
+13 states: AL AK CA GA HI ID MN NE NV OK SC TX UT. `setdiff(panel_states, ever)` and
+`%in% ever_online` are SAFE because the universe comes from the panel. Scan of 81
+first-party scripts: the trap was live in exactly one place,
+`analysis/diagnostics/adoption_selection_levels_slopes.R` (fixed; substrate A 29 → 41
+states, and the adopter-never level gap fell +0.64 → +0.24 log points as a result).
+`R/power/load_blinded_panel.R:262-264` already documented and avoided it.
+
+**Trap 2 — Nevada is always-treated, not never-treated.** Legal sports betting since
+1949; absent from the schedule because there was no post-PASPA event to record. DE/OR/MT
+carry explicit post-2018 dates and are NOT part of this exception.
+
+**NV-affected (re-run before citing):** 2x2 pseudo-power MDE-80 = 0.241 (+27%) and its
+size/Type-M tables (`output/longdiff_2x2_pseudo/`); the 2x2 selection placebo
+(tau = -1.4%, RI p = 0.90) — NV sits in its 17-state "never" arm, which is the arm the
+test is about; era-variance ratios, especially the strict-never-set 3.86, where NV is
+both a member and the flagged `outlier_state`; state-level blinded-power cells
+(`attr(panel,"never_treated")` contains NV — a second reason on top of the double count).
+`analysis/cheap_sims/11_exposure_time_vs_intensity.R` already drops NV but ad hoc via an
+inline `state_abb != "NV"`; migrate it to the shared constant.
+
+**NV-immune (verified, not assumed):** everything on the county download — NV is not in
+`monthly_county_data_download.csv` at all (county calibration, border diagnostic, +9.1%
+did2s headline, county blinded-power cells, `longdiff_real_calendar_decomp.R`); and every
+balanced-panel result — NV has 46 non-COVID months against a 91-month balance threshold,
+so it drops before estimation (pretrends headline, CS/SunAb calibration).
 
 ### CS in the Blinded Power Framework: Two Execution Flags (2026-08-17)
 
@@ -580,6 +986,7 @@ The result is a **bound**, not a precise null:
 - [ ] Run Goodman-Bacon (2021) decomposition on TWFE to quantify negative-weight concern
 - [ ] Add per-batch checkpoint/resume to `R/power/run_scenario_grid.R` and raise `--time` before resubmitting the CS arm of the power sims (county+CS needs ~50–63h vs the 48h limit; a timeout currently loses the whole scenario)
 - [ ] Drop S3 from `power_primary.yml` D1 blocks (structurally infeasible — see Blinded Power-Simulation Framework section) and decide whether to promote a D4 never-treated block into primary
+- [ ] Re-run `analysis/main/power_simulation_twfe_statepanel_staggered_parallel_fixed.R` against the repaired treatment schedule (saved run is 2026-07-23, pre-repair: 16 never-treated incl. ME/VT/KY/FL). Outcome data is county-sourced and fine; only `TREAT_FILE` is stale. PAP §2.4 cites N=2,867 state-months, which matches no run in `data/output/` (current runs: 3,505 with ME, 3,397 without) and says the sample starts 2016-01 while the run panel starts 2012-01 — reconcile both when re-running.
 - [ ] Draft the Arnold pre-analysis plan: port design sections from `Arnold Housing Loss Gambling - Application.docx`; rewrite estimator-selection rule (calibration-gate decision rule, not "CS if different"), power section (blinded framework + MDE in filings-per-year terms + heterogeneous-DGP MDE), and key modeling decisions (COVID window, log(1+y), treatment date defs, balance rules, state exclusions)
 
 ## Bundled R Packages (`did/`, `DRDID-master/`, `fastglm-master/`)
@@ -680,7 +1087,7 @@ This repo includes local patched copies of three R packages to fix critical bugs
 
 ### Power Analysis Results
 
-- **TWFE without COVID**: 80% power to detect 5% effect (MDE = 5 log points). Well-calibrated: SE/SD = 1.14, Type I error = 1-5%.
+- **TWFE without COVID**: 80% power to detect 5% effect (MDE = 5 log points). Well-calibrated: SE/SD = 1.14, Type I error = 1-5%. Outcome is county-sourced, so this is NOT double-count contaminated; it IS on the pre-2026-08-10 schedule and needs a re-run (see the state-panel section).
 - **TWFE with COVID**: 80% power to detect 8% effect (MDE = 8 log points)
 - **Heterogeneity-robust estimators (CS, SunAb)**: MDE ≈ 20-25% (4-5x noisier). Not useful for detecting plausible effect sizes.
 - **No formal power simulation exists for mortgage delinquency** (the mortgage panel has 51 states so power is likely better than evictions)
