@@ -462,11 +462,26 @@ pre-registration; relabelling cellsize as EWATT was not.
 **vwatt gate (2,000 reps, `lpdid_shift12_gate_vwatt`): wild PASSES both
 windows** — spliced 0.0515, postcovid 0.0615; analytic 0.097/0.087 (fails
 spliced, borderline postcovid); SE/SD 1.14. Estimand SD 0.040, between
-cellsize (0.022) and ewatt (0.050), so its wild MDE should land ~0.09–0.10.
-MDE run: `lpdid_shift12_mde_vwatt`. The PAP choice is then EWATT-wild
-(MDE 11.5%, equally-weighted estimand, CS-comparable) vs VWATT-wild
-(smaller MDE, Cengiz-stack estimand, weights are a convenience of the
-design). Both are honest; pick by which estimand the PAP wants to defend.
+cellsize (0.022) and ewatt (0.050).
+
+**vwatt MDE (`lpdid_shift12_mde_vwatt`, 300 reps × 13 δ): spliced wild
+0.0875 (CI 8.3–9.1%)**; spliced analytic 0.075 (borderline gate, don't
+lead with it); postcovid 0.32–0.37 (the thin postcovid design is hostile
+to variance weighting — do not use vwatt there).
+
+**Final PAP decision table (shift12, NV-free, spliced, size-valid arms):**
+
+| arm | size (2,000 reps) | MDE | estimand |
+|---|---|---|---|
+| LP-DiD vwatt + wild | 0.0515 | **0.0875** | variance-weighted (Cengiz stack) |
+| LP-DiD ewatt + wild | 0.0325 | 0.115 | equally-weighted ATT (= CS's) |
+| TWFE analytic | 0.0495 | 0.165 | TWFE pooled |
+
+Both LP-DiD arms are honest; pick by which estimand the PAP wants to
+defend — vwatt buys ~24% MDE by down-weighting thin cells (a property of
+the design, defensible if stated), ewatt matches the CS estimand the
+literature reports. The dead 6.3% sat between them because the cellsize
+weights were an accidental hybrid.
 
 **New config knobs**, both plumbed config → grid → spec → estimator:
 - `lpdid_weights`: `ewatt` (new default) | `cellsize` (pre-fix) | `vwatt`

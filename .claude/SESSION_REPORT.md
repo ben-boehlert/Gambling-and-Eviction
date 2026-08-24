@@ -1183,3 +1183,381 @@ checkpoint at reduced concurrency (6 → 5 workers), no data lost.
 - Done: HANDOFF written to `quality_reports/HANDOFF_2026-08-19.md` (covers the whole
   session incl. the long-differences discussion)
 - Pending: build the 2x2 estimator (B); open decision — RI primary vs CRVE+wild
+
+## 2026-08-19 20:05 — Long differences re-staged as a pre-treatment pseudo-experiment
+
+**Operations:**
+- New: `analysis/diagnostics/longdiff_2x2_pseudo_power.R` (binary 2x2 power sim, 500 reps, RI + CRVE + wild cluster bootstrap, count_nb effects) → `output/longdiff_2x2_pseudo/`
+- New: `analysis/diagnostics/longdiff_era_variance.R` (era σ stress test + centre-anchored averaging test) → `output/longdiff_era_variance/`
+- New: `analysis/diagnostics/longdiff_2x2_selection_placebo.R` → `output/longdiff_2x2_selection/`
+- Memo: `quality_reports/longdiff_pseudo_treatment_memo_2026-08-19.md`; CLAUDE.md gained two sections
+- Design judgement call escalated to Fable (substrate, calendar, assignment, inference, grid)
+
+**Decisions:**
+- Shift the whole long-difference experiment into the pre-treatment era (Black et al. 2022) instead of truncating state-by-state — truncation left only 6 usable states
+- Annual county court panel as substrate (CY2008+09 → CY2016): the only one that fits 24/12-month windows at a ~70-month distance with 22/15 states. ETS monthly untreated era is 29 months and cannot
+- Randomization inference primary — subsequently vindicated: CRVE fails size at 7.8%/12.4%, RI exactly 5.0%
+- Idaho pre-excluded from era σ (drives 100% of pre-era placements; already excluded elsewhere for data quality)
+
+**Results:**
+- Pseudo-era MDE-80 = 0.241 log points (+27% filings), RI size 5.0%, null bias −0.0008
+- Post-COVID σ is 2–4× pre-2018 σ at matched geometry → real-era MDE **+56% to +90%** via three independent routes
+- Burlig confirmed on both margins: 12-month endpoint averaging cuts σ by 5–12% (vs 71% iid); 24- vs 12-month baseline worth ~2% of MDE
+- Type M 2–4× at plausible effect sizes; 28% sign errors at δ=0.02 under CRVE
+- Selection placebo passes (τ = −1.4%, RI p = 0.90)
+- Bug caught and fixed mid-build: `filter(n == n)` in the centre-anchored function admitted partial-coverage states
+
+**Status:**
+- Done: design decision, both deliverables, memo, docs
+- Pending: nothing committed yet (awaiting go-ahead); annual↔ETS outcome bridge is a bridge, not a measurement
+
+## 2026-08-20 01:00 — State panel double count diagnosed and rebuilt
+
+**Operations:**
+- Diagnosed the TX/MN state-vs-county long-difference disagreement: `data/raw/state_month_panel_with_treatment.csv` double-counted 12 states (county sum + overlapping ETS series, exact to the unit on 916/916 overlap months). New audit: `analysis/diagnostics/statepanel_double_count_audit.R` -> `output/statepanel_double_count/`
+- Rebuilt the panel: `data_prep/rebuild_state_month_panel.R` (county sums; NH/WI court repairs kept; NY trimmed to 2019+; MD/LA/MA/MO/NM/NV/RI carried; treat_start from repaired schedule). Old panel -> `data/raw/deprecated/state_month_panel_with_treatment_double_counted_2026-08-20.csv`
+- Regenerated `data/processed/state_month_panel_handle50_treatment.csv` from the rebuilt panel
+- Re-ran pretrends twice to decompose schedule repair vs panel fix: `output/pretrends_rebuild_A_oldpanel/` (old panel + repaired schedule) and `output/pretrends_rebuild_B_newpanel/` (rebuilt panel)
+
+**Decisions:**
+- One consistent source per state; drop NY pre-2019 (different-basket ETS series) rather than keep the seam — NY falls out of the balanced pretrends panel
+- Old panel preserved in deprecated/, not deleted
+
+**Results:**
+- Breaks: cities series start 2020-01 (AZ OH SC TN TX jump up), state_level series end 2023-02 (CT DE IN MN PA VA drop), FL drop 2020-01; 1.2x-2.4x level breaks
+- New pretrends headline: 25 states (16 treated/9 never), CS ATT +0.080 (SE 0.088), pretrends pass. Panel fix cut CS SE by ~1/3 vs old panel at same schedule (0.130 -> 0.088); point estimate ~unchanged
+- Contaminated and needing re-run: state calibration table, blinded-power state cells (did2s Type I, TWFE-wild MDE, time_agg/splice memo, LP-DiD spliced-state 8.1%), TWFE MDE=5% sim, post-COVID handle50 outputs, era-variance state sigmas. County-based results immune.
+
+**Status:**
+- Done: audit, rebuild, handle50 regen, pretrends re-run, CLAUDE.md known-issue section
+- Pending: re-run state calibration + blinded-power state cells + handle50 post-COVID pipeline on rebuilt panel; decide NY re-entry via OCA data
+
+## 2026-08-20 01:30 — NC extended from NC AOC court source (2023-06 → 2026-06); state + handle50 panels rebuilt
+
+**Operations:**
+- New: `data_prep/monthly_panel_expansion/09a_download_nc_aoc_civil_issue_reports.R` (11 FY workbooks → `data/raw/monthly_expansion/nc_aoc/`, 61 MB)
+- New: `data_prep/monthly_panel_expansion/09b_parse_nc_aoc_sume.R` → `data/raw/monthly_expansion/nc_sume_county_month.csv` (13,200 rows; 100 counties × 132 months, 2015-07..2026-06)
+- New: `data_prep/monthly_panel_expansion/09c_extend_nc_in_county_files.R` — appended 3,600 NC rows (36 months × 100 counties, 2023-07..2026-06) to `data/raw/monthly_county_data_download.csv` and `data/raw/combined_monthly_panel.csv`
+- Reran `data_prep/rebuild_state_month_panel.R` and `data_prep/build_panel_handle50_treatment.R`
+- Backups (once, never overwritten): `data/raw/deprecated/{monthly_county_data_download,combined_monthly_panel}_pre_nc_extension_2026-08-20.csv`
+
+**Decisions:**
+- Eviction = `Issue_Code == "SUME"` summed over ALL case types, not CVM alone — CVM-only runs ~2% below ETS and the non-CVM SUME rows fall from ~875/mo (2022) to ~10/mo (2026) as cases reclassify into CVM, which would read as a spurious downward trend.
+- Append-only at the seam: ETS rows 2016-01..2023-06 untouched, so every existing county-download-based result stays bit-for-bit reproducible. Verified: existing rows byte-identical to backup in both files.
+- Carried renter/poverty forward per county — exact, not approximate (0 of 100 NC counties ever vary in the download). NCAOC supplies no denominator.
+
+**Results:**
+- Validation vs ETS on 90 overlap months: statewide corr **1.0000**, median monthly ratio 1.0000 (min 0.9978); 8,984/9,000 county-months exact (99.8%), mean diff −0.01, max |diff| 26 (Wake ≈1%). ETS's NC feed *is* this report.
+- R parser reproduces an independent Python extraction with 0 value mismatches on all 13,200 rows.
+- **NC before: 0 rows in the rebuilt state panel** (fixed-basket rule dropped it — no NC county reported through the 2024-12 basket window). **After: 126 months, all 100 counties every month, basket_share 1.0, 28 treated months** (treat_start 2024-03-01).
+- handle50 panel: NC 126 months / 28 treated; states with treat_start = 20, states with ≥1 treated obs = 20 — **the zero-treated-but-dated set is now empty**.
+- Global basket-month count unchanged (91 before and after) → no other state's basket shifted; NC is the only state that changed.
+- Seam continuous: 2023-06 = 16,165 (ETS) → 2023-07 = 16,470 (AOC), +1.9%.
+- Odyssey/eCourts migration (Feb 2023 – Oct 2025, county-staggered) does NOT drop counties from this report: 100 counties present in all 11 fiscal years.
+
+**Status:**
+- Done: NC wired into `data/raw/`, both panels rebuilt and verified.
+- Pending: MO still carries `treat_start` 2025-12 with 0 treated months (ETS series ends 2023-01) — genuinely post-panel, not a coverage gap. `build_panel_handle50_treatment.R:241` still counts `!is.na(treat_start)` rather than states with any `treated == TRUE`; it agrees with the truth now only by coincidence.
+- Pending: downstream outputs built on the pre-extension panels are stale (pretrends, handle50 outputs, power-sim state cells).
+
+## 2026-08-20 — CLAUDE.md correction: TWFE power sim was wrongly flagged as double-count contaminated
+
+**Operations:**
+- Traced the data path of `analysis/main/power_simulation_twfe_statepanel_staggered_parallel_fixed.R`; replicated `build_state_panel()` against `data/raw/combined_monthly_panel.csv`.
+- Edited `CLAUDE.md`: removed the TWFE power sim from the state-panel **Contaminated** list, moved it to **Immune** with the verified mechanism, added a re-scoped staleness note and a TO DO for the re-run.
+
+**Decisions:**
+- Re-scoped the flag from "double-count contaminated" to "stale treatment schedule" — the two imply different fixes (rebuild panel vs. re-run against repaired schedule) and different credibility (biased vs. merely out of date).
+
+**Results:**
+- Power sim's OUTCOME comes from `combined_monthly_panel.csv`, not the double-counted state panel. Replicating the build: **32 states via county aggregation, 6 via state fallback (LA, MA, MO, NM, NV, RI — the legitimately single-source states), 0 duplicate state-months.** All 12 double-counted states have county rows, so `filter(!(state_abb %in% county_states))` excludes their ETS series — the two sources are never summed.
+- `state_month_panel_with_treatment.csv` is read only as `TREAT_FILE`, transmuted to `state_abb, month_date, treat_start, treated`. Filing counts never enter.
+- **What is genuinely stale:** saved run `data/output/twfe_power_out_2024_with_me/` is dated 2026-07-23, pre-dating the 2026-08-10 schedule repair. Panel = 38 states / 22 switchers / 16 never-treated; the repair moved ME, VT, KY, FL out of never-treated. No known direction of bias.
+- Discrepancies found in PAP §2.4: cites N = 2,867 state-months (no run in `data/output/` matches — current runs are 3,505 with ME, 3,397 without) and a 2016-01 sample start (run panel starts 2012-01). Rest of §2.4 reproduces exactly (2,000 sims, 0–6% grid, `MIN_STATES_PER_MONTH=5`, Mar-2020–May-2021 end-exclusive window, power 0.828 at 0.0488 log points).
+- Root cause of the bad flag: the entry was added by pattern-matching the file name, not by reading the loader — same class of error as the 2026-08-10 "reproducibility anomaly."
+
+**Status:**
+- Done: `CLAUDE.md` corrected in three places (contaminated/immune block, Empirical Results TWFE power bullet, Power Analysis Results bullet) + TO DO added.
+- Pending: re-run the power sim against the repaired schedule; reconcile PAP §2.4's N and sample start.
+- Pending: PAP §2.5 estimator section still leads with TWFE and pre-registers "CS-DD if different from OLS" — contradicts the calibration record and the blinded size-gate decision rule. Not yet edited.
+
+## 2026-08-21 10:15 — Adoption-timing selection diagnostic (levels vs slopes)
+
+**Operations:**
+- Created `analysis/diagnostics/adoption_selection_levels_slopes.R`; outputs to `output/adoption_selection/`
+- Two independent pre-legalization substrates, both fixed-county-basket: (A) annual county court panel 2009–2015, 29 states; (B) ETS monthly county download 2016-01..2018-05, 19 states. Both windows end before the first US legalization (2018-06).
+- Tests per substrate × treatment definition (online, first): ever-adopt LPM, months-to-adoption OLS (HC3), Cox PH with never-adopters censored at 2024-12, permutation Spearman and permutation mean-difference (5,000 draws)
+
+**Decisions:**
+- Fixed basket + `basket_share`/`n_cty` trimming (>=5 counties, >=50% of state renters) — composition churn would otherwise fake both level and slope (per CLAUDE.md rebuild warning)
+- Cox PH rather than OLS-on-timing alone, so never-adopters enter as censored instead of being dropped
+- Ran directly rather than via the /analyze agent pipeline (session directive: no agent dispatch unless requested)
+
+**Results:**
+- SLOPES: no relationship anywhere. Cox log-hazard per SD of pre-slope −0.25 (SE 0.23) substrate A, +0.13 (SE 0.31) substrate B; months-to-adoption per SD +6.0 (SE 6.4) A vs −4.3 (SE 8.6) B — signs flip, all CIs straddle zero
+- LEVELS: adopters sit higher (A +0.64 log pts, perm p=0.19; B trimmed +1.10, p=0.043) and Cox hazard is positive (+0.14 A to +0.81 B×first, p=0.033), but months-to-adoption sign flips across substrates and the effect is absorbed by state size — adding log(renters) moves B-full level 0.148 → 0.077 while size takes 0.545 (p=0.039)
+- 32 tests total, 3 at p<0.06 vs ~1.6 expected under the null
+- Corroborates `output/pretrends_rebuild_B_newpanel`: CS Holm p=1.0, SunAb p=1.0, mean |pre-ATT| 0.029
+- Cross-state LEVEL comparisons flagged as weakly identified: MD = 852 filings per 1k renters (serial filings), several states enter on 1–2 counties
+
+**Status:**
+- Done: diagnostic, outputs, figure, logs
+- Pending: not committed
+
+## 2026-08-21 11:40 — Pre-PASPA predictability of adoption and timing
+
+**Operations:**
+- Created `analysis/diagnostics/adoption_predictability_prepaspa.R` -> `output/adoption_predictability/`
+- Predictors, two windows: PRE-REPEAL (<=2018-01, before Murphy v. NCAA) and PRE-ANTICIPATION (<=2009-12, before NJ's 2012 PASPA challenge). Blocks: mortgage 90+ delinquency level/crisis-peak/slope (51 states), log adult population, n bordering states, eviction level/slope (41 / 30 states)
+- Metrics: repeated stratified 5-fold CV (200 repeats) for AUC/Brier/R-squared/Cox concordance, each against a 1,000-draw permutation null run through the identical CV loop
+
+**Decisions:**
+- Abandoned leave-one-out after verifying it is structurally broken at this N: dropping an adopter lowers the training base rate, so held-out adopters get systematically lower fitted probabilities and LOO AUC collapses to exactly 0 under no signal (confirmed on mort_slope: 51 distinct probs, coef -0.007, AUC 0.000). Stratified K-fold holds the base rate fixed; null recentres at ~0.49
+- Fixed the 51-state universe: the schedule CSV omits never-legalizing states as ABSENT rows, so joins were deleting AL AK CA GA HI ID MN NE NV OK SC TX UT. NV flagged separately (legal since 1949, PASPA-grandfathered)
+- Fixed AK/HI n_border = 0 (count() had dropped them, deleting two never-adopters)
+
+**Results:**
+- EVER-ADOPT: best CV AUC 0.600 (macro, eviction sample) / 0.583 (macro, 51 states) vs null ~0.485, p=0.16-0.18; in-sample 0.74-0.78 -> optimism gap ~0.18. Brier skill NEGATIVE in all 8 models (-0.09 to -0.58): worse than the base rate
+- TIMING: CV R-squared negative in all 8 models (-0.24 to -1.34) against in-sample 0.05-0.22; p>=0.39. Cox concordance 0.36-0.55, all within noise of the null (p>=0.47)
+- Eviction history adds nothing: macro-only 0.600 -> macro+eviction 0.574
+- Pre-anticipation window is uniformly worse than pre-repeal (all CV AUC <=0.48)
+- Single exception: 2016-17 mortgage delinquency, CV AUC 0.689 (p=0.008), Brier skill +0.095, adopters 1.40% vs never 1.06% (Wilcoxon p=0.009). Predicts WHETHER, not WHEN (Cox p=0.448); vanishes in the 2009 window; pattern is judicial-foreclosure Northeast vs Plains/Mountain, i.e. a region proxy
+- Re-ran `adoption_selection_levels_slopes.R` on the corrected 51-state universe: substrate A 29 -> 41 states, adopter-never level gap +0.64 -> +0.24 log points, slope gap -2.0 -> -0.8 pp/yr, nothing significant outside the smallest trimmed cell
+
+**Status:**
+- Done: both diagnostics, corrected universe, CV methodology, figures, logs
+- Pending: not committed
+
+## 2026-08-21 12:55 — Adoption universe hard-coded; schedule-join audit
+
+**Operations:**
+- `utils/eviction_treatment_schedule.R`: added `EVICTION_STATE_UNIVERSE` (51), `PRE_PASPA_SPORTS_BETTING` (= NV), `eviction_adoption_outcomes()`, `eviction_control_states()`, `assert_no_pre_paspa_controls()`; `della_upload/utils/` copy synced byte-identical
+- Refactored `analysis/diagnostics/adoption_selection_levels_slopes.R` and `adoption_predictability_prepaspa.R` onto the shared helpers; both now exclude NV
+- Migrated `analysis/cheap_sims/11_exposure_time_vs_intensity.R` off its inline `state_abb != "NV"` onto the shared constant
+- Wrote `docs/methodology/ADOPTION_UNIVERSE_AUDIT.md`; added a CLAUDE.md section at line ~407
+- Re-ran both diagnostics
+
+**Decisions:**
+- Audited by tracing each script's actual data path and reconstructing samples, not by pattern-matching filenames — the standing lesson from the 2026-08-10 anomaly and the 2026-08-20 TWFE mislabelling
+- Kept `PRE_PASPA_SPORTS_BETTING` to NV alone: DE/OR/MT carry explicit post-2018 dates so the ordinary path handles them
+- `control_eligible` written into the outcome table so the NV decision is data, not per-script judgement
+
+**Results:**
+- Absent-row trap: live in exactly 1 of 81 scripts (my own, fixed). `setdiff(panel_states, ever)` and `%in% ever_online` are safe; `R/power/load_blinded_panel.R:262-264` already documented the hazard
+- NV-affected (superseded until re-run): 2x2 pseudo-power MDE-80 0.241 (+27%) and its size/Type-M tables; 2x2 selection placebo (tau -1.4%, RI p 0.90) — NV sits in the very arm the test is about; era-variance ratios, esp. strict-never-set 3.86 where NV is a member AND the flagged outlier_state; STATE blinded-power cells
+- NV-immune (verified): all county-download work (NV absent from `monthly_county_data_download.csv`); all balanced-panel work (NV 46 non-COVID months vs 91 threshold -> drops). Pretrends headline, CS/SunAb calibration, county CS adaptive MDE, border diagnostic, +9.1% did2s, mortgage all stand
+- Selection re-run (NV out): substrate A 40 states / 17 never; slope and level results unchanged and null
+- Predictability re-run (NV out): ever-adopt best CV AUC 0.640 (p=0.068) vs 0.600 before — NV removal modestly IMPROVES discrimination, still not significant; timing CV R-squared still negative everywhere (-0.23 to -1.45); Cox concordance 0.556 vs null 0.556; mort_level single 0.703 (p=0.006, only positive Brier skill +0.108); macro+eviction 0.591 < macro-only 0.640 so eviction still adds nothing
+
+**Status:**
+- Done: utility, refactors, audit doc, CLAUDE.md, both re-runs
+- Pending: re-run the four NV-affected analyses; not committed
+
+## 2026-08-21 14:10 — Political/institutional block comparison
+
+**Operations:**
+- Extracted the CV machinery to `utils/cv_predictability.R` so every block is scored by one estimator, one fold scheme, one permutation null; rewired `adoption_predictability_prepaspa.R` to source it
+- New `analysis/diagnostics/adoption_predictability_institutions.R` -> `output/adoption_predictability_institutions/`
+- Found and used real pre-PASPA political data: Berry-Ringquist-Fording-Hanson state ideology, `Funding/Data/stateideology_v2018.xlsx`, 1960-2017, taken at **1991** (PASPA enacted Oct 1992). Region from base R `state.region` (DC -> South)
+- Wrote `docs/methodology/ADOPTION_PREDICTORS_FEASIBILITY.md`
+
+**Decisions:**
+- Implemented only blocks with real data. Casino/tribal structure, lottery, constitutional barriers, legislature professionalism, gaming fiscal dependence and neighbour legalization are NOT in the workspace and were not hand-keyed from memory — documented as acquisition targets with named sources instead
+- Added an explicit orthogonality test, because "assignment runs on institutions" only supports the identification claim if those institutions are themselves unrelated to pre-period eviction dynamics
+- Flagged the neighbour-legalization model as a discrete-time hazard with time-varying covariates, not a cross-sectional block
+
+**Results:**
+- EVER adopt: region CV AUC **0.676 (p=0.008)**, Brier skill +0.093 — the only block with genuine out-of-sample skill; macro 0.631 (p=0.072); pre-PASPA ideology 0.561 (p=0.249); eviction 0.469 (p=0.590); everything-stacked 0.630, worse than region alone
+- TIMING: negative CV R-squared for EVERY block (-0.22 to -1.32), all p >= 0.29. Cox concordance 0.45-0.57 against nulls 0.46-0.57, all p >= 0.48. Nothing forecasts when
+- ORTHOGONALITY caveat: ideo_govt x ev_slope r = 0.291 (p=0.069); reg_West x ev_slope r = -0.343 (p=0.030). Institutions are not cleanly orthogonal to the pre-period eviction slope
+- Consequence: the user's conditional ("institutions forecast timing strongly") is unmet on the measurable blocks. The defensible version is narrower — timing is unpredictable from everything measured, which is the margin the staggered DiD actually rests on
+
+**Status:**
+- Done: shared CV util, institutions script, feasibility doc, logs
+- Pending: acquire blocks 1-6; NV-affected re-runs; not committed
+
+## 2026-08-21 12:25 — Eviction stabilization timing, post-COVID boundary, anticipation window
+
+**Operations:**
+- New: `analysis/diagnostics/eviction_stabilization_timing.R` -> `output/eviction_stabilization/`
+- New: `analysis/diagnostics/postcovid_boundary_fixedlen.R` -> `output/covid_global_pt/postcovid_boundary_fixedlen.csv`
+- New: `config/power_boundary_A_2021_08.yml`, `config/power_boundary_B_2022_08.yml`
+- Re-ran `analysis/diagnostics/postcovid_boundary_sweep.R` on the REBUILT panel (numbers differ from the pre-rebuild log; script footer benchmarks 0.416/0.467 are now STALE)
+- Power runs: `output_blinded_power/boundary_A_2021_08/` COMPLETE (300 reps); `boundary_B_2022_08/` PARTIAL at 175/300 reps, resumable
+
+**Results:**
+- Median state stabilization = **2022-07** (IQR 2022-02..2023-03); only 3/20 settled by 2022-01; 6 states (KS MD MN MT NC UT) never stabilize. Robust across 18 threshold combos.
+- Post-COVID noise floor 1.43x pre-COVID, never 1.0x — independently reproduces the era-variance finding. An absolute "back to pre-COVID volatility" criterion is WRONG here.
+- Stabilization is a WITHIN-state property; parallel trends is CROSS-state. Fixed-length sliding windows show later windows are NOT more stable (18mo half-split SD 0.108 early vs 0.207 late). Stabilization date alone does NOT justify moving the boundary.
+- Boundary 2021-08 -> 2022-08 costs 3 of 7 treated clusters (KS MA OH), 52 -> 40 months.
+- `power_lpdid_gate_postcovid.yml` header says 7 treated / 10 never-treated; on the rebuilt panel it is 7 / **8** (HI, NV, SC gone). Header STALE.
+- +4Q redating does NOT save clusters in the blinded framework (cutoff pinned to `g_first` by protocol §4; online/first/retail/ramp75 all give byte-identical panels). In a real estimation it recovers KS/MA/OH but hands every treated state 12 post-launch months coded as control.
+- **ANTICIPATION WINDOW IS THE REAL LEVER.** `anticipation_months=6` is a blindness buffer, NOT the econometric assumption (`est_anticipation` is already 0). Protocol §4 pre-registers A in {0,3,12}. Treated clusters: boundary 2021-07 A=0 -> **12** vs A=6 -> 7; boundary 2022-07 A=0 -> **7** vs A=6 -> 4. A=0 buys the later boundary for free.
+- Arm A size gate (2021-08, A=6, 7 treated): only **lpdid wild passes (6.0%)**; did2s analytic 28.7% FAIL, twfe 12.0%/11.3% FAIL.
+- Delay: implement as NY-Fed buildup window (h>=12, does not shift dates), NOT redating — `lpdid_statepanel.R:113` flags redating's dirty-window contamination.
+
+**Status:**
+- Done: stabilization analysis; boundary composition + trend tests; anticipation sweep; arm A gate
+- Pending: resume arm B (175/300 banked); **run size gate at A=0 / current boundary (12 treated clusters)** — highest-value next test
+
+## 2026-08-21 15:30 — Casino + lottery blocks acquired; Cox null bug fixed; timing model reversed
+
+**Operations:**
+- Acquired pre-PASPA gambling institutions from external sources; built `data/raw/gambling_institutions/state_gambling_institutions_prepaspa.csv` via `data_prep/build_gambling_institutions_prepaspa.R`, provenance in the sibling `SOURCES.md`
+  - Lottery first-offering year, all 51: LotteryUSA "first offerings by state". DC corrected to 1982 (source only implied 1987; verified first ticket 25 Aug 1982)
+  - Commercial casino authorization/operation: I. Nelson Rose "Pivotal Dates", corroborated per-state (IRGC, SD Commission on Gaming, CO LegiSource, UPI 1991 on LA)
+  - ABANDONED a "commercial casinos as of 2017" variable: AGA list not retrievable and a Wikipedia extraction returned Alabama as commercial-casino, which is wrong. Unverifiable variable omitted rather than guessed
+  - Tribal gaming deliberately not coded (needs NIGC/BIA primary records; sign is ambiguous because exclusivity compacts can block commercial expansion)
+- **BUGFIX `utils/cv_predictability.R`**: the Cox permutation null re-ran `cv_cox_c` on UNPERMUTED data, so it measured fold noise around the observed value, not a null. Every Cox p-value reported earlier this session (~0.4-0.6 regardless of signal, with null means tracking observed values to 3 dp) was a non-test. Now permutes design rows against the (time, event) pairs; verified a pure-noise predictor gives null mean 0.488
+- Re-ran both predictability scripts under the fix
+
+**Results — ADOPTION HAZARD (the timing model), corrected null:**
+- gambling institutions (pre-PASPA): C = 0.703 vs null 0.479, **p < 0.001**
+- lottery maturity alone: C = 0.699 vs 0.470, **p < 0.001**
+- casino authorized alone: C = 0.517, p = 0.224 — nothing
+- region 0.564 (p=0.120); macro 0.554 (p=0.220); political ideology 0.529 (p=0.356)
+- eviction level+slope: C = 0.446, p = 0.712 — nothing
+- Previous prepaspa-script Cox conclusions survive the fix qualitatively: macro 0.556 (p=0.240), eviction-only 0.468 (p=0.616)
+
+**Results — EVER ADOPT:** lottery maturity alone CV AUC 0.800, Brier skill +0.287 (p<0.001); gambling+region 0.804; casino-only 0.468 (p=0.518); eviction 0.450 (p=0.601)
+
+**Results — TIMING CONDITIONAL ON ADOPTING (months among 30 adopters):** still nothing. gambling block CV R-squared -0.055 (p=0.120); casino_auth alone 0.001 (p=0.060) is the only non-negative value in the whole exercise; everything else negative
+
+**Orthogonality flags (matter for the identification argument):**
+- lottery_years_91 x ev_level r = 0.291 (p=0.068)
+- ideo_govt x ev_slope r = 0.291 (p=0.069)
+- reg_West x ev_slope r = -0.343 (p=0.030)
+
+**Status:**
+- Done: both blocks acquired with provenance, Cox null fixed, both scripts re-run, all outputs on disk. NOTHING RUNNING — safe to close the laptop
+- Pending: independent verification of the compiled institution data against primary statutes before any publication use; NV-affected re-runs (2x2 pseudo-power, selection placebo, era-variance, state power cells); tribal/constitutional/fiscal blocks; not committed
+
+## 2026-08-21 16:20 — Pretrends conditioned on lottery vintage
+
+**Operations:**
+- Added conditional-parallel-trends support to `analysis/pretrends/pretrends_statepanel_template.R`: `COVARIATES` / `COVARIATE_FILE` env vars -> `did::att_gt(xformla=)`; Sun-Abraham gets `i(t, X)` covariate-by-period interactions since a time-invariant X is absorbed by the unit FE. Loud failure if a covariate is missing for any in-sample state (att_gt would drop it silently). Pre-change copy in `analysis/pretrends/deprecated/`
+- Fixed the Sun-Abraham coefficient mask: `grepl("::")` also matches `i(t,X)` names, which would have swept 90 interaction coefficients into the event study. Now `^[^:]+::-?[0-9]+$`
+- Plumbed COVARIATES through `scripts/run_pretrends_statepanel.sh`
+- Three runs on an identical panel (26 states, 17 treated, 9 never, 16 cohorts, 91 months, 2,366 obs)
+
+**Results:**
+| spec | CS ATT | SE | joint p | mean abs pre-ATT | max abs pre-ATT |
+|---|---|---|---|---|---|
+| A unconditional | +0.020 | 0.057 | 0.170 | 0.0285 | 0.0689 |
+| C lottery BINARY | +0.048 | 0.055 | 0.914 | 0.0285 | 0.0648 |
+| B lottery vintage CONTINUOUS | +0.136 | 0.128 | 0.449 | 0.0602 | 0.2308 |
+
+- **The saved +0.080 headline was the g/Inf bug**, per the template's own comment at line 503 ("inflated the 2026-08-20 headline ATT from +0.029 to +0.080"). Confirmed: baseline is now +0.020
+- Continuous conditioning fails in a specific, diagnosable way: e=-2 goes +0.021/SE 0.065 -> -0.231/SE 0.242 and e=-1 -0.030/SE 0.054 -> +0.078/SE 0.181, while median SE inflation across the rest of the pre-window is just 1.19x. Thin not-yet-treated control pools at the event times closest to treatment cannot support a continuous covariate in the outcome regression
+- Binary conditioning is stable and leaves pre-trends essentially untouched
+- Substantive conclusion unchanged across all three: no detectable effect of online legalization on eviction filings
+
+**Status:**
+- Done: conditioning support, mask fix, three runs, CLAUDE.md updated
+- Pending: NV-affected re-runs (2x2 pseudo-power, selection placebo, era-variance, state power cells); institution data verification vs primary statutes; not committed
+
+## 2026-08-21 17:45 — NV-affected re-runs complete
+
+**Operations:**
+- Patched the three longdiff scripts and `R/power/load_blinded_panel.R` to drop `PRE_PASPA_SPORTS_BETTING` from control pools; pre-fix copies in `analysis/diagnostics/deprecated/` and `R/power/deprecated/`
+- Re-ran selection placebo, era variance, and 2x2 pseudo-power (500 reps)
+
+**Results:**
+- 2x2 pseudo-power: MDE-80 (main, RI) 0.241 -> **0.2401** (+27.1%); 36 states / 1,532 counties. CRVE still fails size (8.4% main, 10.6% b12), RI nominal 5.4%, WCB 4.4%. **Conclusion unchanged**
+- Selection placebo: tau -1.4% -> **-0.30%**, RI p 0.90 -> 0.976. **Holds, slightly cleaner**
+- Era variance: overall median post/pre ratio 2.67 -> **2.04**; strict never_any_exid 3.86 -> **2.73**. NV was the flagged outlier_state inflating post-era sigma. Pre-era MDEs need LESS inflation than documented. never_any 8 -> 7 states, exid 7 -> 6 (thin)
+- State power cells: **not re-runnable**. Excluding NV makes state D1 structurally infeasible at the post-COVID boundary, 3,600/3,600 rep failures ("no template placement ... enough eligible states, min_pre=12, min_post=6")
+
+**Audit correction:** `never_treated` is consumed only in the D4 branch (`make_pseudo_schedules.R:279`); every state config uses D1, so no completed state run read it. NV's real route was being an unassigned control in the D1 pool of the 33-state S2 panel. The loader fix (S3 + attribute) is still correct but was not the binding mechanism.
+
+**Concurrent session:** `config/power_boundary_A0*.yml` created today 13:28/13:30 by another session; `_noNV` untracked. Its `exclude_states: [NV]` is honored (`run_scenario_grid.R:1108`). Its noNV arm is the run that failed 3,600/3,600.
+
+**Process miss:** overwrote untracked `output/longdiff_era_variance/` in place; pre-fix CSVs unrecoverable, only headline 2.67/3.86 survive in CLAUDE.md.
+
+**Status:**
+- Done: all four dispositioned, CLAUDE.md updated
+- Pending: institution-data verification vs primary statutes; not committed
+
+## 2026-08-21 19:20 — LP-DiD power tests: NV audit and headline re-run
+
+**Operations:**
+- Inventoried all LP-DiD/LDAM power configs and runs
+- Created `config/power_lpdid_ramp75_mde_noNV.yml` (exclude_states: [NV]) and ran it, 300 reps x 13 deltas x 2 cells, 31,200 rows, 0 failures
+- Feasibility pre-checked: D1 placement 40/40 without NV on both spliced (32 states) and postcovid (14 states)
+
+**Results:**
+- 9 of 10 LP-DiD/LDAM configs are level: state -> NV in the S2 panel (33 states) and, having no launch date, permanently eligible as a control under the hybrid launch-date control coding
+- The only NV-free arm, `lpdid_mde_county`, was ABANDONED mid-run 2026-08-17 (batch 5/12 spliced, 7/30 postcovid); partials only, no mde_table/oc_summary. So every COMPLETED LP-DiD power result is NV-contaminated
+- Headline ramp75 spliced cell, NV removed: LP-DiD analytic MDE 0.0733 -> **0.0597**; wild 0.0933 -> **0.0707**; SE/SD 0.860 -> **0.979**; size unchanged at 0.063. TWFE analytic MDE 0.1269 -> 0.0797
+- Postcovid cell: LP-DiD MDE flat (0.2120 -> 0.2144) but TWFE analytic size 0.040 -> **0.097**, now failing the size gate. NV was masking TWFE post-COVID miscalibration
+- Mechanism: an always-treated control adds heterogeneity to the control pool, inflating estimator SD and depressing SE/SD
+
+**Correction:** state D1 is NOT generally infeasible without NV (40/40 placements). The earlier 3,600/3,600 failure was specific to the boundary_A0 cell (anticipation A=0, 2021-08 boundary).
+
+**Status:**
+- Done: ramp75 MDE noNV arm
+- Pending: NV-free re-runs of lpdid_gate, lpdid_gate_postcovid, lpdid_mde, lpdid_wild_gate, lpdid_ramp75_gate, ldam_gate{,_keepcovid,_postcovid}; finish the county arm; not committed
+
+## 2026-08-21 22:15 — shift12 test: new recommended state spec
+
+**Operations:**
+- `data_prep/build_shift12_schedule.R` -> `data/processed/shift12_schedule.csv` (launch + 12mo, 38 states, 31 with a date); asserts +12mo exactly and same state set as ramp75
+- Added `shift12_start_date` to the `treat_def` enum in `R/power/load_blinded_panel.R` (pre-change copy in `R/power/deprecated/`)
+- D1 feasibility pre-checked NV-free: 30/30
+- Ran `power_lpdid_shift12_gate_noNV.yml` (2,000 reps) and `power_lpdid_shift12_mde_noNV.yml` (300 reps x 13 deltas)
+
+**Results:**
+- Gate, spliced, NV-free, 2,000 reps: LP-DiD **wild 0.0580 CI [0.0482, 0.0692] PASS**; analytic 0.0865 borderline/fail; TWFE analytic 0.0465 PASS
+- Gate, postcovid: LP-DiD analytic 0.0630 PASS, wild 0.0535 PASS — ramp75's analytic arm was 0.0733 here
+- MDE, spliced, wild: **0.0628** vs ramp75 0.0707 vs raw-online 0.0487 (artifact, fails size at 0.1033)
+- SE/SD at 2,000 reps: shift12 spliced 1.003 (ramp75 0.979)
+
+**Conclusion:** ramp75's size-gate advantage over raw online dating comes from the LAG, not the handle-based timing — both lagged defs pass under wild. shift12 achieves it with zero outcome data, so it dominates on both power and design. **Recommended: shift12 + LP-DiD + wild bootstrap, spliced window, NV excluded, MDE 6.3%.**
+
+**Status:**
+- Done: shift12 schedule, loader support, gate (2,000 reps), MDE
+- Pending: queue B (lpdid_gate / lpdid_gate_postcovid baselines on the rebuilt panel); a higher-rep shift12 MDE; institution-data verification; not committed
+
+## 2026-08-24 16:35 — LP-DiD reweighting fix + CS-equivalence audit (DGJT paper)
+
+**Operations:**
+- Read Dube, Girardi, Jordà & Taylor (FRBSF WP 2023-12 / NBER w31184) in full; repo had no copy
+- Fixed `R/power/run_estimators.R` `.re_lpdid`: cell weights `1/Var_cell(D)` → `1/(1-Dbar_cell)` (new `.re_lpdid_weights()` helper); same fix in `analysis/main/lpdid_statepanel.R` (`lpdid_cell_weights()`, `LPDID_WEIGHTS` env var)
+- New config knobs `lpdid_weights` (ewatt/cellsize/vwatt) and `lpdid_pmd`, plumbed config → grid → spec → estimator; `lpdid_weights` hashes its NEW default so post-fix runs can never pool with pre-fix partials
+- New tests in `tests/testthat/test-estimators.R` (closed-form estimand checks, knob wiring, CS equivalence); 68 pass, full-suite failures identical to baseline
+- New diagnostics: `analysis/diagnostics/lpdid_cs_equivalence.R`, `analysis/diagnostics/lpdid_weights_paired_compare.R`
+- Runs: `lpdid_shift12_gate_ewatt` (2,000 reps, done), `lpdid_shift12_mde_ewatt` (300 reps × 13 δ, running), `lpdid_shift12_gate_vwatt` (queued)
+
+**Decisions:**
+- `ewatt` (the paper's §2.5.2 weight) made the default; `cellsize` kept only to reproduce pre-fix partials
+- CS cross-check done as diagnostic + test rather than a grid arm — cleaner falsification
+
+**Results:**
+- Old weights = cell weight N_cell: neither the paper's VWATT nor EWATT; every prior LP-DiD size/MDE number is on that third estimand
+- CS equivalence (ewatt+pmd1) holds to 2.2e-16 on contiguous panels — even badly unbalanced ones — and BREAKS on any interior time gap (toy: 7-month hole → 1.1e-01). `.re_prep()` gives CS a consecutive rank index that bridges the COVID splice; flagged as a framework-wide CS issue
+- Corrected EWATT gate: analytic FAILS (0.145 spliced, SE/SD 0.67 — CS-like miscalibration, consistent with the equivalence); wild PASSES (0.0325 spliced). TWFE unchanged (validates comparison)
+
+**Commits:**
+- `5c46e15` checkpoint, `f708b57` weighting fix, `02ac68d` equivalence test + configs, `45d3c72` contiguity diagnostic, `7aba318` CLAUDE.md, `1fdbdc8` gate results + vwatt queue
+
+**Status:**
+- Done: fix, tests, diagnostics, gate re-run, CLAUDE.md
+- Pending: MDE re-run (running), vwatt gate (queued), CLAUDE.md update with MDE numbers
+
+## 2026-08-24 17:40 — Corrected shift12 runs complete (three-way weighting comparison)
+
+**Results (all NV-free, spliced window, wild inference unless noted):**
+- ewatt (corrected EWATT): size 0.033, MDE 0.115 [CI 10.2–12.5%]; analytic FAILS (0.145, SE/SD 0.67 — inherits CS miscalibration, as the numerical equivalence predicts)
+- vwatt (Cengiz-stack VWATT): size 0.0515, MDE 0.0875 [CI 8.3–9.1%]; postcovid MDE 0.32–0.37 (unusable there)
+- cellsize (dead pre-fix figures): 6.3% MDE was the mislabelled estimand
+- TWFE stable 0.14–0.18 in every cell (validity check on the comparisons)
+
+**Decisions:**
+- Recommended PAP framing: choose ewatt-wild (MDE 11.5%, CS-comparable estimand) or vwatt-wild (MDE 8.75%, variance-weighted estimand) explicitly; never quote the 6.3%
+
+**Commits:**
+- `1fdbdc8` ewatt gate + vwatt config, `df08995` corrected MDE, `cff69e8` vwatt gate, (this entry follows the vwatt MDE)
+
+**Status:**
+- Done: full three-way gate+MDE ladder, CLAUDE.md, diagnostics, tests
+- Pending: Ben's estimand choice for the PAP; the `.re_prep` CS splice-bridging issue (flagged, separate work)
