@@ -9,7 +9,7 @@ Curated, current-state-only. No history, no superseded numbers, no corrections n
 - **No detectable effect of online sports-gambling legalization on eviction filings.** The current pretrends baseline (26 states, 17 treated / 9 never-treated) puts the overall CS-DiD ATT at **+0.020 log points (SE 0.057)** — not significant, and parallel trends is not rejected (joint Holm p = 0.170). [`output/pretrends_lottery_A_baseline/pretrends_summary.csv`]
 - **The best state-level bound**, from the size-gate-first PAP decision rule, is an **MDE of 8.75% (vwatt) to 11.5% (ewatt), both wild bootstrap**, depending on which estimand the PAP commits to — see §2. Neither figure supports ruling out effects in the 5–10% range that the credit literature reports.
 - **At county level, the calibrated workhorse is did2s (Gardner)** — well-calibrated (4% Type I, SE/SD 0.97) — while **CS-DiD is eliminated on power**: it has no finite MDE on the pre-registered grid (power curve is flat, never crosses the 80% target even at δ=0.20). [`output_blinded_power/county_cs_adaptive/size_gate.csv`, `mde_adaptive.csv`]
-- **The one point estimate suggesting a possible effect**: county-level did2s restricted to pre-COVID-treated cohorts, NH excluded (a documented data artifact), gives **+9.1% (CI −0.10% to +17.5%)** — borderline significant, and directionally consistent with Hollenbeck et al. (2025)'s credit-outcome findings. This is a robustness/exploratory result, not the pre-registered headline. [`output/border_diagnostic/HANDOFF.md`, Phase 7 table]
+- **The one point estimate suggesting a possible effect**: county-level did2s restricted to pre-COVID-treated cohorts, NH excluded (a documented data artifact), gives **+9.1%** (coefficient +0.087, SE 0.045; 95% CI −0.001 to +0.175 **log points**, i.e. ≈ −0.1% to +19.1% in filings — the source memo's "+17.5%" upper bound is the raw log endpoint read as a percent) — borderline significant, and directionally consistent with Hollenbeck et al. (2025)'s credit-outcome findings. This is a robustness/exploratory result, not the pre-registered headline. [`output/border_diagnostic/HANDOFF.md`, Phase 7 table]
 - Both readings are true at once: **the pooled/PAP-style test finds nothing, and a cohort-disaggregated exploratory cut finds a borderline-positive signal in 8 of 13 individual state cohorts** (+6% to +12% range). Neither dominates; report both.
 
 ---
@@ -21,8 +21,8 @@ Decision rule: **size gate first** (any estimator whose null rejection rate is m
 | Arm | Size (2,000 reps, δ=0) | SE/SD | MDE (300 reps) | Estimand |
 |---|---:|---:|---:|---|
 | LP-DiD **vwatt** + wild | 0.0515 PASS | 1.14 | **0.0875** (CI 8.3–9.1%) | variance-weighted (Cengiz-style stack) |
-| LP-DiD **ewatt** + wild | 0.0325 PASS | 0.81 | 0.115 | equally-weighted ATT (= CS's estimand) |
-| TWFE analytic | 0.0495 PASS | 0.98 | 0.163–0.165 | TWFE pooled |
+| LP-DiD **ewatt** + wild | 0.0325 PASS | 0.67 | 0.115 | equally-weighted ATT (= CS's estimand) |
+| TWFE analytic | 0.0495 PASS | 1.02–1.04 | 0.163–0.165 | TWFE pooled |
 | LP-DiD ewatt analytic | 0.145 FAIL | 0.67 | n/a — fails gate | — |
 | LP-DiD vwatt analytic | 0.097 borderline/fail | — | 0.075 (don't lead with it) | — |
 
@@ -64,9 +64,9 @@ Parallel trends is not rejected in any of the three specs. **Do not condition on
 | CS | county | boot / boot_t | **4.4% / 3.2%** | ~1.74 (uncalibrated) | size-valid but power curve flat — no finite MDE |
 | LDAM | state | analytic | 57–70% (3 windows) | 0.18–0.27 | catastrophically miscalibrated — never quote |
 | LDAM | state | jackknife | 1.0–3.7% (3 windows) | ~0.98–1.25 | **passes — use jackknife inference only** |
-| LP-DiD (ewatt) | state | wild | 3.3% (spliced) | 0.81 | passes |
+| LP-DiD (ewatt) | state | wild | 3.3% (spliced) | 0.67 | passes — SEs run small; wild bootstrap is what rescues size |
 | LP-DiD (vwatt) | state | wild | 5.2% (spliced) | 1.14 | passes |
-| TWFE | state | analytic | 5.0% (spliced) | 0.98 | passes |
+| TWFE | state | analytic | 5.0% (spliced) | 1.02–1.04 | passes |
 
 Sources: county multi-estimator calibration `output/border_diagnostic/cs_calibration_multi_county/calibration_summary.csv`; CS adaptive `output_blinded_power/county_cs_adaptive/size_gate.csv`; LDAM `output_blinded_power/ldam_gate_noNV/oc_summary.csv`, `ldam_gate_keepcovid_noNV/oc_summary.csv`, `ldam_gate_postcovid_noNV/oc_summary.csv`; LP-DiD/TWFE state `output_blinded_power/lpdid_shift12_gate_{ewatt,vwatt}/oc_summary.csv`.
 
@@ -76,7 +76,7 @@ Sources: county multi-estimator calibration `output/border_diagnostic/cs_calibra
 
 - **The COVID splice breaks CS-DiD's contiguity assumption.** `att_gt` receives a consecutive rank index that treats the month before and after the COVID gap as adjacent — this is independent of estimator, and generalizes: CS calibration is far worse on spliced windows than on the clean post-COVID-only window (5.0% analytic size vs 18–25% on spliced/annual-aggregated windows).
 - **NV must be excluded from every state-level control pool.** NV has legal sports betting since 1949 (pre-PASPA); it has no row in `sports_gambling_legalization_dates.csv` (absent, not NA) and is an always-treated state masquerading as a never-treated control. Use `utils/eviction_treatment_schedule.R`'s helpers — `EVICTION_STATE_UNIVERSE`, `PRE_PASPA_SPORTS_BETTING`, `eviction_adoption_outcomes()`, `eviction_control_states()`, `assert_no_pre_paspa_controls()` — do not re-derive the universe or the NV rule ad hoc. County-level work is immune (NV has no rows in `monthly_county_data_download.csv`).
-- **Panel-era pairing rule.** The state panel was rebuilt 2026-08-20 ~01:26 to fix a 12-state double count. Never pair a pre-rebuild run (38/17 treated+control state counts) with a post-rebuild run (33/15) — a fresh `run_name` is required after any panel/schedule edit, since scenario ids hash settings, not data.
+- **Panel-era pairing rule.** The state panel was rebuilt 2026-08-20 ~01:26 to fix a 12-state double count. Never pair a pre-rebuild run (38 states — e.g. 23 treated / 15 never-treated in `lpdid_gate`'s metadata) with a post-rebuild run (33 states — 21 / 12 in `lpdid_mde_fixedpanel`) — a fresh `run_name` is required after any panel/schedule edit, since scenario ids hash settings, not data.
 - **Basket-composition QA gate.** Every state-panel row now carries `n_counties` and `basket_share`; `data/processed/state_panel_coverage_qa.csv` grades each state's reporting-county composition stability. Censor the tail or fix the basket before citing any state-level long-difference or level estimate — composition churn (e.g., FL losing Miami-Dade/Lee at 2024-01, TX losing Harris at 2024-05) produces artifacts of up to ±1 log point.
 - **`lpdid_weights` / `lpdid_pmd` knobs** (plumbed config → grid → spec → estimator): `lpdid_weights` is `ewatt` (default, equally-weighted ATT = CS's estimand) | `cellsize` (retired, dead estimand — pre-2026-08-24 default) | `vwatt` (variance-weighted, Cengiz-style stack). `lpdid_pmd` sets base-period width (default 3).
 - **`cs_safe_patches` / `cs_faster_mode` flags** (`R/power/` CS runs). `cs_safe_patches: TRUE` is required to avoid uncatchable C-level process aborts from zero-row design matrices; `cs_faster_mode: FALSE` is required for CS to actually estimate on this design (the historical `TRUE` default failed on 100% of probed cells). Any pre-2026-08-17 CS run without both flags set correctly used a non-estimating code path and should not be cited.
@@ -86,10 +86,10 @@ Sources: county multi-estimator calibration `output/border_diagnostic/cs_calibra
 ## 6. Open Questions
 
 - **Mortgage delinquency power sim**: `output/power_mortgage_delinquency/` exists and is complete, contradicting CLAUDE.md's own prose ("no formal power simulation exists for mortgage delinquency") — one of the two is stale; reconcile before citing either.
-- **Mortgage pretrends NV re-run pending**: `output/pretrends_mortgage_delinquency/` was flagged NV-affected (NV is necessarily in the 51-state, 27-never-treated mortgage panel) and is not in the completed NV re-run list — needs a fresh run before citing.
+- **Mortgage pretrends NV re-run pending**: `output/deprecated/pretrends_mortgage_delinquency/` (moved in the 2026-08-25 cleanup) was flagged NV-affected (NV is necessarily in the 51-state, 27-never-treated mortgage panel) and is not in the completed NV re-run list — needs a fresh run before citing.
 - **LDAM has no MDE run.** Only size-gate runs exist (`ldam_gate_noNV`, `ldam_gate_keepcovid_noNV`, `ldam_gate_postcovid_noNV`) — jackknife passes the gate but no MDE table has been produced under jackknife inference.
 - **`boundary_B_2022_08` is an unfinalized partial** — 3,501-row partial CSV with a `.done_reps` marker, but no `oc_summary.csv`/`mde_table.csv`/`failures.csv`. Unclear whether abandoned or just never finalized.
-- **TWFE staggered power sim (state-panel MDE = 5% claim) needs a re-run.** The saved run (`data/output/twfe_power_out_2024_with_me/`, 2026-07-23) is on the pre-schedule-repair treatment file (16 never-treated including ME/VT/KY/FL, which the repair moved to treated). The outcome data itself is county-sourced and not double-count contaminated, but the switcher/control composition has changed since this run and the MDE has not been recomputed against the repaired schedule.
+- **TWFE staggered power sim (state-panel MDE = 5% claim) needs a re-run.** The saved run (`data/output/twfe_power_out_2024_with_me/`, 2026-07-23) is on the pre-schedule-repair treatment file (16 never-treated including ME/VT/KY/FL, which the repair moved to treated). The outcome data itself is county-sourced and not double-count contaminated, but the switcher/control composition has changed since this run and the MDE has not been recomputed against the repaired schedule. When re-running, also reconcile the PAP text: PAP §2.4 cites N = 2,867 state-months, which matches no saved run (current runs: 3,505 with ME / 3,397 without), and says the sample starts 2016-01 while the run panel starts 2012-01.
 
 ---
 

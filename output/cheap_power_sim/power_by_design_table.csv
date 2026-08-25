@@ -1,7 +1,0 @@
-design,power_d0,power_d0.01,power_d0.025,power_d0.05,mde_80,extrapolated
-covid_clean,0.08,0.068,0.056,0.048,NA,NA
-cross_covid,0.232,0.24,0.248,0.276,0.5808174614196429,TRUE
-full,0,0,0,0.004,0.45173602683839437,TRUE
-full_didsimple,0,0,0,0.004,0.45173602683839437,TRUE
-post_covid,0.14,0.128,0.112,0.08,NA,NA
-pre_covid,0,0,0,0.004,0.45173602683839437,TRUE

@@ -18,7 +18,7 @@ This file describes the repo's **structure, data, and conventions**. It does not
 2. When a LIVE result changes, update FINDINGS.md in the same session.
 3. Corrections and post-mortems get a dated file in `docs/findings-archive/` — do **not** accumulate findings narrative in this file.
 4. Deprecation is by move to the nearest `deprecated/` folder, recorded in MOVES.md. Nothing is deleted.
-5. Before comparing any two runs, check RUN_LEDGER.md vintages: panel rebuild 2026-08-20, schedule repair 2026-08-10, NV exclusion 2026-08-21, LP-DiD weights fix 2026-08-24. Never pair across a boundary; after any panel/schedule edit use a fresh `run_name` (scenario ids hash settings, not data).
+5. Before comparing any two runs, check RUN_LEDGER.md vintages: NH/ME court-source repairs 2026-07-23, schedule repair 2026-08-10, panel rebuild 2026-08-20, NV exclusion 2026-08-21, LP-DiD weights fix 2026-08-24. Never pair across a boundary; after any panel/schedule edit use a fresh `run_name` (scenario ids hash settings, not data).
 
 ## Terminology Note (Data Search)
 
@@ -137,6 +137,10 @@ Open analysis items are tracked in **FINDINGS.md §6** (mortgage power-sim recon
 - [ ] Drop S3 from `power_primary.yml` D1 blocks (structurally infeasible) and decide whether to promote a D4 never-treated block into primary.
 - [ ] Draft the Arnold PAP: port design sections from `Arnold Housing Loss Gambling - Application.docx`; estimator selection as the calibration-gate decision rule; power section from the blinded framework with MDEs in filings-per-year terms; key modeling decisions (COVID window, log(1+y), treatment date defs, balance rules, state exclusions). Drafts: `preanalysis plan v1.1.docx`.
 - [ ] Migrate `analysis/cheap_sims/11_exposure_time_vs_intensity.R` from its inline `state_abb != "NV"` to the shared `PRE_PASPA_SPORTS_BETTING` constant.
+- [ ] Build an annual panel merging ETS (aggregated to annual) + Court Data states for a 30+ state robustness check (the 7-state table: `docs/findings-archive/empirical-results-summary_pre-cleanup.md`).
+- [ ] Run CS calibration on that annual panel to test whether multi-state cohorts fix the het.-robust estimator problem.
+- [ ] Consider sourcing monthly court data directly from state court systems (NJ Courts, Michigan SCAO, Iowa Judicial Branch) for online-gambling states without monthly ETS coverage.
+- [ ] Run a Goodman-Bacon (2021) decomposition on TWFE to quantify the negative-weight concern (TWFE's known staggered-design caveat; less concerning for a null result).
 
 ## Bundled R Packages (`did/`, `DRDID-master/`, `fastglm-master/`)
 

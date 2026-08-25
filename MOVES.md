@@ -155,3 +155,4 @@ Nothing was deleted. Reversal is `mv` back.
 | `Sports Betting Across Borders Spatial Spillovers, Credit Distress, and Fiscal Externalities.pdf` | `Literature/Sports Betting Across Borders Spatial Spillovers, Credit Distress, and Fiscal Externalities.pdf (copy); deprecated/Sports Betting Across Borders Spatial Spillovers, Credit Distress, and Fiscal Externalities.pdf (original)` | reference PDF relocated to Literature/ |
 | `Robust Signal Maximization in Spillover Experiments.pdf` | `Literature/Robust Signal Maximization in Spillover Experiments.pdf (copy); deprecated/Robust Signal Maximization in Spillover Experiments.pdf (original)` | reference PDF relocated to Literature/ |
 | `w32902.pdf` | `Literature/w32902.pdf (copy); deprecated/w32902.pdf (original)` | reference PDF relocated to Literature/ |
+| `output/cheap_power_sim` | `output/deprecated/cheap_power_sim` | status overturned LIVE→CONTAMINATED by 2026-08-25 Opus audit (pre-rebuild state panel) |

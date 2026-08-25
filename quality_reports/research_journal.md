@@ -217,3 +217,10 @@ aggregation. Spliced + complete-periods = D1-infeasible.
 **Score:** N/A
 **Verdict:** **shift12 dominates ramp75.** Gate at 2,000 reps NV-free: LP-DiD wild size 0.0580 CI [0.0482, 0.0692] PASS; MDE 0.0628 vs ramp75's 0.0707. Also passes the post-COVID cell (0.053/0.040) where ramp75 analytic was borderline. Answers the design question: raw online LP-DiD fails size (0.103) while BOTH lagged defs pass under wild — so ramp75's advantage is the LAG, not the handle-based timing, and shift12 gets it without any outcome data. Recommended state spec: shift12 + LP-DiD + wild, spliced, NV-free, MDE 6.3%.
 **Report:** `output_blinded_power/lpdid_shift12_{gate,mde}_noNV/`
+
+### 2026-08-25 12:35 — Orchestrator (repo cleanup)
+**Phase:** Infrastructure
+**Target:** RUN_LEDGER.md, FINDINGS.md, CLAUDE.md, MOVES.md, docs/findings-archive/
+**Score:** Opus audit: 1 BLOCKER + 3 SHOULD-FIX + 6 NOTE, all resolved
+**Verdict:** Repo reorganized around a run registry + current-truth doc; 124 artifacts deprecated by move; CLAUDE.md no longer accumulates findings
+**Report:** quality_reports/cleanup_2026-08-25/ (inventories), quality_reports/plans/2026-08-25_repo-cleanup-run-ledger.md

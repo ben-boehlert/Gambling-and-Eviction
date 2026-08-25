@@ -71,3 +71,29 @@ Analysis of how quickly state gambling markets reach their peak monthly Handle (
 - **Heterogeneity-robust estimators (CS, SunAb)**: MDE ≈ 20-25% (4-5x noisier). Not useful for detecting plausible effect sizes.
 - **No formal power simulation exists for mortgage delinquency** (the mortgage panel has 51 states so power is likely better than evictions)
 
+
+---
+
+## Data Coverage Constraint (restored 2026-08-25 — the section CLAUDE.md points here for)
+
+### Data Coverage Constraint
+
+The ETS (Eviction Tracking System) monthly panel covers only 38 states, and after balancing to common months (excluding COVID), ~26 states survive (25 without ME; ME repaired and re-included 2026-07-23). This is the binding constraint on power — not the estimator choice.
+
+**7 online gambling states have annual court data but are NOT in the ETS panel:**
+
+| State | Online Start | Court Data Source | Coverage |
+|-------|-------------|-------------------|----------|
+| NJ | 2018-08 | `Court Data/` compiled CSV | 2013-2025, 21 counties |
+| IA | 2019-08 | Compiled CSV (no source files) | 2000-2025, 99 counties |
+| OR | 2019-10 | `Oregon pasted.xlsx` | 2000-2025, 36 counties |
+| IL | 2020-06 | `Summary Illinois.xlsx` | 2000-2025, 102 counties |
+| MI | 2021-01 | Compiled CSV (no source files) | 2010-2025, 83 counties |
+| WY | 2021-09 | Compiled CSV | 2014-2025, 23 counties |
+| MD | 2022-11 | `Maryland 20XX.xlsx` files | 2000-2025, 24 counties |
+
+- All court data is **annual** (county-year), not monthly
+- Only North Carolina has monthly breakdowns in source files (and NC is already in the ETS panel)
+- Court data compiled file: `/Users/bb1806/Documents/Court Data/county_court-issued_2000_2025_ben_update_3_19.csv`
+- Adding these 7 states via an annual panel would: (a) increase treated clusters from 11 to 18, (b) create multi-state annual cohorts (e.g., 2019: PA+IA+IN+OR = 4 states), (c) partially resolve the singleton-cohort problem
+- Tradeoff: annual data means fewer time periods, coarser treatment timing

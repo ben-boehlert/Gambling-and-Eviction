@@ -1561,3 +1561,33 @@ checkpoint at reduced concurrency (6 → 5 workers), no data lost.
 **Status:**
 - Done: full three-way gate+MDE ladder, CLAUDE.md, diagnostics, tests
 - Pending: Ben's estimand choice for the PAP; the `.re_prep` CS splice-bridging issue (flagged, separate work)
+
+## 2026-08-25 12:35 — Repo cleanup: run ledger, findings doc, CLAUDE.md slim, deprecation moves
+
+**Operations:**
+- Built `RUN_LEDGER.md` (registry of all runs w/ statuses) from 4 parallel-agent inventories in `quality_reports/cleanup_2026-08-25/` (output/ 89 entries, output_blinded_power/ 92, config/ 49, run history 43 rows)
+- Wrote `FINDINGS.md` (current-truth only; every number artifact-verified) and `MOVES.md` (150 recorded moves)
+- Moved 48 output/ dirs + 63 blinded-power entries + 18 root relics to deprecated/; 8 reference PDFs copied to Literature/ (originals deprecated); 12 LIVE-run logs moved inside their run dirs; +1 late move (cheap_power_sim, audit-overturned)
+- CLAUDE.md slimmed 1,159 → ~195 lines; history split verbatim (sed line ranges) into `docs/findings-archive/` (12 topic files + INDEX); pre-slim copy at `deprecated/CLAUDE_2026-08-25_pre-slim.md`
+- Opus audit (10 findings) → all fixed
+
+**Decisions:**
+- Orchestration per model-routing: Fable orchestrated, Sonnet executed, Opus audited
+- Status vocabulary LIVE/SUPERSEDED/CONTAMINATED/DEAD/EXPLORATORY/UNKNOWN; UNKNOWN never guessed (9 flagged for Ben)
+- Maintenance rules added to CLAUDE.md: ledger row per run, FINDINGS update on LIVE change, dated archive files for corrections, deprecate-by-move, vintage check before pairing
+
+**Results:**
+- Audit BLOCKER caught & fixed: FINDINGS PAP table had post-COVID SE/SDs (0.81/0.98) pasted into spliced rows; artifact values are 0.67 (ewatt) / 1.02–1.04 (TWFE)
+- `cheap_power_sim` overturned LIVE → CONTAMINATED (pre-rebuild state panel; named in the old contaminated list)
+- 29→28 LIVE runs; 57 stale ledger links repaired after moves; 7-state court-data table restored to archive; 4 dropped TO DO items restored
+- Pre-existing unit-mix documented: +9.1% headline's "+17.5%" CI bound is the raw log endpoint (exponentiated: +19.1%)
+
+**Commits:**
+- `c3471e5` Pre-cleanup snapshot
+- `b791dc0` Cleanup phase 1: ledger, findings, moves
+- `8937853` Cleanup phase 2: CLAUDE.md slim + archive
+- (this commit) Cleanup phase 3: Opus audit fixes
+
+**Status:**
+- Done: registry, findings doc, CLAUDE.md slim, moves, audit
+- Pending (Ben): 9 UNKNOWN dirs to adjudicate (RUN_LEDGER Open items); FINDINGS §6 open questions; git-hygiene (branch reconciliation) deliberately out of scope
