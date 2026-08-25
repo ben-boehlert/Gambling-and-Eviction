@@ -1,0 +1,12 @@
+window,model,outcome,n,events,n_pred,insample_r2,cv_r2,cv_r2_null_mean,p_r2,sd_outcome
+pre-PASPA political / pre-repeal macro,gambling institutions (pre-PASPA),months to adoption (adopters),30,30,2,0.1339538247237517,-0.055290011840570724,-0.1857758434874896,0.12,20.79115249475648
+pre-PASPA political / pre-repeal macro,  lottery maturity only,months to adoption (adopters),30,30,1,0.009590640181806784,-0.1364434798206977,-0.1240757635358561,0.522,20.79115249475648
+pre-PASPA political / pre-repeal macro,  casino authorized only,months to adoption (adopters),30,30,1,0.12308235098548524,-0.004131707694421326,-0.13353515325564036,0.074,20.79115249475648
+pre-PASPA political / pre-repeal macro,political (ideology 1991),months to adoption (adopters),29,29,2,0.017827234897606695,-0.27290883484656986,-0.18996969850494108,0.781,20.981162707809787
+pre-PASPA political / pre-repeal macro,region,months to adoption (adopters),30,30,3,0.08498458772233869,-0.1951756055717954,-0.24743646166611272,0.331,20.79115249475648
+pre-PASPA political / pre-repeal macro,"macro (mortgage, size)",months to adoption (adopters),30,30,3,0.021508480875231096,-0.44310621172173725,-0.26644592474892265,0.888,20.79115249475648
+pre-PASPA political / pre-repeal macro,"eviction (level, slope)",months to adoption (adopters),23,23,2,0.06036046348357509,-0.22348048235889104,-0.2636606139185276,0.361,20.548856027423394
+pre-PASPA political / pre-repeal macro,gambling + political,months to adoption (adopters),29,29,4,0.2266831741962857,-0.19226104761486215,-0.33504340833196644,0.215,20.981162707809787
+pre-PASPA political / pre-repeal macro,gambling + region,months to adoption (adopters),30,30,5,0.1771933556846751,-0.25504303892834973,-0.38961080723512986,0.272,20.79115249475648
+pre-PASPA political / pre-repeal macro,gambling + political + region,months to adoption (adopters),29,29,7,0.38852950110783907,-0.30554413995963364,-0.6451152624633045,0.145,20.981162707809787
+pre-PASPA political / pre-repeal macro,everything incl. eviction,months to adoption (adopters),23,23,12,0.6561621968422068,-2.5023288728660535,-3.6164653984287685,0.323,20.548856027423394

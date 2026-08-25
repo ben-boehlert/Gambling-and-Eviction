@@ -22,8 +22,8 @@
 #          spec knobs: lpdid_pmd (baseline months, default 3), lpdid_post
 #          (pooled horizon window hmin..H, default H = 12), lpdid_hmin
 #          (lowest horizon entering the pool, default 0), lpdid_anchor
-#          ("event" default / "launch" -- which schedule date the cell's base
-#          period sits before; see the LP-DiD block below), lpdid_wild (wild
+#          ("event_clean" default / "event" legacy / "launch" legacy; see the
+#          LP-DiD block below), lpdid_wild (wild
 #          cluster bootstrap arm, default FALSE in simulation - WLS forces
 #          boottest to dummy-expand the stacked time-cell factor, which is
 #          memory-unsafe on county panels; see .re_lpdid).
@@ -1019,13 +1019,19 @@ run_estimator <- function(panel_sim,
 # cluster-robust SE, which is why the two can land on opposite sides of the
 # size gate.
 #
-# CELL ANCHOR (spec$lpdid_anchor, default "event" = historical). The schedule
+# CELL ANCHOR (spec$lpdid_anchor, default "event_clean"). The schedule
 # can carry TWO dates per switcher: pseudo_launch (legalization) and pseudo_g
 # (the event that times the switch). They differ only under a shifted
 # treatment definition -- shift12, ramp75, maturation50 -- and are the same
 # month otherwise, so this knob is a no-op on every unshifted run.
 #
-#   "event"  : cell anchored at pseudo_g. The base period is then the pmd
+#   "event_clean": cell and horizons are anchored at pseudo_g, but the shared
+#              treated/control baseline is the pmd months immediately before
+#              pseudo_launch. Cells split by (pseudo_g, pseudo_launch), so
+#              both arms use identical calendar endpoints. Controls must
+#              remain unlaunched through pseudo_g+h. This is the clean mature-
+#              period versus untreated estimand and the default for new runs.
+#   "event"  : LEGACY. Cell anchored at pseudo_g. The base period is then the pmd
 #              months ending just before the EVENT month, which under a
 #              shifted schedule lies INSIDE the buildup window (shift12 with
 #              pmd = 3: months launch+9..launch+11; ramp75: the three months
@@ -1035,7 +1041,7 @@ run_estimator <- function(panel_sim,
 #              pooled ATT toward zero whenever the effect is partly on before
 #              the event date. The hybrid control coding below fixes the
 #              CONTROL leg of this leak; it does not fix the baseline leg.
-#   "launch" : cell anchored at pseudo_launch. The base period is pre-launch
+#   "launch" : LEGACY. Cell anchored at pseudo_launch. The base period is pre-launch
 #              and common to both arms (LP-DiD needs a shared base window or
 #              calendar-time effects stop cancelling -- do NOT move only the
 #              switcher's baseline), and buildup exposure is carried by the
@@ -1095,8 +1101,8 @@ run_estimator <- function(panel_sim,
   pmd  <- as.integer(sp$lpdid_pmd  %||% 3L)
   hmax <- as.integer(sp$lpdid_post %||% 12L)
   hmin <- as.integer(sp$lpdid_hmin %||% 0L)
-  anchor <- match.arg(as.character(sp$lpdid_anchor %||% "event"),
-                      c("event", "launch"))
+  anchor <- match.arg(as.character(sp$lpdid_anchor %||% "event_clean"),
+                      c("event_clean", "event", "launch"))
   wscheme <- match.arg(as.character(sp$lpdid_weights %||% "ewatt"),
                        c("ewatt", "cellsize", "vwatt"))
   wild <- isTRUE(sp$lpdid_wild)
@@ -1145,10 +1151,8 @@ run_estimator <- function(panel_sim,
       ifelse(is.na(gtab$pseudo_launch[ord]), NA_integer_,
              m_of(gtab$pseudo_launch[ord]) - m_min + 1L)
     } else gm
-    # CELL ANCHOR (see the block comment above): which month a switcher
-    # switches in, and hence which months its own baseline is drawn from.
-    # `lm` falls back to `gm` when the schedule carries no separate launch
-    # date, so "launch" is bit-identical to "event" on every unshifted run.
+    # Legacy cell anchor. event_clean is handled separately below because its
+    # outcome is indexed from gm while its shared baseline is indexed from lm.
     am <- if (identical(anchor, "launch")) lm else gm
 
     # Baseline per base period: mean of the PMD months ending at t-1; NA if
@@ -1160,25 +1164,48 @@ run_estimator <- function(panel_sim,
 
     out <- vector("list", (hmax - hmin + 1L) * M)
     k <- 0L
-    for (h in hmin:hmax) {
-      # `(pmd+1):(M-h)` would run DESCENDING, not empty, on a horizon longer
-      # than the panel can carry. Latent before lpdid_post was ever raised
-      # above 12; live now that a launch anchor needs post >= hmin + window.
-      if (M - h < pmd + 1L) next
-      for (tt in (pmd + 1L):(M - h)) {
-        far <- tt + h
-        dy  <- Y[, far] - B[, tt]
-        # Switcher SET is `!is.na(gm)` under either anchor; only the switch
-        # MONTH moves. Control eligibility stays gated on the launch month.
-        sw  <- !is.na(gm) & !is.na(am) & am == tt
-        ctl <- is.na(lm) | lm > far
-        keep <- (sw | ctl) & is.finite(dy)
-        if (!any(keep & sw) || !any(keep & ctl)) next
-        k <- k + 1L
-        out[[k]] <- data.frame(
-          state_abb = st[keep], D_treat = as.integer(sw[keep]),
-          dy = dy[keep], cell = paste0(tt, "_", h),
-          stringsAsFactors = FALSE)
+    if (identical(anchor, "event_clean")) {
+      cohorts <- unique(data.frame(event = gm, launch = lm))
+      cohorts <- cohorts[is.finite(cohorts$event) & is.finite(cohorts$launch),
+                         , drop = FALSE]
+      for (h in hmin:hmax) {
+        for (j in seq_len(nrow(cohorts))) {
+          tt <- cohorts$event[j]
+          bb <- cohorts$launch[j]
+          far <- tt + h
+          if (bb < pmd + 1L || bb > M || far < 1L || far > M) next
+          dy <- Y[, far] - B[, bb]
+          sw <- !is.na(gm) & !is.na(lm) & gm == tt & lm == bb
+          # Launch is absorbing: a state is clean only if it has not launched
+          # by the mature outcome. Buildup observations never become controls.
+          ctl <- is.na(lm) | lm > far
+          keep <- (sw | ctl) & is.finite(dy)
+          if (!any(keep & sw) || !any(keep & ctl)) next
+          k <- k + 1L
+          out[[k]] <- data.frame(
+            state_abb = st[keep], D_treat = as.integer(sw[keep]),
+            dy = dy[keep], cell = paste(tt, bb, h, sep = "_"),
+            stringsAsFactors = FALSE)
+        }
+      }
+    } else {
+      for (h in hmin:hmax) {
+        # `(pmd+1):(M-h)` would run DESCENDING, not empty, on a horizon longer
+        # than the panel can carry.
+        if (M - h < pmd + 1L) next
+        for (tt in (pmd + 1L):(M - h)) {
+          far <- tt + h
+          dy  <- Y[, far] - B[, tt]
+          sw  <- !is.na(gm) & !is.na(am) & am == tt
+          ctl <- is.na(lm) | lm > far
+          keep <- (sw | ctl) & is.finite(dy)
+          if (!any(keep & sw) || !any(keep & ctl)) next
+          k <- k + 1L
+          out[[k]] <- data.frame(
+            state_abb = st[keep], D_treat = as.integer(sw[keep]),
+            dy = dy[keep], cell = paste0(tt, "_", h),
+            stringsAsFactors = FALSE)
+        }
       }
     }
     if (k == 0L) NULL else do.call(rbind, out[seq_len(k)])

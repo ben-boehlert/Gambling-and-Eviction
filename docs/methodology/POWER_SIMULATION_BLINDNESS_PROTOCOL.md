@@ -120,3 +120,29 @@ Simulation *operating characteristics* computed on untreated data with imposed k
 (power, size, coverage, MDE, bias) are not "results" in the prohibited sense — they are the
 product of this framework and may be freely inspected, reported, and used to choose the primary
 specification. Similarly, prior *published* effect sizes from other papers are allowed anchors.
+
+## Deviation log
+
+### 2026-08-15 — LP-DiD real-data estimates produced mid-session
+
+While evaluating LP-DiD (Dube, Girardi, Jorda & Taylor 2023) as a candidate
+estimator, real-data treated-period estimates were produced
+(`analysis/main/lpdid_statepanel.R`; pooled ATTs under two treatment-date
+definitions, an event study, and pre-trend tests) and compared against the
+project's existing headline estimate — both prohibited inputs under §3.
+
+Mitigating facts, verified at the time of the deviation:
+- The effect grid, calibration samples, and decision rule in
+  `config/power_*.yml` were committed 2026-08-03 (`12725a5`) and have not been
+  modified since; no framework parameter was set after exposure.
+- The outputs live under `output/`, which §3 already designates prohibited.
+- Estimator/level selection is a mechanical rule (size gate, then MDE among
+  survivors), leaving no post-exposure judgment call in the selection itself.
+
+Consequence for interpretation: the analyst is no longer blind. LP-DiD's
+admission to the candidate set was motivated in part by its identifying
+assumption (local, gap-respecting) and in part by the real-data work above;
+its performance in the PAP is assessed exclusively by the blinded size gate
+(`config/power_lpdid_gate.yml`) and MDE ladder on simulated outcomes over
+untreated data. Any future deviation should be appended here rather than
+left implicit.

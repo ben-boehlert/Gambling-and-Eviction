@@ -30,7 +30,7 @@ MD,167,167,0,0,0,0,0,md_judiciary_lt_complaint_filings
 ME,119,119,0,0,0,0,119,county_download_fixed_basket
 MO,97,97,0,0,0,0,97,ets_single_series_no_denominator
 MS,99,0,99,0,0,99,0,NA
-NC,90,0,90,0,0,90,0,NA
+NC,90,126,0,0,0,0,90,county_download_fixed_basket
 NH,84,84,0,0,0,0,0,nh_court_source_repair_2026-07-23
 NM,73,73,0,0,0,0,73,ets_single_series_no_denominator
 NV,71,71,0,0,0,0,0,ets_single_series_no_denominator

@@ -2,12 +2,10 @@ state_abb,state_name,study_start,study_cutoff,legal_online_start,handle_threshol
 AK,Alaska,2016-01-01,2024-12-31,NA,0.5,NA,FALSE,FALSE,never_online_in_window,TRUE,TRUE,NA,NA
 AR,Arkansas,2016-01-01,2024-12-31,2022-03-01,0.5,2023-03-01,TRUE,TRUE,observed_handle_threshold_treated,FALSE,TRUE,NA,2023-03-01
 AZ,Arizona,2016-01-01,2024-12-31,2021-09-01,0.5,2021-10-01,TRUE,TRUE,observed_handle_threshold_treated,FALSE,TRUE,NA,2021-10-01
-CO,Colorado,2016-01-01,2024-12-31,2020-05-01,0.5,2021-09-01,TRUE,TRUE,observed_handle_threshold_treated,FALSE,TRUE,NA,2021-09-01
 CT,Connecticut,2016-01-01,2024-12-31,2021-10-01,0.5,2021-11-01,TRUE,TRUE,observed_handle_threshold_treated,FALSE,TRUE,NA,2021-11-01
 DE,Delaware,2016-01-01,2024-12-31,2024-01-01,0.5,2024-01-01,TRUE,TRUE,observed_handle_threshold_treated,FALSE,TRUE,NA,2024-01-01
 FL,Florida,2016-01-01,2024-12-31,2023-12-01,0.5,NA,FALSE,FALSE,legally_online_missing_handle,FALSE,FALSE,Online betting began within the study window but Handle exposure is missing,NA
 GA,Georgia,2016-01-01,2024-12-31,NA,0.5,NA,FALSE,FALSE,never_online_in_window,TRUE,TRUE,NA,NA
-HI,Hawaii,2016-01-01,2024-12-31,NA,0.5,NA,FALSE,FALSE,never_online_in_window,TRUE,TRUE,NA,NA
 ID,Idaho,2016-01-01,2024-12-31,NA,0.5,NA,FALSE,FALSE,never_online_in_window,TRUE,TRUE,NA,NA
 IN,Indiana,2016-01-01,2024-12-31,2019-10-01,0.5,2020-12-01,TRUE,TRUE,observed_handle_threshold_treated,FALSE,TRUE,NA,2020-12-01
 KS,Kansas,2016-01-01,2024-12-31,2022-09-01,0.5,2022-09-01,TRUE,TRUE,observed_handle_threshold_treated,FALSE,TRUE,NA,2022-09-01
@@ -18,19 +16,16 @@ MD,Maryland,2016-01-01,2024-12-31,2022-11-01,0.5,2022-12-01,TRUE,TRUE,observed_h
 ME,Maine,2016-01-01,2024-12-31,2023-11-01,0.5,2023-11-01,TRUE,TRUE,observed_handle_threshold_treated,FALSE,TRUE,NA,2023-11-01
 MN,Minnesota,2016-01-01,2024-12-31,NA,0.5,NA,FALSE,FALSE,never_online_in_window,TRUE,TRUE,NA,NA
 MO,Missouri,2016-01-01,2024-12-31,2025-12-01,0.5,NA,FALSE,FALSE,not_yet_online_after_cutoff,TRUE,TRUE,NA,NA
-MS,Mississippi,2016-01-01,2024-12-31,NA,0.5,NA,FALSE,FALSE,never_online_in_window,TRUE,TRUE,NA,NA
 MT,Montana,2016-01-01,2024-12-31,NA,0.5,NA,FALSE,FALSE,never_online_in_window,TRUE,TRUE,NA,NA
 NC,North Carolina,2016-01-01,2024-12-31,2024-03-01,0.5,2024-03-01,TRUE,TRUE,observed_handle_threshold_treated,FALSE,TRUE,NA,2024-03-01
 ND,North Dakota,2016-01-01,2024-12-31,NA,0.5,NA,FALSE,FALSE,never_online_in_window,TRUE,TRUE,NA,NA
 NH,New Hampshire,2016-01-01,2024-12-31,2019-12-01,0.5,2021-01-01,TRUE,TRUE,observed_handle_threshold_treated,FALSE,TRUE,NA,2021-01-01
 NM,New Mexico,2016-01-01,2024-12-31,NA,0.5,NA,FALSE,FALSE,never_online_in_window,TRUE,TRUE,NA,NA
 NV,Nevada,2016-01-01,2024-12-31,NA,0.5,NA,FALSE,FALSE,pre_sample_treated,FALSE,FALSE,Sports betting exposure predates the study window,NA
-NY,New York,2016-01-01,2024-12-31,2022-01-01,0.5,2022-01-01,TRUE,TRUE,observed_handle_threshold_treated,FALSE,TRUE,NA,2022-01-01
 OH,Ohio,2016-01-01,2024-12-31,2023-01-01,0.5,2023-01-01,TRUE,TRUE,observed_handle_threshold_treated,FALSE,TRUE,NA,2023-01-01
 OK,Oklahoma,2016-01-01,2024-12-31,NA,0.5,NA,FALSE,FALSE,never_online_in_window,TRUE,TRUE,NA,NA
 PA,Pennsylvania,2016-01-01,2024-12-31,2019-05-01,0.5,2020-10-01,TRUE,TRUE,observed_handle_threshold_treated,FALSE,TRUE,NA,2020-10-01
 RI,Rhode Island,2016-01-01,2024-12-31,2019-09-01,0.5,2019-11-01,TRUE,TRUE,observed_handle_threshold_treated,FALSE,TRUE,NA,2019-11-01
-SC,South Carolina,2016-01-01,2024-12-31,NA,0.5,NA,FALSE,FALSE,never_online_in_window,TRUE,TRUE,NA,NA
 TN,Tennessee,2016-01-01,2024-12-31,2020-11-01,0.5,2021-10-01,TRUE,TRUE,observed_handle_threshold_treated,FALSE,TRUE,NA,2021-10-01
 TX,Texas,2016-01-01,2024-12-31,NA,0.5,NA,FALSE,FALSE,never_online_in_window,TRUE,TRUE,NA,NA
 UT,Utah,2016-01-01,2024-12-31,NA,0.5,NA,FALSE,FALSE,never_online_in_window,TRUE,TRUE,NA,NA

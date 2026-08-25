@@ -128,6 +128,17 @@ CS_BOOTSTRAP  <- parse_bool(getenv1("CS_BOOTSTRAP", "TRUE"), TRUE)
 CS_BITERS     <- parse_int(getenv1("CS_BITERS", "199"), 199L)
 CS_FASTER_MODE <- parse_bool(getenv1("CS_FASTER_MODE", "TRUE"), TRUE)
 
+# --- Time-invariant state covariates for CONDITIONAL parallel trends ---------
+# COVARIATES is a comma-separated list of columns in COVARIATE_FILE (keyed on
+# state_abb). They enter did::att_gt() through xformla, which is the correct
+# route: CS conditions each 2x2 comparison on X, so parallel trends is required
+# only WITHIN covariate cells. For Sun-Abraham a time-invariant covariate is
+# absorbed by the unit FE, so it is entered as covariate-by-period interactions
+# instead, which lets the pre-trend itself differ by the covariate.
+COVARIATE_FILE <- getenv1("COVARIATE_FILE",
+  "data/raw/gambling_institutions/state_gambling_institutions_prepaspa.csv")
+COVARIATES     <- parse_chr_list(getenv1("COVARIATES", ""))
+
 GAMBLING_FILE <- getenv1("GAMBLING_FILE", "")
 GAMBLING_AMOUNT_COL <- getenv1("GAMBLING_AMOUNT_COL", "Handle")
 
@@ -486,6 +497,42 @@ if (TREAT_SOURCE == "file" && has_panel_treat) {
 panel <- panel %>%
   left_join(treat_by_state, by = "state_abb")
 
+# --- attach time-invariant covariates ----------------------------------------
+if (length(COVARIATES) > 0) {
+  if (!file.exists(COVARIATE_FILE)) {
+    stop("COVARIATES requested but COVARIATE_FILE not found: ", COVARIATE_FILE)
+  }
+  cov_tbl <- readr::read_csv(COVARIATE_FILE, show_col_types = FALSE)
+  if (!("state_abb" %in% names(cov_tbl))) {
+    stop("COVARIATE_FILE must contain state_abb: ", COVARIATE_FILE)
+  }
+  missing_cols <- setdiff(COVARIATES, names(cov_tbl))
+  if (length(missing_cols)) {
+    stop("COVARIATES not present in COVARIATE_FILE: ", paste(missing_cols, collapse = ", "))
+  }
+  cov_tbl <- cov_tbl %>% select(state_abb, all_of(COVARIATES)) %>% distinct()
+  stopifnot(!any(duplicated(cov_tbl$state_abb)))
+
+  panel <- panel %>% left_join(cov_tbl, by = "state_abb")
+
+  # A covariate missing for any state in the sample would be silently dropped by
+  # att_gt (the same failure mode as the g/Inf bug documented below). Fail loud.
+  cov_na <- panel %>%
+    summarise(across(all_of(COVARIATES), ~ sum(is.na(.x)))) %>%
+    unlist()
+  if (any(cov_na > 0)) {
+    bad_states <- panel %>%
+      filter(if_any(all_of(COVARIATES), is.na)) %>%
+      distinct(state_abb) %>% pull(state_abb)
+    stop("Covariate(s) missing for states in sample: ", paste(bad_states, collapse = ", "),
+         ". att_gt would drop these silently.")
+  }
+  log_msg(glue("Conditioning on covariates: {paste(COVARIATES, collapse=', ')} ",
+               "(from {COVARIATE_FILE})"))
+} else {
+  log_msg("No covariates: unconditional parallel trends (xformla = ~1)")
+}
+
 if (isTRUE(BALANCE_COMMON_MONTHS)) {
   n_states_tmp <- n_distinct(panel$state_abb)
   common_months <- panel %>%
@@ -833,6 +880,13 @@ log_msg(glue("Headline CS inference method: {HEADLINE_METHOD}"))
 # SECTION 5: CS-DiD PRETRENDS (Analysis A)
 ################################################################################
 
+# xformla for did::att_gt: ~1 when unconditional, ~x1 + x2 when conditioning
+CS_XFORMLA <- if (length(COVARIATES) > 0) {
+  as.formula(paste("~", paste(COVARIATES, collapse = " + ")))
+} else {
+  ~1
+}
+
 run_cs_pretrends <- function(panel_df, bstrap, biters, label) {
   log_msg(glue("Running CS-DiD pretrends ({label})..."))
 
@@ -842,12 +896,15 @@ run_cs_pretrends <- function(panel_df, bstrap, biters, label) {
     g  = panel_df$g,
     y  = panel_df$y
   )
+  if (length(COVARIATES) > 0) {
+    dat <- cbind(dat, panel_df[, COVARIATES, drop = FALSE])
+  }
 
   mp <- tryCatch({
     suppressMessages(suppressWarnings({
       did::att_gt(
         yname = "y", tname = "t", idname = "id", gname = "g",
-        xformla = ~1, data = dat, panel = TRUE,
+        xformla = CS_XFORMLA, data = dat, panel = TRUE,
         control_group = CONTROL_GROUP,
         allow_unbalanced_panel = ALLOW_UNBALANCED,
         est_method = EST_METHOD,
@@ -959,7 +1016,17 @@ log_msg("Running TWFE/Sun-Abraham pretrends...")
 
 sa_result <- NULL
 sa_mod <- tryCatch({
-  fixest::feols(y ~ sunab(g, t) | id + t, data = panel, cluster = ~id)
+  if (length(COVARIATES) > 0) {
+    # Time-invariant X is absorbed by the id FE, so interact it with period.
+    # i(t, X) gives each period its own X coefficient: the pre-trend is now
+    # allowed to differ by X, which is exactly what conditioning should buy.
+    sa_rhs <- paste0("sunab(g, t) + ",
+                     paste(sprintf("i(t, %s)", COVARIATES), collapse = " + "))
+    fixest::feols(as.formula(paste("y ~", sa_rhs, "| id + t")),
+                  data = panel, cluster = ~id)
+  } else {
+    fixest::feols(y ~ sunab(g, t) | id + t, data = panel, cluster = ~id)
+  }
 }, error = function(e) {
   log_msg(glue("ERROR in Sun-Abraham model: {conditionMessage(e)}"))
   NULL
@@ -970,9 +1037,18 @@ if (!is.null(sa_mod)) {
   sa_ses <- se(sa_mod)
   coef_names <- names(sa_coefs)
 
-  # Parse event times from coefficient names (sunab names: "t::VALUE")
-  sunab_mask <- grepl("::", coef_names)
+  # Parse event times from coefficient names (sunab names: "t::VALUE").
+  # CAUTION: fixest also names i(t, X) interaction terms with "::", as
+  # "t::<period>:<varname>". A bare grepl("::") mask therefore sweeps the
+  # covariate interactions into the event study and corrupts every pre-trend
+  # test. Require the part after "::" to be a bare integer.
+  sunab_mask <- grepl("^[^:]+::-?[0-9]+$", coef_names)
   sunab_names <- coef_names[sunab_mask]
+  n_interaction_dropped <- sum(grepl("::", coef_names)) - length(sunab_names)
+  if (n_interaction_dropped > 0) {
+    log_msg(glue("Sun-Abraham: excluded {n_interaction_dropped} covariate-by-period ",
+                 "interaction coefficients from the event study"))
+  }
 
   extract_event_time <- function(name) {
     parts <- strsplit(name, "::", fixed = TRUE)[[1]]

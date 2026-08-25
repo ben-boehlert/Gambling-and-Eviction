@@ -1,0 +1,5 @@
+covid,estimator,mde80,max_power
+drop,ddd,0.06875,1
+drop,did_twfe,0.0625,1
+keep,ddd,0.075,1
+keep,did_twfe,0.125,1

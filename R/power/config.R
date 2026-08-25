@@ -128,14 +128,12 @@ read_power_config <- function(path = NULL) {
     # scenarios. Needed when analytic lpdid over-rejects with few treated
     # clusters (county post-COVID gate, 2026-08-19).
     lpdid_wild          = FALSE,
-    # LP-DiD cell anchor (run_estimators.R spec$lpdid_anchor): "event"
-    # (default, historical) puts the base period immediately before the
-    # schedule's EVENT month; "launch" puts it immediately before the LAUNCH
-    # month. They differ ONLY under a shifted treatment definition (shift12,
-    # ramp75, maturation50), where "event" draws the switcher's own baseline
-    # from inside the buildup window. Hashed into the scenario id only when
-    # non-default AND the scenario runs lpdid.
-    lpdid_anchor        = "event",
+    # LP-DiD cell anchor (run_estimators.R spec$lpdid_anchor): "event_clean"
+    # (new default) indexes outcomes from the event/maturity date but uses a
+    # shared pre-launch baseline for each treated/control cell. "event" and
+    # "launch" retain the two legacy constructions for reproducibility. The
+    # new default is hashed so it cannot reuse historical event-anchor partials.
+    lpdid_anchor        = "event_clean",
     # Lowest horizon entering the pooled LP-DiD EWATT (default 0 =
     # historical). `lpdid_anchor: launch` + `lpdid_hmin: 12` is the LP-DiD
     # transposition of did::aggte(min_e = 12): buildup horizons are estimated
@@ -224,10 +222,10 @@ read_power_config <- function(path = NULL) {
   cfg$lpdid_wild <- isTRUE(as.logical(cfg$lpdid_wild))
 
   # NULL/NA fall back to the documented defaults so a config that omits either
-  # key keeps historical behavior. match.arg() rejects a typo here rather than
-  # letting it reach .re_lpdid and silently resolve to "event".
-  cfg$lpdid_anchor <- match.arg(as.character(cfg$lpdid_anchor %||% "event"),
-                                c("event", "launch"))
+  # key keeps the documented behavior. match.arg() rejects a typo here.
+  cfg$lpdid_anchor <- match.arg(
+    as.character(cfg$lpdid_anchor %||% "event_clean"),
+    c("event_clean", "event", "launch"))
   cfg$lpdid_hmin <- suppressWarnings(as.integer(cfg$lpdid_hmin %||% 0L))
   if (length(cfg$lpdid_hmin) != 1L || is.na(cfg$lpdid_hmin) ||
       cfg$lpdid_hmin < 0L) {

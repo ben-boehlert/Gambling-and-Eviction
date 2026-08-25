@@ -1,0 +1,64 @@
+universe: 50 states | 30 adopted | ideology coverage: 49 | eviction coverage: 40 
+pre-PASPA gambling: lottery by 1991 = 34 | casino authorized by 1991 = 7 (of 50 analysed states; NV excluded)
+
+There were 50 or more warnings (use warnings() to see the first 50)
+=========== (1) EVER ADOPT ONLINE ===========
+                             model  n events n_pred insample_auc cv_auc cv_auc_null_mean p_auc brier_skill
+ gambling institutions (pre-PASPA) 50     30      2        0.833  0.773            0.477 0.000       0.225
+             lottery maturity only 50     30      1        0.825  0.800            0.461 0.000       0.288
+            casino authorized only 50     30      1        0.533  0.466            0.462 0.533      -0.042
+         political (ideology 1991) 49     29      2        0.647  0.564            0.474 0.209      -0.028
+                            region 50     30      3        0.748  0.674            0.463 0.014       0.089
+            macro (mortgage, size) 50     30      3        0.730  0.633            0.481 0.070       0.013
+           eviction (level, slope) 40     23      2        0.609  0.468            0.484 0.547      -0.107
+              gambling + political 49     29      4        0.869  0.792            0.480 0.000       0.221
+                 gambling + region 50     30      5        0.877  0.810            0.475 0.001       0.244
+     gambling + political + region 49     29      7        0.890  0.770            0.484 0.004       0.117
+         everything incl. eviction 40     23     12        0.964  0.652            0.472 0.022      -0.361
+
+=========== (2) MONTHS TO ADOPTION (adopters) ===========
+                             model  n n_pred insample_r2  cv_r2 cv_r2_null_mean  p_r2
+ gambling institutions (pre-PASPA) 30      2       0.134 -0.055          -0.186 0.120
+             lottery maturity only 30      1       0.010 -0.136          -0.124 0.522
+            casino authorized only 30      1       0.123 -0.004          -0.134 0.074
+         political (ideology 1991) 29      2       0.018 -0.273          -0.190 0.781
+                            region 30      3       0.085 -0.195          -0.247 0.331
+            macro (mortgage, size) 30      3       0.022 -0.443          -0.266 0.888
+           eviction (level, slope) 23      2       0.060 -0.223          -0.264 0.361
+              gambling + political 29      4       0.227 -0.192          -0.335 0.215
+                 gambling + region 30      5       0.177 -0.255          -0.390 0.272
+     gambling + political + region 29      7       0.389 -0.306          -0.645 0.145
+         everything incl. eviction 23     12       0.656 -2.502          -3.616 0.323
+
+=========== (3) ADOPTION HAZARD (Cox, censored) ===========
+                             model  n events n_pred cv_cindex cindex_null_mean p_cindex
+ gambling institutions (pre-PASPA) 50     30      2     0.703            0.479    0.000
+             lottery maturity only 50     30      1     0.699            0.470    0.000
+            casino authorized only 50     30      1     0.517            0.472    0.224
+         political (ideology 1991) 49     29      2     0.529            0.494    0.356
+                            region 50     30      3     0.564            0.477    0.120
+            macro (mortgage, size) 50     30      3     0.554            0.491    0.220
+           eviction (level, slope) 40     23      2     0.446            0.496    0.712
+              gambling + political 49     29      4     0.713            0.489    0.000
+                 gambling + region 50     30      5     0.672            0.494    0.004
+     gambling + political + region 49     29      7     0.677            0.495    0.008
+         everything incl. eviction 40     23     12     0.661            0.490    0.020
+
+=========== (4) ORTHOGONALITY: institutions vs pre-period eviction ===========
+              inst       ev  n      r     p
+ casino_auth_by_91 ev_level 40 -0.258 0.108
+ casino_auth_by_91 ev_slope 40 -0.234 0.146
+      ideo_citizen ev_level 40  0.042 0.799
+      ideo_citizen ev_slope 40  0.227 0.160
+         ideo_govt ev_level 40 -0.014 0.933
+         ideo_govt ev_slope 40  0.291 0.069
+  lottery_years_91 ev_level 40  0.291 0.068
+  lottery_years_91 ev_slope 40  0.015 0.925
+       reg_Midwest ev_level 40 -0.078 0.633
+       reg_Midwest ev_slope 40  0.038 0.814
+         reg_South ev_level 40  0.243 0.131
+         reg_South ev_slope 40  0.069 0.670
+          reg_West ev_level 40 -0.228 0.157
+          reg_West ev_slope 40 -0.343 0.030
+
+Wrote: output/adoption_predictability_institutions 

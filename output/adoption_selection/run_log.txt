@@ -1,0 +1,259 @@
+
+=== Substrate A: annual court panel 2009-2015 (level 2013-15) ===
+  full: 41 states, 1757 counties
+  trimmed (n_cty>=5, basket_share>=.5): 33 states
+=== Substrate B: ETS monthly 2016-01..2018-05 ===
+  full: 25 states, 674 counties
+  trimmed: 19 states
+
+
+### A annual x online (full) 
+                               outcome    term  n    est    se  95%lo  95%hi
+               ever_adopt (LPM, joint) level_z 40  0.070 0.094 -0.121  0.261
+               ever_adopt (LPM, joint) slope_z 40 -0.042 0.089 -0.222  0.137
+          ever_adopt (LPM, univariate) level_z 40  0.073 0.093 -0.116  0.261
+          ever_adopt (LPM, univariate) slope_z 40 -0.047 0.093 -0.235  0.142
+            months to adoption (joint) level_z 23  2.245 3.282 -4.602  9.092
+            months to adoption (joint) slope_z 23  6.054 6.426 -7.351 19.460
+       months to adoption (univariate) level_z 23  2.241 2.966 -3.927  8.409
+       months to adoption (univariate) slope_z 23  6.051 6.188 -6.818 18.920
+                   Cox PH (log hazard) level_z 40  0.140 0.206 -0.264  0.544
+                   Cox PH (log hazard) slope_z 40 -0.128 0.219 -0.557  0.301
+    Spearman rho w/ months (perm test)   level 23  0.109    NA     NA     NA
+    Spearman rho w/ months (perm test)   slope 23  0.115    NA     NA     NA
+ adopter - never mean diff (perm test)   level 40  0.291 0.323     NA     NA
+ adopter - never mean diff (perm test)   slope 40 -0.006 0.011     NA     NA
+     p
+ 0.462
+ 0.635
+ 0.440
+ 0.618
+ 0.502
+ 0.357
+ 0.458
+ 0.339
+ 0.498
+ 0.559
+ 0.621
+ 0.584
+ 0.384
+ 0.578
+
+### A annual x online (trimmed) 
+                               outcome    term  n    est    se  95%lo  95%hi
+               ever_adopt (LPM, joint) level_z 32  0.113 0.097 -0.084  0.311
+               ever_adopt (LPM, joint) slope_z 32 -0.032 0.097 -0.230  0.165
+          ever_adopt (LPM, univariate) level_z 32  0.123 0.090 -0.062  0.307
+          ever_adopt (LPM, univariate) slope_z 32 -0.065 0.104 -0.277  0.148
+            months to adoption (joint) level_z 18  5.113 4.866 -5.260 15.486
+            months to adoption (joint) slope_z 18  8.409 6.562 -5.577 22.395
+       months to adoption (univariate) level_z 18  4.119 4.059 -4.486 12.724
+       months to adoption (univariate) slope_z 18  7.621 6.347 -5.833 21.076
+                   Cox PH (log hazard) level_z 32  0.208 0.218 -0.220  0.635
+                   Cox PH (log hazard) slope_z 32 -0.150 0.290 -0.718  0.419
+    Spearman rho w/ months (perm test)   level 18  0.077    NA     NA     NA
+    Spearman rho w/ months (perm test)   slope 18  0.152    NA     NA     NA
+ adopter - never mean diff (perm test)   level 32  0.411 0.305     NA     NA
+ adopter - never mean diff (perm test)   slope 32 -0.008 0.011     NA     NA
+     p
+ 0.251
+ 0.742
+ 0.185
+ 0.537
+ 0.310
+ 0.219
+ 0.325
+ 0.247
+ 0.341
+ 0.606
+ 0.767
+ 0.547
+ 0.182
+ 0.506
+
+### A annual x first  (full) 
+                               outcome    term  n    est    se  95%lo  95%hi
+               ever_adopt (LPM, joint) level_z 40 -0.009 0.077 -0.166  0.148
+               ever_adopt (LPM, joint) slope_z 40  0.036 0.083 -0.132  0.205
+          ever_adopt (LPM, univariate) level_z 40 -0.011 0.076 -0.164  0.142
+          ever_adopt (LPM, univariate) slope_z 40  0.037 0.082 -0.129  0.203
+            months to adoption (joint) level_z 28 -0.923 3.376 -7.876  6.029
+            months to adoption (joint) slope_z 28  5.694 5.203 -5.023 16.410
+       months to adoption (univariate) level_z 28 -1.613 3.461 -8.726  5.501
+       months to adoption (univariate) slope_z 28  5.817 4.898 -4.250 15.885
+                   Cox PH (log hazard) level_z 40 -0.007 0.195 -0.390  0.376
+                   Cox PH (log hazard) slope_z 40 -0.004 0.192 -0.381  0.373
+    Spearman rho w/ months (perm test)   level 28 -0.181    NA     NA     NA
+    Spearman rho w/ months (perm test)   slope 28  0.287    NA     NA     NA
+ adopter - never mean diff (perm test)   level 40 -0.051 0.343     NA     NA
+ adopter - never mean diff (perm test)   slope 40  0.006 0.011     NA     NA
+     p
+ 0.911
+ 0.665
+ 0.885
+ 0.655
+ 0.787
+ 0.284
+ 0.645
+ 0.246
+ 0.972
+ 0.983
+ 0.358
+ 0.153
+ 0.889
+ 0.625
+
+### B ETS x online (full) 
+                               outcome    term  n    est    se   95%lo  95%hi
+               ever_adopt (LPM, joint) level_z 25  0.061 0.144  -0.238  0.360
+               ever_adopt (LPM, joint) slope_z 25  0.076 0.101  -0.133  0.285
+          ever_adopt (LPM, univariate) level_z 25  0.044 0.133  -0.232  0.319
+          ever_adopt (LPM, univariate) slope_z 25  0.062 0.097  -0.139  0.263
+            months to adoption (joint) level_z 16 -7.743 6.924 -22.701  7.216
+            months to adoption (joint) slope_z 16 -3.922 7.799 -20.770 12.927
+       months to adoption (univariate) level_z 16 -5.423 6.331 -19.003  8.156
+       months to adoption (univariate) slope_z 16 -1.493 2.501  -6.858  3.871
+                   Cox PH (log hazard) level_z 25  0.137 0.229  -0.311  0.586
+                   Cox PH (log hazard) slope_z 25  0.244 0.249  -0.244  0.732
+    Spearman rho w/ months (perm test)   level 16 -0.068    NA      NA     NA
+    Spearman rho w/ months (perm test)   slope 16 -0.068    NA      NA     NA
+ adopter - never mean diff (perm test)   level 25  0.151 0.340      NA     NA
+ adopter - never mean diff (perm test)   slope 25  0.016 0.026      NA     NA
+     p
+ 0.675
+ 0.458
+ 0.745
+ 0.530
+ 0.284
+ 0.623
+ 0.406
+ 0.560
+ 0.548
+ 0.328
+ 0.800
+ 0.813
+ 0.675
+ 0.642
+
+### B ETS x online (trimmed) 
+                               outcome    term  n     est     se   95%lo  95%hi
+               ever_adopt (LPM, joint) level_z 19   0.247  0.103   0.028  0.465
+               ever_adopt (LPM, joint) slope_z 19   0.175  0.095  -0.026  0.375
+          ever_adopt (LPM, univariate) level_z 19   0.198  0.114  -0.042  0.438
+          ever_adopt (LPM, univariate) slope_z 19   0.105  0.082  -0.067  0.278
+            months to adoption (joint) level_z 12 -10.970  8.679 -30.603  8.663
+            months to adoption (joint) slope_z 12  -4.824 16.933 -43.130 33.482
+       months to adoption (univariate) level_z 12  -8.172  6.605 -22.888  6.544
+       months to adoption (univariate) slope_z 12   0.054  6.057 -13.442 13.550
+                   Cox PH (log hazard) level_z 19   0.724  0.338   0.061  1.387
+                   Cox PH (log hazard) slope_z 19   0.490  0.292  -0.082  1.061
+    Spearman rho w/ months (perm test)   level 12  -0.203     NA      NA     NA
+    Spearman rho w/ months (perm test)   slope 12   0.203     NA      NA     NA
+ adopter - never mean diff (perm test)   level 19   0.567  0.337      NA     NA
+ adopter - never mean diff (perm test)   slope 19   0.029  0.032      NA     NA
+     p
+ 0.029
+ 0.083
+ 0.100
+ 0.216
+ 0.238
+ 0.782
+ 0.244
+ 0.993
+ 0.032
+ 0.093
+ 0.524
+ 0.523
+ 0.096
+ 0.442
+
+### B ETS x first  (full) 
+                               outcome    term  n     est     se   95%lo  95%hi
+               ever_adopt (LPM, joint) level_z 25   0.027  0.127  -0.237  0.292
+               ever_adopt (LPM, joint) slope_z 25   0.092  0.100  -0.115  0.299
+          ever_adopt (LPM, univariate) level_z 25   0.006  0.110  -0.222  0.234
+          ever_adopt (LPM, univariate) slope_z 25   0.086  0.083  -0.086  0.258
+            months to adoption (joint) level_z 19 -10.521  7.299 -25.993  4.951
+            months to adoption (joint) slope_z 19  -3.544 11.825 -28.612 21.523
+       months to adoption (univariate) level_z 19  -8.876  6.010 -21.556  3.803
+       months to adoption (univariate) slope_z 19   0.266  5.019 -10.323 10.856
+                   Cox PH (log hazard) level_z 25   0.191  0.233  -0.266  0.647
+                   Cox PH (log hazard) slope_z 25   0.184  0.203  -0.215  0.582
+    Spearman rho w/ months (perm test)   level 19  -0.370     NA      NA     NA
+    Spearman rho w/ months (perm test)   slope 19   0.063     NA      NA     NA
+ adopter - never mean diff (perm test)   level 25   0.027  0.383      NA     NA
+ adopter - never mean diff (perm test)   slope 25   0.028  0.029      NA     NA
+     p
+ 0.832
+ 0.368
+ 0.955
+ 0.314
+ 0.169
+ 0.768
+ 0.158
+ 0.958
+ 0.413
+ 0.366
+ 0.121
+ 0.805
+ 0.941
+ 0.359
+
+=== adopter vs never contrast (ONLINE) ===
+                   substrate  ever  n mean_rate mean_log_level
+    A annual x online (full) FALSE 17     58.88           3.65
+    A annual x online (full)  TRUE 23     95.51           3.94
+ A annual x online (trimmed) FALSE 14     64.47           3.73
+ A annual x online (trimmed)  TRUE 18    103.68           4.14
+       B ETS x online (full) FALSE  9      7.66           1.47
+       B ETS x online (full)  TRUE 16      6.21           1.62
+    B ETS x online (trimmed) FALSE  7      3.24           1.00
+    B ETS x online (trimmed)  TRUE 12      5.88           1.57
+ mean_slope_pct_yr sd_slope_pct
+             -0.90         4.33
+             -1.53         2.44
+             -0.68         3.82
+             -1.49         2.55
+              0.67         4.42
+              2.27         7.03
+              0.48         4.96
+              3.42         7.79
+
+=== Cox adoption hazard with state-size control (online) ===
+             sample  n events           term    est    se     p cor_level_size
+    A annual (full) 40     23        level_z  0.195 0.224 0.384          0.461
+    A annual (full) 40     23        slope_z -0.155 0.221 0.483          0.461
+    A annual (full) 40     23         size_z -0.133 0.234 0.569          0.461
+    A annual (full) 40     23 size_z (alone) -0.010 0.212 0.962          0.461
+ A annual (trimmed) 32     18        level_z  0.197 0.236 0.402          0.460
+ A annual (trimmed) 32     18        slope_z -0.136 0.311 0.661          0.460
+ A annual (trimmed) 32     18         size_z  0.036 0.292 0.903          0.460
+ A annual (trimmed) 32     18 size_z (alone)  0.185 0.236 0.433          0.460
+       B ETS (full) 25     16        level_z  0.154 0.266 0.562          0.077
+       B ETS (full) 25     16        slope_z  0.260 0.245 0.289          0.077
+       B ETS (full) 25     16         size_z  0.432 0.253 0.089          0.077
+       B ETS (full) 25     16 size_z (alone)  0.433 0.258 0.094          0.077
+    B ETS (trimmed) 19     12        level_z  0.958 0.540 0.076          0.646
+    B ETS (trimmed) 19     12        slope_z  0.544 0.315 0.084          0.646
+    B ETS (trimmed) 19     12         size_z -0.277 0.480 0.563          0.646
+    B ETS (trimmed) 19     12 size_z (alone)  0.323 0.290 0.267          0.646
+ cor_slope_size
+         -0.250
+         -0.250
+         -0.250
+         -0.250
+         -0.443
+         -0.443
+         -0.443
+         -0.443
+          0.006
+          0.006
+          0.006
+          0.006
+         -0.087
+         -0.087
+         -0.087
+         -0.087
+`geom_smooth()` using formula = 'y ~ x'
+
+Wrote: output/adoption_selection 

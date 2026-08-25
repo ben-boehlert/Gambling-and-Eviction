@@ -279,22 +279,19 @@ power_rep_seed <- function(base_seed, rep, scenario_offset) {
       "lpdid" %in% as.character(unlist(g$estimators[[i]]))) {
     id$lpdid_wild <- TRUE
   }
-  # `lpdid_anchor` / `lpdid_hmin` are hashed CONDITIONALLY, same principle and
-  # estimator gating as `lpdid_wild`: the defaults ("event", 0) reproduce
-  # pre-flag behavior bit-for-bit, so every existing partial keeps its id.
-  # Non-default values change the LP-DiD estimate itself -- the anchor moves
-  # each switcher's base period, the floor drops low horizons from the pool --
-  # so those runs must land in their own scenario ids and can never be pooled
-  # with anchor-"event" partials. A scenario with no lpdid is provably
-  # unaffected and must keep its id.
+  # `lpdid_anchor` uses an inverted compatibility rule. Historical partials
+  # used "event" and omitted this key. New runs default to "event_clean", so
+  # that value MUST be hashed; explicit legacy "event" stays unhashed and can
+  # reproduce old ids. Other anchors are also hashed. lpdid_hmin/lpdid_post
+  # retain their historical conditional rules.
   #
   # NOTE the anchor is a no-op on schedules with no separate launch date, so a
   # run that sets it there gets a NEW id for a bit-identical result. That is
   # the safe direction of the trade (a redundant re-run, never a silent pool
   # of two different estimands), and it matches how `template` is handled.
   if ("lpdid" %in% as.character(unlist(g$estimators[[i]]))) {
-    anch <- as.character(g$lpdid_anchor[i] %||% "event")
-    if (length(anch) != 1L || is.na(anch)) anch <- "event"
+    anch <- as.character(g$lpdid_anchor[i] %||% "event_clean")
+    if (length(anch) != 1L || is.na(anch)) anch <- "event_clean"
     if (!identical(anch, "event")) id$lpdid_anchor <- anch
     hmn <- suppressWarnings(as.integer(g$lpdid_hmin[i] %||% 0L))
     if (length(hmn) != 1L || is.na(hmn)) hmn <- 0L
@@ -429,7 +426,7 @@ expand_scenario_grid <- function(cfg) {
     g$lpdid_wild <- isTRUE(blk$lpdid_wild %||% cfg$lpdid_wild %||% FALSE)
     # LP-DiD cell anchor and pooled-horizon floor; block may override.
     g$lpdid_anchor <- as.character(blk$lpdid_anchor %||% cfg$lpdid_anchor %||%
-                                     "event")
+                                     "event_clean")
     g$lpdid_hmin <- as.integer(blk$lpdid_hmin %||% cfg$lpdid_hmin %||% 0L)
     g$lpdid_post <- as.integer(blk$lpdid_post %||% cfg$lpdid_post %||% 12L)
     # LP-DiD base-period width and cell weighting; block may override.
@@ -1443,7 +1440,7 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
              # rather than error.
              cs_faster_mode = isTRUE(sc$cs_faster_mode %||% TRUE),
              lpdid_wild     = isTRUE(sc$lpdid_wild %||% FALSE),
-             lpdid_anchor   = as.character(sc$lpdid_anchor %||% "event"),
+             lpdid_anchor   = as.character(sc$lpdid_anchor %||% "event_clean"),
              lpdid_hmin     = as.integer(sc$lpdid_hmin %||% 0L),
              lpdid_post     = as.integer(sc$lpdid_post %||% 12L),
              lpdid_pmd      = as.integer(sc$lpdid_pmd %||% 3L),

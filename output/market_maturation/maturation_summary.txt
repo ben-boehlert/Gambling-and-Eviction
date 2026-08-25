@@ -1,0 +1,109 @@
+
+=== TIME TO AN ESTABLISHED MARKET (Kaplan-Meier, months) ===
+Event = YoY handle growth below threshold for 3 consecutive months.
+Sample ends 2026-05-01; states not yet matured are right-censored.
+
+# A tibble: 6 × 9
+  spec      n_states n_matured n_censored   p25 median median_lo median_hi   p75
+  <chr>        <dbl>     <dbl>      <dbl> <dbl>  <dbl>     <dbl>     <dbl> <dbl>
+1 YoY<10%,…       34        32          2    18   31          25        40    42
+2 YoY<10%,…       29        28          1    20   27          25        37    39
+3 YoY<15%,…       34        33          1    17   27          24        36    42
+4 YoY<15%,…       29        29          0    17   25          23        33    36
+5 YoY<25%,…       34        33          1    14   22.5        15        33    36
+6 YoY<25%,…       29        29          0    14   20          15        31    32
+
+=== SENSITIVITY: excluding COVID-window launches ===
+# A tibble: 3 × 9
+  spec      n_states n_matured n_censored   p25 median median_lo median_hi   p75
+  <chr>        <dbl>     <dbl>      <dbl> <dbl>  <dbl>     <dbl>     <dbl> <dbl>
+1 YoY<10%,…       26        24          2    18   28          18        42    47
+2 YoY<15%,…       26        25          1    15   25          17        42    42
+3 YoY<25%,…       26        25          1    13   15.5        14        39    39
+
+=== BY LAUNCH TYPE (threshold 15%, clock = first handle) ===
+# A tibble: 2 × 9
+  spec      n_states n_matured n_censored   p25 median median_lo median_hi   p75
+  <chr>        <dbl>     <dbl>      <dbl> <dbl>  <dbl>     <dbl>     <dbl> <dbl>
+1 YoY<15%,…       13        13          0    27     36        27        NA    42
+2 YoY<15%,…       21        20          1    17     24        18        39    36
+
+=== PER-STATE MATURITY (threshold 15%) ===
+# A tibble: 34 × 10
+   State             first_handle_date online_start_date retail_first mat       
+   <chr>             <date>            <date>            <lgl>        <date>    
+ 1 Delaware          2018-06-01        2024-01-01        TRUE         2019-06-01
+ 2 North Carolina    2024-03-01        2024-03-01        TRUE         2025-03-01
+ 3 Ohio              2023-01-01        2023-01-01        FALSE        2024-01-01
+ 4 Kentucky          2023-09-01        2023-09-01        FALSE        2024-10-01
+ 5 Vermont           2024-01-01        2024-01-01        FALSE        2025-02-01
+ 6 Louisiana         2021-11-01        2022-01-01        TRUE         2023-02-01
+ 7 Nevada            2018-06-01        NA                FALSE        2019-09-01
+ 8 South Dakota      2021-09-01        NA                FALSE        2022-12-01
+ 9 Connecticut       2021-10-01        2021-10-01        FALSE        2023-03-01
+10 Arizona           2021-09-01        2021-09-01        FALSE        2023-03-01
+11 Maine             2023-11-01        2023-11-01        FALSE        2025-05-01
+12 Montana           2020-03-01        NA                FALSE        2021-12-01
+13 Kansas            2022-09-01        2022-09-01        FALSE        2024-09-01
+14 Virginia          2021-01-01        2021-01-01        FALSE        2023-01-01
+15 District of Colu… 2020-05-01        2020-05-01        FALSE        2022-06-01
+16 Tennessee         2020-11-01        2020-11-01        FALSE        2023-01-01
+17 Massachusetts     2023-01-01        2023-03-01        TRUE         2025-04-01
+18 Michigan          2020-03-01        2021-01-01        TRUE         2022-06-01
+19 Colorado          2020-05-01        2020-05-01        FALSE        2022-12-01
+20 Indiana           2019-09-01        2019-10-01        TRUE         2022-06-01
+21 New Hampshire     2019-12-01        2019-12-01        FALSE        2022-09-01
+22 Illinois          2020-03-01        2020-06-01        TRUE         2023-03-01
+23 Iowa              2019-08-01        2019-08-01        FALSE        2022-08-01
+24 Maryland          2021-12-01        2022-11-01        TRUE         2024-12-01
+25 Mississippi       2018-08-01        NA                FALSE        2021-11-01
+26 New York          2019-07-01        2022-01-01        TRUE         2023-01-01
+27 Pennsylvania      2018-11-01        2019-05-01        TRUE         2022-05-01
+28 New Jersey        2018-06-01        2018-08-01        TRUE         2022-05-01
+29 West Virginia     2018-08-01        2018-08-01        FALSE        2022-08-01
+30 Rhode Island      2018-11-01        2019-09-01        TRUE         2022-12-01
+31 Wyoming           2021-09-01        2021-09-01        FALSE        2025-10-01
+32 Oregon            2019-10-01        2019-10-01        FALSE        2025-02-01
+33 Arkansas          2019-07-01        2022-03-01        TRUE         2025-12-01
+34 Nebraska          2023-06-01        NA                FALSE        NA        
+# ℹ 5 more variables: mo_from_first <dbl>, mat_onl <date>,
+#   mo_from_online <dbl>, n_months <int>, status <chr>
+
+=== MONTHS TO 80% OF PLATEAU (trailing-12 basis, >=36 mo states) ===
+# A tibble: 30 × 5
+   State                plateau_bn mo_to_80pct mo_to_80_onl still_growing
+   <chr>                     <dbl>       <dbl>        <dbl> <lgl>        
+ 1 Mississippi                 0.4          11           NA FALSE        
+ 2 Massachusetts               8.3          18           16 FALSE        
+ 3 Ohio                       10            18           18 FALSE        
+ 4 Kansas                      2.8          19           19 FALSE        
+ 5 Michigan                    5.6          24           14 TRUE         
+ 6 New Hampshire               0.9          24           24 FALSE        
+ 7 Rhode Island                0.4          24           14 FALSE        
+ 8 South Dakota                0            25           NA FALSE        
+ 9 Nebraska                    0.1          26           NA FALSE        
+10 West Virginia               0.5          28           28 FALSE        
+11 Maryland                    6.6          29           18 FALSE        
+12 Colorado                    6.4          31           31 FALSE        
+13 Connecticut                 2.4          31           31 FALSE        
+14 Iowa                        2.9          31           31 FALSE        
+15 Louisiana                   4.2          31           29 FALSE        
+16 Wyoming                     0.2          33           33 FALSE        
+17 Arizona                     9            34           34 FALSE        
+18 Montana                     0.1          36           NA FALSE        
+19 Nevada                      8            37           NA FALSE        
+20 New Jersey                 12.1          39           37 FALSE        
+21 Virginia                    7.6          39           39 FALSE        
+22 Pennsylvania                8.7          40           34 FALSE        
+23 Tennessee                   5.8          42           42 FALSE        
+24 Illinois                   15.3          49           46 FALSE        
+25 Oregon                      0.9          54           54 FALSE        
+26 Indiana                     5.7          55           54 FALSE        
+27 New York                   25.8          58           28 FALSE        
+28 District of Columbia        0.8          59           59 FALSE        
+29 Arkansas                    0.7          63           31 TRUE         
+30 Delaware                    0.2          78           11 FALSE        
+
+  Median months to 80% of plateau (first-handle clock): 32.0
+  Median months to 80% of plateau (online clock):       31.0
+  States still growing >15% YoY at end of sample:      2 of 30

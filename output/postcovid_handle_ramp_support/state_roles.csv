@@ -1,0 +1,326 @@
+sample,treatment_definition,cohort_month,n_treated_states,cohort_date,is_singleton,is_small_cohort,state_abb,state_name,legal_online_start,effective_date,handle_at_window_start,peak_handle,handle_fraction_at_window_start,treatment_role,has_reference_month,is_usable_treated,is_control_eligible
+balanced_postcovid_28,online_legal,,0,,FALSE,FALSE,AK,Alaska,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,online_legal,,0,,FALSE,FALSE,AR,Arkansas,2022-03-01,2022-03-01,8598226,66058203,0.130161366938789,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,online_legal,,0,,FALSE,FALSE,AZ,Arizona,2021-09-01,2021-09-01,512877848,897635847,0.57136515850397,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,online_legal,,0,,FALSE,FALSE,CT,Connecticut,2021-10-01,2021-10-01,116465199,243670782,0.477961280560917,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,online_legal,2024-01-01,2,2024-01-01,FALSE,TRUE,DE,Delaware,2024-01-01,2024-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,online_legal,,0,,FALSE,FALSE,GA,Georgia,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,online_legal,,0,,FALSE,FALSE,ID,Idaho,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,online_legal,,0,,FALSE,FALSE,IN,Indiana,2019-10-01,2019-10-01,360023255,614362613,0.586011009429703,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,online_legal,2022-09-01,1,2022-09-01,TRUE,TRUE,KS,Kansas,2022-09-01,2022-09-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,online_legal,2023-09-01,1,2023-09-01,TRUE,TRUE,KY,Kentucky,2023-09-01,2023-09-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,online_legal,,0,,FALSE,FALSE,LA,Louisiana,2022-01-01,2022-01-01,208255060,413465532,0.503681791787181,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,online_legal,2022-11-01,1,2022-11-01,TRUE,TRUE,MD,Maryland,2022-11-01,2022-11-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,online_legal,2023-11-01,1,2023-11-01,TRUE,TRUE,ME,Maine,2023-11-01,2023-11-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,online_legal,,0,,FALSE,FALSE,MN,Minnesota,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,online_legal,,0,,FALSE,FALSE,MT,Montana,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,online_legal,,0,,FALSE,FALSE,ND,North Dakota,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,online_legal,,0,,FALSE,FALSE,NH,New Hampshire,2019-12-01,2019-12-01,73149079,103390747,0.707501213817519,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,online_legal,,0,,FALSE,FALSE,NY,New York,2022-01-01,2022-01-01,1396791941,2329400446,0.599635817619312,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,online_legal,2023-01-01,1,2023-01-01,TRUE,TRUE,OH,Ohio,2023-01-01,2023-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,online_legal,,0,,FALSE,FALSE,OK,Oklahoma,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,online_legal,,0,,FALSE,FALSE,PA,Pennsylvania,2019-05-01,2019-05-01,572817741,935530170,0.612292109189808,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,online_legal,,0,,FALSE,FALSE,SC,South Carolina,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,online_legal,,0,,FALSE,FALSE,TN,Tennessee,2020-11-01,2020-11-01,292796670,594387437,0.492602386547413,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,online_legal,,0,,FALSE,FALSE,TX,Texas,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,online_legal,,0,,FALSE,FALSE,UT,Utah,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,online_legal,,0,,FALSE,FALSE,VA,Virginia,2021-01-01,2021-01-01,399478366,760965450,0.524962553818968,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,online_legal,2024-01-01,2,2024-01-01,FALSE,TRUE,VT,Vermont,2024-01-01,2024-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,online_legal,,0,,FALSE,FALSE,WV,West Virginia,2018-08-01,2018-08-01,38655331,88190136,0.438318079019631,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_25,,0,,FALSE,FALSE,AK,Alaska,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_25,2022-09-01,2,2022-09-01,FALSE,TRUE,AR,Arkansas,2022-03-01,2022-09-01,8598226,66058203,0.130161366938789,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_25,,0,,FALSE,FALSE,AZ,Arizona,2021-09-01,2021-09-01,512877848,897635847,0.57136515850397,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_25,,0,,FALSE,FALSE,CT,Connecticut,2021-10-01,2021-11-01,116465199,243670782,0.477961280560917,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_25,2024-01-01,2,2024-01-01,FALSE,TRUE,DE,Delaware,2024-01-01,2024-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_25,,0,,FALSE,FALSE,GA,Georgia,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_25,,0,,FALSE,FALSE,ID,Idaho,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_25,,0,,FALSE,FALSE,IN,Indiana,2019-10-01,2019-12-01,360023255,614362613,0.586011009429703,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_25,2022-09-01,2,2022-09-01,FALSE,TRUE,KS,Kansas,2022-09-01,2022-09-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_25,2023-10-01,1,2023-10-01,TRUE,TRUE,KY,Kentucky,2023-09-01,2023-10-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_25,,0,,FALSE,FALSE,LA,Louisiana,2022-01-01,2022-02-01,208255060,413465532,0.503681791787181,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_25,2022-11-01,1,2022-11-01,TRUE,TRUE,MD,Maryland,2022-11-01,2022-11-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_25,2023-11-01,1,2023-11-01,TRUE,TRUE,ME,Maine,2023-11-01,2023-11-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_25,,0,,FALSE,FALSE,MN,Minnesota,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_25,,0,,FALSE,FALSE,MT,Montana,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_25,,0,,FALSE,FALSE,ND,North Dakota,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_25,,0,,FALSE,FALSE,NH,New Hampshire,2019-12-01,2020-08-01,73149079,103390747,0.707501213817519,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_25,,0,,FALSE,FALSE,NY,New York,2022-01-01,2022-01-01,1396791941,2329400446,0.599635817619312,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_25,2023-01-01,1,2023-01-01,TRUE,TRUE,OH,Ohio,2023-01-01,2023-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_25,,0,,FALSE,FALSE,OK,Oklahoma,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_25,,0,,FALSE,FALSE,PA,Pennsylvania,2019-05-01,2019-10-01,572817741,935530170,0.612292109189808,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_25,,0,,FALSE,FALSE,SC,South Carolina,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_25,,0,,FALSE,FALSE,TN,Tennessee,2020-11-01,2020-12-01,292796670,594387437,0.492602386547413,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_25,,0,,FALSE,FALSE,TX,Texas,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_25,,0,,FALSE,FALSE,UT,Utah,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_25,,0,,FALSE,FALSE,VA,Virginia,2021-01-01,2021-02-01,399478366,760965450,0.524962553818968,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_25,2024-01-01,2,2024-01-01,FALSE,TRUE,VT,Vermont,2024-01-01,2024-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_25,,0,,FALSE,FALSE,WV,West Virginia,2018-08-01,2019-09-01,38655331,88190136,0.438318079019631,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_50,,0,,FALSE,FALSE,AK,Alaska,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_50,2023-03-01,1,2023-03-01,TRUE,TRUE,AR,Arkansas,2022-03-01,2023-03-01,8598226,66058203,0.130161366938789,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_50,,0,,FALSE,FALSE,AZ,Arizona,2021-09-01,2021-10-01,512877848,897635847,0.57136515850397,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_50,,0,,FALSE,FALSE,CT,Connecticut,2021-10-01,2021-11-01,116465199,243670782,0.477961280560917,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_50,2024-01-01,2,2024-01-01,FALSE,TRUE,DE,Delaware,2024-01-01,2024-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_50,,0,,FALSE,FALSE,GA,Georgia,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_50,,0,,FALSE,FALSE,ID,Idaho,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_50,,0,,FALSE,FALSE,IN,Indiana,2019-10-01,2020-12-01,360023255,614362613,0.586011009429703,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_50,2022-09-01,1,2022-09-01,TRUE,TRUE,KS,Kansas,2022-09-01,2022-09-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_50,2023-10-01,1,2023-10-01,TRUE,TRUE,KY,Kentucky,2023-09-01,2023-10-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_50,,0,,FALSE,FALSE,LA,Louisiana,2022-01-01,2022-02-01,208255060,413465532,0.503681791787181,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_50,2022-12-01,1,2022-12-01,TRUE,TRUE,MD,Maryland,2022-11-01,2022-12-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_50,2023-11-01,1,2023-11-01,TRUE,TRUE,ME,Maine,2023-11-01,2023-11-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_50,,0,,FALSE,FALSE,MN,Minnesota,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_50,,0,,FALSE,FALSE,MT,Montana,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_50,,0,,FALSE,FALSE,ND,North Dakota,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_50,,0,,FALSE,FALSE,NH,New Hampshire,2019-12-01,2021-01-01,73149079,103390747,0.707501213817519,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_50,,0,,FALSE,FALSE,NY,New York,2022-01-01,2022-01-01,1396791941,2329400446,0.599635817619312,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_50,2023-01-01,1,2023-01-01,TRUE,TRUE,OH,Ohio,2023-01-01,2023-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_50,,0,,FALSE,FALSE,OK,Oklahoma,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_50,,0,,FALSE,FALSE,PA,Pennsylvania,2019-05-01,2020-10-01,572817741,935530170,0.612292109189808,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_50,,0,,FALSE,FALSE,SC,South Carolina,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_50,,0,,FALSE,FALSE,TN,Tennessee,2020-11-01,2021-10-01,292796670,594387437,0.492602386547413,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_50,,0,,FALSE,FALSE,TX,Texas,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_50,,0,,FALSE,FALSE,UT,Utah,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_50,,0,,FALSE,FALSE,VA,Virginia,2021-01-01,2021-10-01,399478366,760965450,0.524962553818968,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_50,2024-01-01,2,2024-01-01,FALSE,TRUE,VT,Vermont,2024-01-01,2024-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_50,,0,,FALSE,FALSE,WV,West Virginia,2018-08-01,2020-08-01,38655331,88190136,0.438318079019631,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_75,,0,,FALSE,FALSE,AK,Alaska,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_75,2023-11-01,3,2023-11-01,FALSE,TRUE,AR,Arkansas,2022-03-01,2023-11-01,8598226,66058203,0.130161366938789,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_75,,0,,FALSE,FALSE,AZ,Arizona,2021-09-01,2022-03-01,512877848,897635847,0.57136515850397,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_75,2023-10-01,3,2023-10-01,FALSE,TRUE,CT,Connecticut,2021-10-01,2023-10-01,116465199,243670782,0.477961280560917,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_75,2024-09-01,1,2024-09-01,TRUE,TRUE,DE,Delaware,2024-01-01,2024-09-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_75,,0,,FALSE,FALSE,GA,Georgia,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_75,,0,,FALSE,FALSE,ID,Idaho,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_75,,0,,FALSE,FALSE,IN,Indiana,2019-10-01,2021-10-01,360023255,614362613,0.586011009429703,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_75,2023-09-01,1,2023-09-01,TRUE,TRUE,KS,Kansas,2022-09-01,2023-09-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_75,2023-10-01,3,2023-10-01,FALSE,TRUE,KY,Kentucky,2023-09-01,2023-10-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_75,2023-11-01,3,2023-11-01,FALSE,TRUE,LA,Louisiana,2022-01-01,2023-11-01,208255060,413465532,0.503681791787181,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_75,2022-12-01,1,2022-12-01,TRUE,TRUE,MD,Maryland,2022-11-01,2022-12-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_75,2023-12-01,1,2023-12-01,TRUE,TRUE,ME,Maine,2023-11-01,2023-12-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_75,,0,,FALSE,FALSE,MN,Minnesota,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_75,,0,,FALSE,FALSE,MT,Montana,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_75,,0,,FALSE,FALSE,ND,North Dakota,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_75,,0,,FALSE,FALSE,NH,New Hampshire,2019-12-01,2021-10-01,73149079,103390747,0.707501213817519,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_75,2023-01-01,2,2023-01-01,FALSE,TRUE,NY,New York,2022-01-01,2023-01-01,1396791941,2329400446,0.599635817619312,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_75,2023-01-01,2,2023-01-01,FALSE,TRUE,OH,Ohio,2023-01-01,2023-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_75,,0,,FALSE,FALSE,OK,Oklahoma,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_75,,0,,FALSE,FALSE,PA,Pennsylvania,2019-05-01,2021-10-01,572817741,935530170,0.612292109189808,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_75,,0,,FALSE,FALSE,SC,South Carolina,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_75,2023-11-01,3,2023-11-01,FALSE,TRUE,TN,Tennessee,2020-11-01,2023-11-01,292796670,594387437,0.492602386547413,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_75,,0,,FALSE,FALSE,TX,Texas,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_75,,0,,FALSE,FALSE,UT,Utah,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_75,2023-10-01,3,2023-10-01,FALSE,TRUE,VA,Virginia,2021-01-01,2023-10-01,399478366,760965450,0.524962553818968,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_75,2024-01-01,1,2024-01-01,TRUE,TRUE,VT,Vermont,2024-01-01,2024-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_75,,0,,FALSE,FALSE,WV,West Virginia,2018-08-01,2020-09-01,38655331,88190136,0.438318079019631,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_50_sustained,,0,,FALSE,FALSE,AK,Alaska,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_50_sustained,2023-09-01,1,2023-09-01,TRUE,TRUE,AR,Arkansas,2022-03-01,2023-09-01,8598226,66058203,0.130161366938789,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_50_sustained,,0,,FALSE,FALSE,AZ,Arizona,2021-09-01,2021-10-01,512877848,897635847,0.57136515850397,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_50_sustained,,0,,FALSE,FALSE,CT,Connecticut,2021-10-01,2021-11-01,116465199,243670782,0.477961280560917,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_50_sustained,2024-03-01,1,2024-03-01,TRUE,TRUE,DE,Delaware,2024-01-01,2024-03-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_50_sustained,,0,,FALSE,FALSE,GA,Georgia,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_50_sustained,,0,,FALSE,FALSE,ID,Idaho,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_50_sustained,,0,,FALSE,FALSE,IN,Indiana,2019-10-01,2021-09-01,360023255,614362613,0.586011009429703,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_50_sustained,2022-09-01,1,2022-09-01,TRUE,TRUE,KS,Kansas,2022-09-01,2022-09-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_50_sustained,2023-10-01,1,2023-10-01,TRUE,TRUE,KY,Kentucky,2023-09-01,2023-10-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_50_sustained,,0,,FALSE,FALSE,LA,Louisiana,2022-01-01,2022-02-01,208255060,413465532,0.503681791787181,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_50_sustained,2022-12-01,1,2022-12-01,TRUE,TRUE,MD,Maryland,2022-11-01,2022-12-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_50_sustained,2023-11-01,1,2023-11-01,TRUE,TRUE,ME,Maine,2023-11-01,2023-11-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_50_sustained,,0,,FALSE,FALSE,MN,Minnesota,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_50_sustained,,0,,FALSE,FALSE,MT,Montana,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_50_sustained,,0,,FALSE,FALSE,ND,North Dakota,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_50_sustained,,0,,FALSE,FALSE,NH,New Hampshire,2019-12-01,2021-09-01,73149079,103390747,0.707501213817519,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_50_sustained,,0,,FALSE,FALSE,NY,New York,2022-01-01,2022-01-01,1396791941,2329400446,0.599635817619312,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_50_sustained,2023-01-01,1,2023-01-01,TRUE,TRUE,OH,Ohio,2023-01-01,2023-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_50_sustained,,0,,FALSE,FALSE,OK,Oklahoma,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_50_sustained,,0,,FALSE,FALSE,PA,Pennsylvania,2019-05-01,2020-10-01,572817741,935530170,0.612292109189808,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_50_sustained,,0,,FALSE,FALSE,SC,South Carolina,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_50_sustained,,0,,FALSE,FALSE,TN,Tennessee,2020-11-01,2021-10-01,292796670,594387437,0.492602386547413,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_50_sustained,,0,,FALSE,FALSE,TX,Texas,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_50_sustained,,0,,FALSE,FALSE,UT,Utah,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+balanced_postcovid_28,handle_50_sustained,,0,,FALSE,FALSE,VA,Virginia,2021-01-01,2021-10-01,399478366,760965450,0.524962553818968,always_treated_excluded,TRUE,FALSE,FALSE
+balanced_postcovid_28,handle_50_sustained,2024-01-01,1,2024-01-01,TRUE,TRUE,VT,Vermont,2024-01-01,2024-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+balanced_postcovid_28,handle_50_sustained,,0,,FALSE,FALSE,WV,West Virginia,2018-08-01,2020-08-01,38655331,88190136,0.438318079019631,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,AK,Alaska,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,AR,Arkansas,2022-03-01,2022-03-01,8598226,66058203,0.130161366938789,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,AZ,Arizona,2021-09-01,2021-09-01,512877848,897635847,0.57136515850397,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,CO,Colorado,2020-05-01,2020-05-01,392311737,716430270,0.547592352567683,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,CT,Connecticut,2021-10-01,2021-10-01,116465199,243670782,0.477961280560917,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,online_legal,2024-01-01,2,2024-01-01,FALSE,TRUE,DE,Delaware,2024-01-01,2024-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,GA,Georgia,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,HI,Hawaii,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,ID,Idaho,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,IN,Indiana,2019-10-01,2019-10-01,360023255,614362613,0.586011009429703,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,online_legal,2022-09-01,1,2022-09-01,TRUE,TRUE,KS,Kansas,2022-09-01,2022-09-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,online_legal,2023-09-01,1,2023-09-01,TRUE,TRUE,KY,Kentucky,2023-09-01,2023-09-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,LA,Louisiana,2022-01-01,2022-01-01,208255060,413465532,0.503681791787181,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,online_legal,2023-03-01,1,2023-03-01,TRUE,TRUE,MA,Massachusetts,2023-03-01,2023-03-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,online_legal,2022-11-01,1,2022-11-01,TRUE,TRUE,MD,Maryland,2022-11-01,2022-11-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,online_legal,2023-11-01,1,2023-11-01,TRUE,TRUE,ME,Maine,2023-11-01,2023-11-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,MN,Minnesota,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,MO,Missouri,2025-12-01,2025-12-01,,,,not_yet_treated_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,MS,Mississippi,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,MT,Montana,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,online_legal,2024-03-01,1,2024-03-01,TRUE,TRUE,NC,North Carolina,2024-03-01,2024-03-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,ND,North Dakota,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,NH,New Hampshire,2019-12-01,2019-12-01,73149079,103390747,0.707501213817519,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,NM,New Mexico,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,NY,New York,2022-01-01,2022-01-01,1396791941,2329400446,0.599635817619312,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,online_legal,2023-01-01,1,2023-01-01,TRUE,TRUE,OH,Ohio,2023-01-01,2023-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,OK,Oklahoma,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,PA,Pennsylvania,2019-05-01,2019-05-01,572817741,935530170,0.612292109189808,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,RI,Rhode Island,2019-09-01,2019-09-01,40186632,62317384,0.644870330243644,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,SC,South Carolina,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,TN,Tennessee,2020-11-01,2020-11-01,292796670,594387437,0.492602386547413,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,TX,Texas,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,UT,Utah,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,VA,Virginia,2021-01-01,2021-01-01,399478366,760965450,0.524962553818968,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,online_legal,2024-01-01,2,2024-01-01,FALSE,TRUE,VT,Vermont,2024-01-01,2024-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,WI,Wisconsin,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,online_legal,,0,,FALSE,FALSE,WV,West Virginia,2018-08-01,2018-08-01,38655331,88190136,0.438318079019631,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,AK,Alaska,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_25,2022-09-01,2,2022-09-01,FALSE,TRUE,AR,Arkansas,2022-03-01,2022-09-01,8598226,66058203,0.130161366938789,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,AZ,Arizona,2021-09-01,2021-09-01,512877848,897635847,0.57136515850397,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,CO,Colorado,2020-05-01,2020-09-01,392311737,716430270,0.547592352567683,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,CT,Connecticut,2021-10-01,2021-11-01,116465199,243670782,0.477961280560917,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_25,2024-01-01,2,2024-01-01,FALSE,TRUE,DE,Delaware,2024-01-01,2024-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,GA,Georgia,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,HI,Hawaii,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,ID,Idaho,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,IN,Indiana,2019-10-01,2019-12-01,360023255,614362613,0.586011009429703,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_25,2022-09-01,2,2022-09-01,FALSE,TRUE,KS,Kansas,2022-09-01,2022-09-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_25,2023-10-01,1,2023-10-01,TRUE,TRUE,KY,Kentucky,2023-09-01,2023-10-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,LA,Louisiana,2022-01-01,2022-02-01,208255060,413465532,0.503681791787181,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_25,2023-03-01,1,2023-03-01,TRUE,TRUE,MA,Massachusetts,2023-03-01,2023-03-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_25,2022-11-01,1,2022-11-01,TRUE,TRUE,MD,Maryland,2022-11-01,2022-11-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_25,2023-11-01,1,2023-11-01,TRUE,TRUE,ME,Maine,2023-11-01,2023-11-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,MN,Minnesota,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,MO,Missouri,2025-12-01,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,MS,Mississippi,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,MT,Montana,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_25,2024-03-01,1,2024-03-01,TRUE,TRUE,NC,North Carolina,2024-03-01,2024-03-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,ND,North Dakota,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,NH,New Hampshire,2019-12-01,2020-08-01,73149079,103390747,0.707501213817519,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,NM,New Mexico,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,NY,New York,2022-01-01,2022-01-01,1396791941,2329400446,0.599635817619312,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_25,2023-01-01,1,2023-01-01,TRUE,TRUE,OH,Ohio,2023-01-01,2023-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,OK,Oklahoma,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,PA,Pennsylvania,2019-05-01,2019-10-01,572817741,935530170,0.612292109189808,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,RI,Rhode Island,2019-09-01,2019-09-01,40186632,62317384,0.644870330243644,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,SC,South Carolina,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,TN,Tennessee,2020-11-01,2020-12-01,292796670,594387437,0.492602386547413,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,TX,Texas,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,UT,Utah,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,VA,Virginia,2021-01-01,2021-02-01,399478366,760965450,0.524962553818968,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_25,2024-01-01,2,2024-01-01,FALSE,TRUE,VT,Vermont,2024-01-01,2024-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,WI,Wisconsin,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_25,,0,,FALSE,FALSE,WV,West Virginia,2018-08-01,2019-09-01,38655331,88190136,0.438318079019631,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,AK,Alaska,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50,2023-03-01,2,2023-03-01,FALSE,TRUE,AR,Arkansas,2022-03-01,2023-03-01,8598226,66058203,0.130161366938789,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,AZ,Arizona,2021-09-01,2021-10-01,512877848,897635847,0.57136515850397,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,CO,Colorado,2020-05-01,2021-09-01,392311737,716430270,0.547592352567683,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,CT,Connecticut,2021-10-01,2021-11-01,116465199,243670782,0.477961280560917,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50,2024-01-01,2,2024-01-01,FALSE,TRUE,DE,Delaware,2024-01-01,2024-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,GA,Georgia,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,HI,Hawaii,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,ID,Idaho,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,IN,Indiana,2019-10-01,2020-12-01,360023255,614362613,0.586011009429703,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50,2022-09-01,1,2022-09-01,TRUE,TRUE,KS,Kansas,2022-09-01,2022-09-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_50,2023-10-01,1,2023-10-01,TRUE,TRUE,KY,Kentucky,2023-09-01,2023-10-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,LA,Louisiana,2022-01-01,2022-02-01,208255060,413465532,0.503681791787181,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50,2023-03-01,2,2023-03-01,FALSE,TRUE,MA,Massachusetts,2023-03-01,2023-03-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_50,2022-12-01,1,2022-12-01,TRUE,TRUE,MD,Maryland,2022-11-01,2022-12-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_50,2023-11-01,1,2023-11-01,TRUE,TRUE,ME,Maine,2023-11-01,2023-11-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,MN,Minnesota,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,MO,Missouri,2025-12-01,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,MS,Mississippi,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,MT,Montana,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50,2024-03-01,1,2024-03-01,TRUE,TRUE,NC,North Carolina,2024-03-01,2024-03-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,ND,North Dakota,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,NH,New Hampshire,2019-12-01,2021-01-01,73149079,103390747,0.707501213817519,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,NM,New Mexico,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,NY,New York,2022-01-01,2022-01-01,1396791941,2329400446,0.599635817619312,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50,2023-01-01,1,2023-01-01,TRUE,TRUE,OH,Ohio,2023-01-01,2023-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,OK,Oklahoma,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,PA,Pennsylvania,2019-05-01,2020-10-01,572817741,935530170,0.612292109189808,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,RI,Rhode Island,2019-09-01,2019-11-01,40186632,62317384,0.644870330243644,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,SC,South Carolina,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,TN,Tennessee,2020-11-01,2021-10-01,292796670,594387437,0.492602386547413,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,TX,Texas,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,UT,Utah,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,VA,Virginia,2021-01-01,2021-10-01,399478366,760965450,0.524962553818968,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50,2024-01-01,2,2024-01-01,FALSE,TRUE,VT,Vermont,2024-01-01,2024-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,WI,Wisconsin,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50,,0,,FALSE,FALSE,WV,West Virginia,2018-08-01,2020-08-01,38655331,88190136,0.438318079019631,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,AK,Alaska,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_75,2023-11-01,4,2023-11-01,FALSE,TRUE,AR,Arkansas,2022-03-01,2023-11-01,8598226,66058203,0.130161366938789,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,AZ,Arizona,2021-09-01,2022-03-01,512877848,897635847,0.57136515850397,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,CO,Colorado,2020-05-01,2022-01-01,392311737,716430270,0.547592352567683,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_75,2023-10-01,3,2023-10-01,FALSE,TRUE,CT,Connecticut,2021-10-01,2023-10-01,116465199,243670782,0.477961280560917,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_75,2024-09-01,1,2024-09-01,TRUE,TRUE,DE,Delaware,2024-01-01,2024-09-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,GA,Georgia,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,HI,Hawaii,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,ID,Idaho,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,IN,Indiana,2019-10-01,2021-10-01,360023255,614362613,0.586011009429703,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_75,2023-09-01,1,2023-09-01,TRUE,TRUE,KS,Kansas,2022-09-01,2023-09-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_75,2023-10-01,3,2023-10-01,FALSE,TRUE,KY,Kentucky,2023-09-01,2023-10-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_75,2023-11-01,4,2023-11-01,FALSE,TRUE,LA,Louisiana,2022-01-01,2023-11-01,208255060,413465532,0.503681791787181,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_75,2023-11-01,4,2023-11-01,FALSE,TRUE,MA,Massachusetts,2023-03-01,2023-11-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_75,2022-12-01,1,2022-12-01,TRUE,TRUE,MD,Maryland,2022-11-01,2022-12-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_75,2023-12-01,1,2023-12-01,TRUE,TRUE,ME,Maine,2023-11-01,2023-12-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,MN,Minnesota,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,MO,Missouri,2025-12-01,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,MS,Mississippi,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,MT,Montana,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_75,2024-03-01,1,2024-03-01,TRUE,TRUE,NC,North Carolina,2024-03-01,2024-03-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,ND,North Dakota,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,NH,New Hampshire,2019-12-01,2021-10-01,73149079,103390747,0.707501213817519,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,NM,New Mexico,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_75,2023-01-01,2,2023-01-01,FALSE,TRUE,NY,New York,2022-01-01,2023-01-01,1396791941,2329400446,0.599635817619312,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_75,2023-01-01,2,2023-01-01,FALSE,TRUE,OH,Ohio,2023-01-01,2023-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,OK,Oklahoma,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,PA,Pennsylvania,2019-05-01,2021-10-01,572817741,935530170,0.612292109189808,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,RI,Rhode Island,2019-09-01,2020-11-01,40186632,62317384,0.644870330243644,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,SC,South Carolina,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_75,2023-11-01,4,2023-11-01,FALSE,TRUE,TN,Tennessee,2020-11-01,2023-11-01,292796670,594387437,0.492602386547413,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,TX,Texas,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,UT,Utah,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_75,2023-10-01,3,2023-10-01,FALSE,TRUE,VA,Virginia,2021-01-01,2023-10-01,399478366,760965450,0.524962553818968,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_75,2024-01-01,1,2024-01-01,TRUE,TRUE,VT,Vermont,2024-01-01,2024-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,WI,Wisconsin,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_75,,0,,FALSE,FALSE,WV,West Virginia,2018-08-01,2020-09-01,38655331,88190136,0.438318079019631,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,AK,Alaska,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50_sustained,2023-09-01,1,2023-09-01,TRUE,TRUE,AR,Arkansas,2022-03-01,2023-09-01,8598226,66058203,0.130161366938789,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,AZ,Arizona,2021-09-01,2021-10-01,512877848,897635847,0.57136515850397,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,CO,Colorado,2020-05-01,2021-09-01,392311737,716430270,0.547592352567683,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,CT,Connecticut,2021-10-01,2021-11-01,116465199,243670782,0.477961280560917,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50_sustained,2024-03-01,2,2024-03-01,FALSE,TRUE,DE,Delaware,2024-01-01,2024-03-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,GA,Georgia,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,HI,Hawaii,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,ID,Idaho,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,IN,Indiana,2019-10-01,2021-09-01,360023255,614362613,0.586011009429703,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50_sustained,2022-09-01,1,2022-09-01,TRUE,TRUE,KS,Kansas,2022-09-01,2022-09-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_50_sustained,2023-10-01,1,2023-10-01,TRUE,TRUE,KY,Kentucky,2023-09-01,2023-10-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,LA,Louisiana,2022-01-01,2022-02-01,208255060,413465532,0.503681791787181,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50_sustained,2023-03-01,1,2023-03-01,TRUE,TRUE,MA,Massachusetts,2023-03-01,2023-03-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_50_sustained,2022-12-01,1,2022-12-01,TRUE,TRUE,MD,Maryland,2022-11-01,2022-12-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_50_sustained,2023-11-01,1,2023-11-01,TRUE,TRUE,ME,Maine,2023-11-01,2023-11-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,MN,Minnesota,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,MO,Missouri,2025-12-01,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,MS,Mississippi,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,MT,Montana,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50_sustained,2024-03-01,2,2024-03-01,FALSE,TRUE,NC,North Carolina,2024-03-01,2024-03-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,ND,North Dakota,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,NH,New Hampshire,2019-12-01,2021-09-01,73149079,103390747,0.707501213817519,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,NM,New Mexico,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,NY,New York,2022-01-01,2022-01-01,1396791941,2329400446,0.599635817619312,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50_sustained,2023-01-01,1,2023-01-01,TRUE,TRUE,OH,Ohio,2023-01-01,2023-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,OK,Oklahoma,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,PA,Pennsylvania,2019-05-01,2020-10-01,572817741,935530170,0.612292109189808,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,RI,Rhode Island,2019-09-01,2020-09-01,40186632,62317384,0.644870330243644,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,SC,South Carolina,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,TN,Tennessee,2020-11-01,2021-10-01,292796670,594387437,0.492602386547413,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,TX,Texas,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,UT,Utah,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,VA,Virginia,2021-01-01,2021-10-01,399478366,760965450,0.524962553818968,always_treated_excluded,TRUE,FALSE,FALSE
+all_handle_eligible_37,handle_50_sustained,2024-01-01,1,2024-01-01,TRUE,TRUE,VT,Vermont,2024-01-01,2024-01-01,,,,treated_in_window,TRUE,TRUE,FALSE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,WI,Wisconsin,,,,,,never_or_not_yet_control,TRUE,FALSE,TRUE
+all_handle_eligible_37,handle_50_sustained,,0,,FALSE,FALSE,WV,West Virginia,2018-08-01,2020-08-01,38655331,88190136,0.438318079019631,always_treated_excluded,TRUE,FALSE,FALSE

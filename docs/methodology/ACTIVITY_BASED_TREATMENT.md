@@ -62,6 +62,18 @@
 - Corrects for timing mismatch
 - Still significant violations but much better
 
+### Current Treatment Definition
+
+The current build scripts freeze the peak-calibration sample at **December
+2024**, matching the study window. Peaks exclude March 2020 through March 2022,
+while the search for the first month reaching 50% of peak retains COVID months
+within the calibration window. Set `PEAK_CALIBRATION_END` to override the cutoff.
+
+This prevents newly published 2025–2026 Handle observations from retroactively
+changing historical treatment dates. Results reported elsewhere in this file
+were produced before the 2026-08-14 source refresh and should be rerun before
+being cited as current estimates.
+
 ### Robustness Reporting
 Report all 11 specifications in appendix table:
 - Shows violations universal but heterogeneous
@@ -172,7 +184,9 @@ estat event, window(-24 24) post
 1. **All specs violate parallel trends** (p < 0.001 for all)
 2. **Activity-based improves but doesn't eliminate** violations
 3. **CS-DiD not available** due to software crash (alternatives exist)
-4. **Peak handle is data-dependent** (uses future data)
+4. **Peak handle is data-dependent within the fixed calibration window**;
+   December 2024 is the default cutoff, so observations published after the
+   study period cannot alter historical treatment dates
 5. **Still need HonestDiD bounds** regardless of specification
 
 ---
@@ -215,6 +229,6 @@ estat event, window(-24 24) post
 
 ---
 
-**Updated**: 2026-01-16 19:46
+**Updated**: 2026-08-14
 **Total Runtime**: ~5 minutes for all 11 specs
 **Output Location**: `pretrends_modern_out/`

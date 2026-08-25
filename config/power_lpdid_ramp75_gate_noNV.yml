@@ -68,6 +68,11 @@ effect_grid:  [0]                # SIZE ONLY — this is a gate, not an MDE
 estimators:   [twfe, lpdid]
 lpdid_wild:   true              # the arm power_lpdid_mde.yml never switched on
 
+# Clean mature-period estimand; see power_lpdid_ramp75_gate.yml.
+lpdid_anchor: event_clean
+lpdid_hmin:   12
+lpdid_post:   24
+
 # ---- Execution --------------------------------------------------------------
 
 n_reps:     300

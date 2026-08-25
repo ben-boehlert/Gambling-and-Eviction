@@ -16,23 +16,18 @@
 # the low horizons, which lpdid_hmin then drops from the pool. That is the
 # LP-DiD transposition of did::aggte(min_e = 12).
 #
-# DESIGN. 2 windows x 2 anchors, everything else held fixed at the SAME
-# horizon window (12..24) so the anchor is the only moving part:
+# DESIGN. The clean event anchor is the forward-looking specification. Legacy
+# event and launch anchors remain only for paired diagnosis. Every arm uses
+# horizons 12..24 relative to its named anchor.
 #
-#   A  spliced   x anchor event    <- isolates the anchor against C
-#   B  spliced   x anchor launch
-#   C  postcovid x anchor event
-#   D  postcovid x anchor launch
-#
-# The A-vs-B and C-vs-D contrasts are the clean test. Comparing either against
-# power_lpdid_ramp75_mde.yml also folds in the horizon-window change (0..12 ->
-# 12..24), so read that contrast as "what the recommended spec costs in MDE",
-# not as an anchor effect.
+# The event_clean arms implement the target design directly. Event/launch and
+# launch-aligned arms are legacy decompositions; they are not candidates for
+# the forward-looking specification.
 #
 # base_seed is unchanged, so every rep sees the identical simulated panel as
 # the published run and as each other — paired throughout.
 #
-# Scenario count: 4. Run locally.
+# Scenario count: 8. Run locally.
 # =============================================================================
 
 run_name: lpdid_ramp75_anchor
@@ -85,6 +80,17 @@ anticipation_months: 6
 
 scenarios:
 
+  # Preferred: maturity-relative outcomes, shared pre-launch baseline, and no
+  # launched state in the control pool. h=12..24 means 12+ months after 75%.
+  - name: spliced_event_clean
+    covid: drop
+    lpdid_anchor: event_clean
+
+  - name: postcovid_event_clean
+    covid: post
+    lpdid_anchor: event_clean
+
+  # Legacy anchors retained for reproducibility and decomposition only.
   - name: spliced_event
     covid: drop
     lpdid_anchor: event

@@ -1,0 +1,64 @@
+adoption universe: 50 states | 30 adopted online by 2024-12-01 | NV excluded (pre-PASPA)
+Warning messages:
+1: In gregexpr(pattern, x, perl = TRUE) :
+  input string 12459 is invalid UTF-8
+2: In gregexpr(pattern, x, perl = TRUE) :
+  input string 12516 is invalid UTF-8
+3: In gregexpr(pattern, x, perl = TRUE) :
+  input string 12534 is invalid UTF-8
+4: In gregexpr(pattern, x, perl = TRUE) :
+  input string 12603 is invalid UTF-8
+5: In gregexpr(pattern, x, perl = TRUE) :
+  input string 17968 is invalid UTF-8
+predictor coverage: mortgage 51 | pop 51 | border 50 | eviction pre-repeal 41 | eviction pre-antic 30 
+
+================ (1) EVER ADOPT ONLINE: out-of-sample discrimination ================
+                       window                       model           outcome  n events n_pred insample_auc cv_auc cv_auc_null_mean p_auc cv_brier brier_intercept_only brier_skill p_brier
+       pre-repeal (<=2018-01)          macro only (51 st) ever adopt online 50     30      5        0.758  0.622            0.493 0.104    0.245                0.240      -0.022   0.080
+       pre-repeal (<=2018-01) macro only, eviction sample ever adopt online 40     23      5        0.783  0.644            0.482 0.071    0.252                0.244      -0.032   0.066
+       pre-repeal (<=2018-01)            macro + eviction ever adopt online 40     23      7        0.798  0.589            0.487 0.167    0.295                0.244      -0.205   0.218
+       pre-repeal (<=2018-01)               eviction only ever adopt online 40     23      2        0.609  0.467            0.484 0.563    0.272                0.244      -0.113   0.664
+ pre-anticipation (<=2009-12)          macro only (51 st) ever adopt online 50     30      4        0.660  0.524            0.487 0.386    0.266                0.240      -0.110   0.396
+ pre-anticipation (<=2009-12) macro only, eviction sample ever adopt online 29     17      4        0.691  0.499            0.490 0.482    0.305                0.243      -0.258   0.546
+ pre-anticipation (<=2009-12)            macro + eviction ever adopt online 29     17      6        0.725  0.411            0.488 0.737    0.365                0.243      -0.504   0.756
+ pre-anticipation (<=2009-12)               eviction only ever adopt online 29     17      2        0.672  0.480            0.481 0.516    0.285                0.243      -0.174   0.753
+
+================ (2) TIMING AMONG ADOPTERS: out-of-sample R^2 ======================
+                       window                       model                       outcome  n events n_pred insample_r2  cv_r2 cv_r2_null_mean  p_r2 sd_outcome
+       pre-repeal (<=2018-01)          macro only (51 st) months to adoption (adopters) 30     30      5       0.049 -0.722          -0.484 0.831     20.791
+       pre-repeal (<=2018-01) macro only, eviction sample months to adoption (adopters) 23     23      5       0.200 -0.963          -0.871 0.639     20.549
+       pre-repeal (<=2018-01)            macro + eviction months to adoption (adopters) 23     23      7       0.219 -1.464          -1.214 0.677     20.549
+       pre-repeal (<=2018-01)               eviction only months to adoption (adopters) 23     23      2       0.060 -0.234          -0.260 0.393     20.549
+ pre-anticipation (<=2009-12)          macro only (51 st) months to adoption (adopters) 30     30      4       0.035 -0.399          -0.337 0.631     20.791
+ pre-anticipation (<=2009-12) macro only, eviction sample months to adoption (adopters) 17     17      4       0.214 -0.628          -0.919 0.345     20.058
+ pre-anticipation (<=2009-12)            macro + eviction months to adoption (adopters) 17     17      6       0.237 -1.404          -1.761 0.400     20.058
+ pre-anticipation (<=2009-12)               eviction only months to adoption (adopters) 17     17      2       0.024 -0.376          -0.421 0.453     20.058
+
+================ (3) ADOPTION HAZARD: LOO Cox concordance ==========================
+                       window                       model                         outcome  n events n_pred cv_cindex cindex_null_mean p_cindex
+       pre-repeal (<=2018-01)          macro only (51 st) adoption hazard (Cox, censored) 50     30      5     0.556            0.500    0.240
+       pre-repeal (<=2018-01) macro only, eviction sample adoption hazard (Cox, censored) 40     23      5     0.573            0.486    0.164
+       pre-repeal (<=2018-01)            macro + eviction adoption hazard (Cox, censored) 40     23      7     0.555            0.499    0.284
+       pre-repeal (<=2018-01)               eviction only adoption hazard (Cox, censored) 40     23      2     0.468            0.487    0.616
+ pre-anticipation (<=2009-12)          macro only (51 st) adoption hazard (Cox, censored) 50     30      4     0.500            0.490    0.444
+ pre-anticipation (<=2009-12) macro only, eviction sample adoption hazard (Cox, censored) 29     17      4     0.450            0.480    0.608
+ pre-anticipation (<=2009-12)            macro + eviction adoption hazard (Cox, censored) 29     17      6     0.409            0.496    0.776
+ pre-anticipation (<=2009-12)               eviction only adoption hazard (Cox, censored) 29     17      2     0.477            0.483    0.536
+
+================ single-predictor screen ============================================
+                       window              model  n events cv_auc p_auc brier_skill cv_cindex p_cindex
+       pre-repeal (<=2018-01) single: mort_level 50     30  0.703 0.005       0.107     0.592    0.044
+       pre-repeal (<=2018-01)  single: mort_peak 50     30  0.580 0.187      -0.009     0.543    0.300
+       pre-repeal (<=2018-01) single: mort_slope 50     30  0.487 0.478      -0.041     0.507    0.444
+       pre-repeal (<=2018-01)    single: log_pop 50     30  0.487 0.473      -0.047     0.481    0.544
+       pre-repeal (<=2018-01)   single: n_border 50     30  0.484 0.472      -0.033     0.520    0.404
+       pre-repeal (<=2018-01)   single: ev_level 40     23  0.585 0.196      -0.050     0.534    0.336
+       pre-repeal (<=2018-01)   single: ev_slope 40     23  0.404 0.735      -0.064     0.451    0.648
+ pre-anticipation (<=2009-12) single: mort_level 50     30  0.627 0.074       0.014     0.577    0.100
+ pre-anticipation (<=2009-12)  single: mort_peak 50     30  0.587 0.194      -0.005     0.549    0.240
+ pre-anticipation (<=2009-12) single: mort_slope 50     30  0.549 0.263      -0.019     0.530    0.308
+ pre-anticipation (<=2009-12)   single: n_border 50     30  0.480 0.495      -0.035     0.515    0.380
+ pre-anticipation (<=2009-12)   single: ev_level 29     17  0.569 0.287      -0.078     0.520    0.432
+ pre-anticipation (<=2009-12)   single: ev_slope 29     17  0.488 0.455      -0.074     0.491    0.560
+
+Wrote: output/adoption_predictability 

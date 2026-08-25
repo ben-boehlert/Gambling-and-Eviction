@@ -1,0 +1,5 @@
+design,n_treated_states,n_exact_month_cohorts,n_singleton_cohorts,largest_cohort
+pure_treat_25pct_peak,8,6,4,2
+pure_treat_50pct_peak,8,7,6,2
+pure_treat_75pct_peak,13,8,5,3
+pure_treat_sustained_50pct_peak,8,8,8,1

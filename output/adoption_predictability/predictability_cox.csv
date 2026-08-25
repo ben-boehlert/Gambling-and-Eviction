@@ -1,0 +1,9 @@
+window,model,outcome,n,events,n_pred,cv_cindex,cindex_null_mean,p_cindex
+pre-repeal (<=2018-01),macro only (51 st),"adoption hazard (Cox, censored)",50,30,5,0.5559338521400778,0.4997120622568093,0.24
+pre-repeal (<=2018-01),"macro only, eviction sample","adoption hazard (Cox, censored)",40,23,5,0.5725429017160686,0.48586583463338534,0.164
+pre-repeal (<=2018-01),macro + eviction,"adoption hazard (Cox, censored)",40,23,7,0.5551014040561623,0.4991263650546022,0.284
+pre-repeal (<=2018-01),eviction only,"adoption hazard (Cox, censored)",40,23,2,0.4682683307332293,0.48702028081123244,0.616
+pre-anticipation (<=2009-12),macro only (51 st),"adoption hazard (Cox, censored)",50,30,4,0.5001167315175097,0.49011284046692605,0.444
+pre-anticipation (<=2009-12),"macro only, eviction sample","adoption hazard (Cox, censored)",29,17,4,0.44988165680473374,0.48011834319526625,0.608
+pre-anticipation (<=2009-12),macro + eviction,"adoption hazard (Cox, censored)",29,17,6,0.40911242603550296,0.49615384615384617,0.776
+pre-anticipation (<=2009-12),eviction only,"adoption hazard (Cox, censored)",29,17,2,0.47650887573964495,0.4833136094674556,0.536

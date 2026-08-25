@@ -1,0 +1,7 @@
+spec,n_states,n_matured,n_censored,p25,median,median_lo,median_hi,p75
+"YoY<10%, clock = first handle",34,32,2,18,31,25,40,42
+"YoY<10%, clock = online launch",29,28,1,20,27,25,37,39
+"YoY<15%, clock = first handle",34,33,1,17,27,24,36,42
+"YoY<15%, clock = online launch",29,29,0,17,25,23,33,36
+"YoY<25%, clock = first handle",34,33,1,14,22.5,15,33,36
+"YoY<25%, clock = online launch",29,29,0,14,20,15,31,32

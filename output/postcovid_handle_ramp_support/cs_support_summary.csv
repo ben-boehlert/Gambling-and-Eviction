@@ -1,0 +1,11 @@
+sample,treatment_definition,n_group_time_cells,n_cells_with_controls,share_cells_small_cohort,min_controls
+balanced_postcovid_28,online_legal,120,120,1,10
+balanced_postcovid_28,handle_25,119,119,1,10
+balanced_postcovid_28,handle_50,140,140,1,10
+balanced_postcovid_28,handle_75,123,123,1,10
+balanced_postcovid_28,handle_50_sustained,144,144,1,10
+all_handle_eligible_37,online_legal,152,152,1,15
+all_handle_eligible_37,handle_25,151,151,1,15
+all_handle_eligible_37,handle_50,150,150,1,15
+all_handle_eligible_37,handle_75,133,133,1,15
+all_handle_eligible_37,handle_50_sustained,166,166,1,15

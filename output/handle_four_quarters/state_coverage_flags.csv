@@ -1,0 +1,32 @@
+state,online_launch_month,retail_launch_month,retail_transition,handle_data_start,handle_data_end,pre_2025_peak_month,pre_2025_peak_handle,has_handle_data,has_pre_2025_peak,is_peak_before_online,event_quarter_plus_4_m12_m14,first_full_calendar_quarter,fourth_exposure_block_m9_m11,fourth_full_calendar_quarter,launch_block_m0_m2
+New Jersey,2018-08-01,2018-06-01,retail_before_online,2018-06-01,2026-05-01,2024-01-01,1719170088,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+West Virginia,2018-08-01,2018-08-01,online_and_retail_same_month,2018-08-01,2026-05-01,2021-11-01,88190136,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Pennsylvania,2019-05-01,2018-11-01,retail_before_online,2018-11-01,2026-05-01,2024-11-01,935530170,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Iowa,2019-08-01,2019-08-01,online_and_retail_same_month,2019-08-01,2026-05-01,2024-11-01,315221241,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Rhode Island,2019-09-01,2018-11-01,retail_before_online,2018-11-01,2026-05-01,2023-01-01,62317384,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Indiana,2019-10-01,2019-09-01,retail_before_online,2019-09-01,2026-05-01,2024-11-01,614362613,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Oregon,2019-10-01,,online_only,2019-10-01,2026-05-01,2024-12-01,90178020,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+New Hampshire,2019-12-01,2020-08-01,retail_after_online,2019-12-01,2026-05-01,2023-03-01,103390747,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Colorado,2020-05-01,2020-05-01,online_and_retail_same_month,2020-05-01,2026-05-01,2023-12-01,716430270,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+District of Columbia,2020-05-01,2020-07-01,retail_after_online,2020-05-01,2026-05-01,2024-11-01,68272811,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Illinois,2020-06-01,2020-03-01,retail_before_online,2020-03-01,2026-04-01,2024-11-01,1532470270,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Tennessee,2020-11-01,,online_only,2020-11-01,2026-05-01,2024-11-01,594387437,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Michigan,2021-01-01,2020-03-01,retail_before_online,2020-03-01,2026-05-01,2024-11-01,671219907,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Virginia,2021-01-01,,online_only,2021-01-01,2026-05-01,2024-11-01,760965450,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Arizona,2021-09-01,2021-09-01,online_and_retail_same_month,2021-09-01,2026-04-01,2024-11-01,897635847,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Wyoming,2021-09-01,,online_only,2021-09-01,2026-05-01,2024-12-01,25236214,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Connecticut,2021-10-01,2021-10-01,online_and_retail_same_month,2021-10-01,2026-05-01,2024-12-01,243670782,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Louisiana,2022-01-01,2021-11-01,retail_before_online,2021-11-01,2026-05-01,2024-11-01,413465532,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+New York,2022-01-01,2019-07-01,retail_before_online,2019-07-01,2026-05-01,2024-10-01,2329400446,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Arkansas,2022-03-01,2019-07-01,retail_before_online,2019-07-01,2026-05-01,2024-11-01,66058203,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Kansas,2022-09-01,2022-09-01,online_and_retail_same_month,2022-09-01,2026-05-01,2024-11-01,290968780,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Maryland,2022-11-01,2021-12-01,retail_before_online,2021-12-01,2026-05-01,2024-11-01,639867400,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Ohio,2023-01-01,2023-01-01,online_and_retail_same_month,2023-01-01,2026-05-01,2023-01-01,1090962383,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Massachusetts,2023-03-01,2023-01-01,retail_before_online,2023-01-01,2026-05-01,2024-12-01,784218035,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Kentucky,2023-09-01,2023-09-01,online_and_retail_same_month,2023-09-01,2026-04-01,2024-11-01,301740758,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Maine,2023-11-01,,online_only,2023-11-01,2026-05-01,2024-12-01,52688855,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Florida,2023-12-01,2023-12-01,online_and_retail_same_month,,,,,FALSE,FALSE,FALSE,missing,missing,missing,missing,missing
+Delaware,2024-01-01,2018-06-01,retail_before_online,2018-06-01,2026-05-01,2024-12-01,28445372,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Vermont,2024-01-01,,online_only,2024-01-01,2026-05-01,2024-12-01,24453075,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+North Carolina,2024-03-01,2021-03-01,retail_before_online,2024-03-01,2026-05-01,2024-03-01,657246516,TRUE,TRUE,FALSE,complete,complete,complete,complete,complete
+Missouri,2025-12-01,2025-12-01,online_and_retail_same_month,2025-12-01,2026-05-01,,,TRUE,FALSE,FALSE,missing,complete,missing,missing,complete

@@ -1,0 +1,8 @@
+restriction,n_rows,n_states
+raw panel,4120,39
+2016-01 through 2024-12,3647,39
+drop 2020-03 through 2021-07,3001,39
+"all panel states, 2016-2024 excluding COVID",3001,39
+current exact balanced sample (91 months),2366,26
+legacy 24-state sample (exclude ID and ME),2184,24
+"Handle estimator panel (exclude FL, NV)",3884,37

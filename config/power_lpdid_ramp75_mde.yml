@@ -59,6 +59,12 @@ effect_grid:  [0, 0.02, 0.05, 0.08, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.
 estimators:   [twfe, lpdid]
 lpdid_wild:   true              # the arm power_lpdid_mde.yml never switched on
 
+# Clean mature-period estimand: compare months 12..24 after 75% maturity with
+# a shared pre-legalization baseline; launched/buildup states are never controls.
+lpdid_anchor: event_clean
+lpdid_hmin:   12
+lpdid_post:   24
+
 # ---- Execution --------------------------------------------------------------
 
 n_reps:     300

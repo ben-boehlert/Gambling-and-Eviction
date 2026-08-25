@@ -1,0 +1,32 @@
+state_abb,g,n_mo,total_handle_bn,pct_post_recovery,handle50_date,class,handle50_class,handle50_lag_mo
+NJ,2018-08-01,94,75.392150284,74.88460468009961,2020-11-01,pre-COVID,matured before recovery,27
+WV,2018-08-01,94,3.4661152140000002,71.0633621770889,2020-08-01,pre-COVID,matured before recovery,24
+PA,2019-05-01,85,47.035621786,80.46142517300494,2020-10-01,pre-COVID,matured before recovery,17
+IA,2019-08-01,82,14.422823925,86.20133515219351,2021-03-01,pre-COVID,matured before recovery,19
+RI,2019-09-01,81,3.026529296,74.73379940479519,2019-11-01,pre-COVID,matured before recovery,2
+IN,2019-10-01,80,28.130874928,83.60651023900496,2020-12-01,pre-COVID,matured before recovery,14
+OR,2019-10-01,80,3.952829788,87.57695156794341,2022-10-01,pre-COVID,matured after recovery,36
+NH,2019-12-01,78,4.760468439,84.68626982110321,2021-01-01,pre-COVID,matured before recovery,13
+CO,2020-05-01,73,31.132167515,88.42053457002928,2021-09-01,during COVID,matured before recovery,16
+DC,2020-05-01,73,2.34740804,90.76401945015064,2024-05-01,during COVID,matured after recovery,48
+IL,2020-06-01,71,64.739509495,89.96981631517998,2021-10-01,during COVID,matured after recovery,16
+TN,2020-11-01,67,24.755497909,92.08255261031357,2021-10-01,during COVID,matured after recovery,11
+MI,2021-01-01,65,26.968208687,90.9034040989806,2021-03-01,during COVID,matured before recovery,2
+VA,2021-01-01,65,31.467017482,93.75456416826228,2021-10-01,during COVID,matured after recovery,9
+AZ,2021-09-01,56,34.657098686,99.15973096698472,2021-10-01,during COVID,matured after recovery,1
+WY,2021-09-01,57,0.905576074,99.31066321436403,2022-01-01,during COVID,matured after recovery,4
+CT,2021-10-01,56,9.193136711,100,2021-11-01,post-recovery,matured after recovery,1
+LA,2022-01-01,53,14.882460546,100,2022-02-01,post-recovery,matured after recovery,1
+NY,2022-01-01,53,95.612185624,100,2022-01-01,post-recovery,matured after recovery,0
+AR,2022-03-01,51,2.183881264,100,2023-03-01,post-recovery,matured after recovery,12
+KS,2022-09-01,45,9.235688373,100,2022-09-01,post-recovery,matured after recovery,0
+MD,2022-11-01,43,20.76733176,100,2022-12-01,post-recovery,matured after recovery,1
+OH,2023-01-01,41,30.85745735,100,2023-01-01,post-recovery,matured after recovery,0
+MA,2023-03-01,39,24.33547381,100,2023-03-01,post-recovery,matured after recovery,0
+KY,2023-09-01,32,7.591821947,100,2023-10-01,post-recovery,matured after recovery,1
+ME,2023-11-01,31,1.445265319,100,2023-11-01,post-recovery,matured after recovery,0
+FL,2023-12-01,0,0,NA,NA,post-recovery,NA,NA
+DE,2024-01-01,29,0.563618566,100,2024-01-01,post-recovery,matured after recovery,0
+VT,2024-01-01,29,0.536467986,100,2024-01-01,post-recovery,matured after recovery,0
+NC,2024-03-01,27,15.801695051,100,2024-03-01,post-recovery,matured after recovery,0
+MO,2025-12-01,6,2.058736279,100,NA,post-recovery,NA,NA

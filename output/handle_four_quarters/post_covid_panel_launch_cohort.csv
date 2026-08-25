@@ -1,0 +1,9 @@
+state,online_launch_month,retail_launch_month,retail_transition,has_handle_data,handle_data_start,handle_data_end,has_pre_2025_peak,pre_2025_peak_month,pre_2025_peak_handle
+Kansas,2022-09-01,2022-09-01,online_and_retail_same_month,TRUE,2022-09-01,2026-05-01,TRUE,2024-11-01,290968780
+Maryland,2022-11-01,2021-12-01,retail_before_online,TRUE,2021-12-01,2026-05-01,TRUE,2024-11-01,639867400
+Ohio,2023-01-01,2023-01-01,online_and_retail_same_month,TRUE,2023-01-01,2026-05-01,TRUE,2023-01-01,1090962383
+Kentucky,2023-09-01,2023-09-01,online_and_retail_same_month,TRUE,2023-09-01,2026-04-01,TRUE,2024-11-01,301740758
+Maine,2023-11-01,,online_only,TRUE,2023-11-01,2026-05-01,TRUE,2024-12-01,52688855
+Florida,2023-12-01,2023-12-01,online_and_retail_same_month,FALSE,,,FALSE,,
+Delaware,2024-01-01,2018-06-01,retail_before_online,TRUE,2018-06-01,2026-05-01,TRUE,2024-12-01,28445372
+Vermont,2024-01-01,,online_only,TRUE,2024-01-01,2026-05-01,TRUE,2024-12-01,24453075

@@ -25,6 +25,11 @@ export EXPECTED_TREAT_SOURCE="${EXPECTED_TREAT_SOURCE:-}"
 export REQUIRE_PANEL_TREATMENT="${REQUIRE_PANEL_TREATMENT:-FALSE}"
 export TREAT_FILE="${TREAT_FILE:-data/raw/sports_gambling_legalization_dates.csv}"
 export TREAT_DATE_COL="${TREAT_DATE_COL:-online_start_date}"
+
+# ---- Conditional parallel trends (time-invariant state covariates) ----
+# e.g. COVARIATES=lottery_years_91 to condition on pre-PASPA lottery vintage
+export COVARIATE_FILE="${COVARIATE_FILE:-data/raw/gambling_institutions/state_gambling_institutions_prepaspa.csv}"
+export COVARIATES="${COVARIATES:-}"
 # Maine repaired from the Maine Judicial Branch court source (2026-07-23); no
 # longer excluded. Override with EXCLUDE_STATES=ME to reproduce the old spec.
 export EXCLUDE_STATES="${EXCLUDE_STATES:-}"

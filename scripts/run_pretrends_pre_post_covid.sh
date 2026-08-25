@@ -34,13 +34,19 @@ OUT_DIR=output/pretrends_eviction_precovid \
 echo ""
 echo "---- PART 2: Building 50% Handle treatment panel ----"
 
-Rscript --vanilla data_prep/build_panel_handle50_treatment.R
+Rscript --vanilla scripts/audit_lsr_handle_data.R
+
+PEAK_CALIBRATION_END="${PEAK_CALIBRATION_END:-2024-12-31}" \
+  Rscript --vanilla data_prep/build_panel_handle50_treatment.R
 
 # ==== PART 3: Post-COVID (Apr 2022 – Dec 2024), 50% Handle treatment ====
 echo ""
 echo "---- PART 3: Post-COVID (2022-04 to 2024-12), 50% Handle treatment ----"
 
 PANEL_FILE=data/processed/state_month_panel_handle50_treatment.csv \
+TREAT_SOURCE=panel \
+EXPECTED_TREAT_SOURCE=panel \
+REQUIRE_PANEL_TREATMENT=TRUE \
 MIN_DATE=2022-04-01 \
 MAX_DATE=2024-12-31 \
 NO_COVID=FALSE \

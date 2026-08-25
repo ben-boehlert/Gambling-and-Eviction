@@ -13,9 +13,9 @@
 # (github.com/danielegirardi/lpdid, "R example files"), rather than via the R
 # port, because this panel needs gap handling no packaged version exposes.
 #
-#   post horizon h:  D_h y = y_{t+h} - y_{t-1}          (h = 0..POST)
-#   pre  horizon h:  Dm_h y = y_{t-h} - y_{t-1}         (h = 2..PRE)
-#   clean controls:  switchers at t, plus units not yet treated through t+h
+#   post horizon h:  D_h y = y_{event+h} - mean(y_{launch-PMD..launch-1})
+#   pooled horizons: h = POST_MIN..POST (ramp75 default: 12..18 after maturity)
+#   clean controls:  event switchers plus units unlaunched through event+h
 #   regression:      feols(D_h y ~ D_treat | time, weights = ~rw, vcov = ~unit)
 #
 # THE COVID GAP — the reason this is hand-rolled. The panel drops the COVID
@@ -53,18 +53,23 @@ source("utils/eviction_treatment_schedule.R")
 
 getenv1 <- function(k, d) { v <- Sys.getenv(k); if (nzchar(v)) v else d }
 TREAT_DEF       <- getenv1("TREAT_DEF", "raw")          # "raw" | "ramp75" | "shift12"
-# CELL ANCHOR: which of the two dates times the SWITCH (and therefore which
-# months the PMD baseline is drawn from). "event" is historical: under a
-# redated spec (ramp75/shift12) the baseline is the PMD months ending just
-# before MATURITY, i.e. inside the buildup window, so buildup exposure enters
-# with negative weight through the baseline. "launch" anchors the cell at the
-# online launch, so the baseline is pre-launch and clean, buildup exposure is
-# carried by the LOW horizons, and the existing h >= 12 buildup window
-# (pool_window) is what gives those horizons zero weight. Under TREAT_DEF=raw
-# the two dates coincide and the setting is inert.
-ANCHOR          <- getenv1("ANCHOR", "event")           # "event" | "launch"
-stopifnot(ANCHOR %in% c("event", "launch"))
-POST            <- as.integer(getenv1("POST", "18"))    # months after treatment
+# CELL ANCHOR:
+#   event_clean (default): outcomes are indexed from the event/maturity date,
+#     but every cohort is differenced from its own PRE-LAUNCH baseline. Cells
+#     split by (launch, event) so treated and control changes use identical
+#     calendar endpoints. This is the clean mature-period estimand.
+#   event: legacy behavior; both outcome and baseline are indexed from the
+#     event date, putting the baseline inside the buildup period for redated
+#     treatments.
+#   launch: legacy launch-indexed event study; both outcome and baseline are
+#     indexed from launch, so a common horizon only approximates maturity when
+#     maturation lags vary across states.
+# Under TREAT_DEF=raw all three are numerically identical.
+ANCHOR          <- getenv1("ANCHOR", "event_clean")
+stopifnot(ANCHOR %in% c("event_clean", "event", "launch"))
+POST            <- as.integer(getenv1("POST", "18"))    # maximum months after event
+POST_MIN        <- as.integer(getenv1(
+  "POST_MIN", if (identical(TREAT_DEF, "ramp75")) "12" else "0"))
 PRE             <- as.integer(getenv1("PRE",  "12"))    # months before (pre-trend)
 PMD             <- as.integer(getenv1("PMD",  "3"))     # pre-mean-difference baseline
 DROP_STRADDLING <- toupper(getenv1("DROP_STRADDLING", "FALSE")) == "TRUE"
@@ -80,11 +85,11 @@ REWEIGHT        <- TRUE                                  # weight cells (see bel
 #   vwatt              unweighted OLS = the paper's variance-weighted LP-DiD
 LPDID_WEIGHTS   <- match.arg(getenv1("LPDID_WEIGHTS", "ewatt"),
                              c("ewatt", "cellsize", "vwatt"))
+stopifnot(POST_MIN >= 0L, POST_MIN <= POST)
 
-# Output tag: the historical filenames are keyed on TREAT_DEF alone, so a
-# launch-anchored run must NOT reuse them (it would silently overwrite the
-# 2026-08-20 event-anchored results). Non-default anchors get their own suffix.
-TAG <- if (identical(ANCHOR, "event")) TREAT_DEF else paste0(TREAT_DEF, "_launch")
+# Historical event-anchored filenames keep their old tag. Every other anchor
+# gets an explicit suffix so a clean run cannot overwrite a legacy result.
+TAG <- if (identical(ANCHOR, "event")) TREAT_DEF else paste(TREAT_DEF, ANCHOR, sep = "_")
 
 OUT_DIR <- "output/lpdid_statepanel"
 dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
@@ -149,10 +154,8 @@ treat_tbl <- tibble(state_abb = sort(unique(p$state_abb))) %>%
          # dates coincide and behavior is unchanged (regression-checked).
          g        = ifelse(is.na(treat_date),  NA_integer_, ym_index(treat_date)),
          g_launch = ifelse(is.na(treat_start), NA_integer_, ym_index(treat_start))) %>%
-  # Anchor = the month a switcher switches. The switcher SET stays defined by
-  # a non-missing `g` under either setting (see build_h), so a launched-but-
-  # never-mature state remains a dirty non-switcher rather than becoming a new
-  # treated unit -- only the switch month, and hence the baseline, moves.
+  # Legacy anchor used only by the historical event/launch modes. The clean
+  # mode keeps both dates and builds cells from their pair.
   mutate(g_anchor = if (identical(ANCHOR, "launch")) g_launch else g)
 
 panel <- p %>% left_join(treat_tbl %>% select(state_abb, g), by = "state_abb")
@@ -162,7 +165,8 @@ panel <- panel %>% mutate(g = ifelse(!is.na(g) & g > t_max, NA_integer_, g))
 
 n_treat <- n_distinct(panel$state_abb[!is.na(panel$g)])
 cat(glue("LP-DiD | treatment definition: {TREAT_DEF} | cell anchor: {ANCHOR} ",
-         "| PMD baseline: {PMD} month(s)"), "\n")
+         "| PMD baseline: {PMD} month(s) | pooled event horizons: ",
+         "{POST_MIN}..{POST}"), "\n")
 cat(glue("Panel: {n_distinct(panel$state_abb)} states ({n_treat} treated, ",
          "{n_distinct(panel$state_abb) - n_treat} never-treated), {n_distinct(panel$t)} months"), "\n")
 cat(glue("Dropped COVID window in calendar index: [{G_DROP[1]}, {G_DROP[2]}]"), "\n\n")
@@ -187,49 +191,76 @@ baseline_at <- function(state, tt) {
 spans_gap <- function(lo, hi) lo <= G_DROP[2] && hi >= G_DROP[1]
 
 # ── Build the LP-DiD stacked sample for one horizon ─────────────────────────
-# For each (unit, base period t) we need: a treatment-switch indicator at t,
-# and the clean-control condition. Absorbing treatment, so a unit is a clean
-# control at horizon h if it is still untreated at t+h.
+# event_clean cells are indexed by BOTH launch and event. Their baseline is
+# immediately before launch and their outcome is event +/- h. Controls use the
+# same two calendar endpoints and must remain unlaunched through the outcome.
+# Consequently, no legal-to-maturity observation can enter as a control.
 states <- sort(unique(panel$state_abb))
-t_grid <- sort(unique(panel$t))
+
+cohort_source <- treat_tbl %>% filter(!is.na(g), g <= t_max)
+cohort_cells <- if (identical(ANCHOR, "event_clean")) {
+  cohort_source %>%
+    filter(!is.na(g_launch), g_launch <= t_max) %>%
+    transmute(event_t = as.integer(g), launch_t = as.integer(g_launch),
+              cell_t = event_t, base_t = launch_t,
+              cell_id = paste(event_t, launch_t, sep = "_")) %>%
+    distinct()
+} else if (identical(ANCHOR, "launch")) {
+  cohort_source %>%
+    filter(!is.na(g_launch), g_launch <= t_max) %>%
+    transmute(event_t = NA_integer_, launch_t = as.integer(g_launch),
+              cell_t = launch_t, base_t = launch_t,
+              cell_id = as.character(launch_t)) %>%
+    distinct()
+} else {
+  cohort_source %>%
+    transmute(event_t = as.integer(g), launch_t = NA_integer_,
+              cell_t = event_t, base_t = event_t,
+              cell_id = as.character(event_t)) %>%
+    distinct()
+}
 
 build_h <- function(h, side = c("post", "pre")) {
   side <- match.arg(side)
-  rows <- map_dfr(states, function(s) {
-    g_s <- treat_tbl$g[treat_tbl$state_abb == s]
-    g_s <- if (length(g_s) == 0 || is.na(g_s) || g_s > t_max) NA_integer_ else g_s
-    # launch date gates control eligibility; a launch beyond the panel never
-    # contaminates the sample window, so it stays NA (= control-eligible).
-    g_l <- treat_tbl$g_launch[treat_tbl$state_abb == s]
-    g_l <- if (length(g_l) == 0 || is.na(g_l) || g_l > t_max) NA_integer_ else g_l
-    # ANCHOR month: event date (historical) or launch date. Gated on g_s being
-    # a real switcher either way.
-    g_a <- treat_tbl$g_anchor[treat_tbl$state_abb == s]
-    g_a <- if (length(g_a) == 0 || is.na(g_a) || g_a > t_max) NA_integer_ else g_a
-    map_dfr(t_grid, function(tt) {
-      # switcher: this unit's ANCHOR month is exactly t (and it is a switcher
-      # at all, i.e. it has an event date inside the panel).
-      is_switch <- !is.na(g_s) && !is.na(g_a) && g_a == tt
-      far <- if (side == "post") tt + h else tt - h
-      # clean control: no LIVE GAMBLING through the far end of the window.
-      # Judged by launch, not by the event date -- a live-but-immature market
-      # is dirty, excluded from the cell entirely.
-      is_clean_ctrl <- is.na(g_l) || g_l > max(tt, far)
+  rows <- map_dfr(seq_len(nrow(cohort_cells)), function(j) {
+    cc <- cohort_cells[j, ]
+    far <- if (side == "post") cc$cell_t + h else cc$cell_t - h
+
+    # In clean mode a lead is diagnostic only if it is genuinely pre-launch.
+    # Legal-to-maturity months are neither untreated leads nor controls.
+    if (side == "pre" && identical(ANCHOR, "event_clean") &&
+        far >= cc$launch_t) return(NULL)
+
+    map_dfr(states, function(s) {
+      g_s <- treat_tbl$g[treat_tbl$state_abb == s]
+      g_s <- if (length(g_s) == 0 || is.na(g_s) || g_s > t_max) NA_integer_ else g_s
+      g_l <- treat_tbl$g_launch[treat_tbl$state_abb == s]
+      g_l <- if (length(g_l) == 0 || is.na(g_l) || g_l > t_max) NA_integer_ else g_l
+
+      is_switch <- if (identical(ANCHOR, "event_clean")) {
+        !is.na(g_s) && !is.na(g_l) && g_s == cc$event_t && g_l == cc$launch_t
+      } else if (identical(ANCHOR, "launch")) {
+        !is.na(g_s) && !is.na(g_l) && g_l == cc$launch_t
+      } else {
+        !is.na(g_s) && g_s == cc$event_t
+      }
+      is_clean_ctrl <- is.na(g_l) || g_l > far
       if (!is_switch && !is_clean_ctrl) return(NULL)
 
-      base <- baseline_at(s, tt)
+      base <- baseline_at(s, cc$base_t)
       yfar <- y_at(s, far)
       if (is.na(base) || is.na(yfar)) return(NULL)
 
-      lo <- min(far, tt - PMD); hi <- max(far, tt - 1L)
-      tibble(state_abb = s, t = tt, D_treat = as.integer(is_switch),
-             dy = yfar - base, straddles = spans_gap(lo, hi))
+      lo <- min(far, cc$base_t - PMD); hi <- max(far, cc$base_t - 1L)
+      tibble(state_abb = s, t = cc$cell_t, cell_id = cc$cell_id,
+             D_treat = as.integer(is_switch), dy = yfar - base,
+             straddles = spans_gap(lo, hi))
     })
   })
   if (nrow(rows) == 0) return(rows)
   if (DROP_STRADDLING) rows <- rows %>% filter(!straddles)
   # A horizon is identified only if both switchers and controls survive.
-  rows %>% group_by(t) %>% filter(n_distinct(D_treat) == 2) %>% ungroup()
+  rows %>% group_by(cell_id) %>% filter(n_distinct(D_treat) == 2) %>% ungroup()
 }
 
 # ── Cell weights ─────────────────────────────────────────────────────────────
@@ -268,10 +299,10 @@ lpdid_cell_weights <- function(D, cell, scheme = LPDID_WEIGHTS) {
 # scheme named by LPDID_WEIGHTS (default EWATT).
 estimate_h <- function(d, h, side) {
   if (nrow(d) == 0 || sum(d$D_treat) == 0) return(NULL)
-  d <- d %>% mutate(time = factor(t))
+  d <- d %>% mutate(time = factor(cell_id))
 
   if (REWEIGHT) {
-    d$rw <- lpdid_cell_weights(d$D_treat, d$t)
+    d$rw <- lpdid_cell_weights(d$D_treat, d$cell_id)
     d <- d %>% filter(is.finite(rw))
   } else d$rw <- 1
 
@@ -312,7 +343,8 @@ estimate_h <- function(d, h, side) {
 # and are structurally excluded — the LP-DiD analogue of the COVID problem.
 usable <- treat_tbl %>% filter(!is.na(g), g <= t_max) %>%
   rowwise() %>%
-  mutate(has_baseline = !is.na(baseline_at(state_abb, g)),
+  mutate(base_t = if (identical(ANCHOR, "event")) g else g_launch,
+         has_baseline = !is.na(base_t) && !is.na(baseline_at(state_abb, base_t)),
          g_in_gap = g >= G_DROP[1] & g <= G_DROP[2]) %>%
   ungroup()
 cat("=== TREATED-STATE ELIGIBILITY ===\n")
@@ -322,7 +354,7 @@ cat(glue("  Excluded (no pre-treatment baseline in panel): ",
          "{paste(sort(usable$state_abb[!usable$has_baseline]), collapse=', ')}"), "\n")
 cat(glue("  ...of which legalized INSIDE the dropped COVID window: ",
          "{paste(sort(usable$state_abb[usable$g_in_gap]), collapse=', ')}"), "\n\n")
-write_csv(usable %>% select(state_abb, g, has_baseline, g_in_gap),
+write_csv(usable %>% select(state_abb, g, g_launch, base_t, has_baseline, g_in_gap),
           file.path(OUT_DIR, glue("treated_eligibility_{TAG}.csv")))
 
 cat("Estimating event study...\n")
@@ -331,17 +363,23 @@ es <- bind_rows(
   map_dfr(2:PRE,  function(h) { d <- build_h(h, "pre");  estimate_h(d, h, "pre") })
 ) %>% arrange(event_time)
 
-# Reference period: t-1 is the baseline by construction, so ATT(-1) = 0.
-es <- bind_rows(es, tibble(side = "pre", event_time = -1, att = 0, se = 0,
-                           p_analytic = NA, p_wild = NA, n_obs = NA,
-                           n_switchers = NA, n_clean_controls = NA,
-                           n_straddling = NA)) %>% arrange(event_time)
+# Legacy modes use t-1 as their common reference. event_clean has a pre-launch
+# baseline at a cohort-specific distance from maturity, so there is no honest
+# common event-time -1 reference to insert.
+if (!identical(ANCHOR, "event_clean")) {
+  es <- bind_rows(es, tibble(side = "pre", event_time = -1, att = 0, se = 0,
+                             p_analytic = NA, p_wild = NA, n_obs = NA,
+                             n_switchers = NA, n_clean_controls = NA,
+                             n_straddling = NA))
+}
+es <- es %>% arrange(event_time)
 
 # ── Pooled post-treatment effect ─────────────────────────────────────────────
 cat("Estimating pooled effect...\n")
 pooled_dat <- map_dfr(0:POST, function(h) build_h(h, "post") %>% mutate(h = h))
-pooled <- if (nrow(pooled_dat) > 0) {
-  d <- pooled_dat %>% mutate(time = factor(paste(t, h, sep = "_")))
+pooled_use <- pooled_dat %>% filter(h >= POST_MIN)
+pooled <- if (nrow(pooled_use) > 0) {
+  d <- pooled_use %>% mutate(time = factor(paste(cell_id, h, sep = "_")))
   d$rw <- lpdid_cell_weights(d$D_treat, d$time)
   d <- d %>% filter(is.finite(rw))
   fit <- feols(dy ~ D_treat | time, data = d, weights = ~rw, vcov = ~state_abb,
@@ -380,7 +418,7 @@ pool_window <- function(dat, h_lo, h_hi, era, label) {
                      n_obs = NA_integer_, note = NA_character_)
   if (nrow(d) == 0 || sum(d$D_treat) == 0)
     return(base_row %>% mutate(note = "no switch cells in this era/window"))
-  d <- d %>% mutate(time = factor(paste(t, h, sep = "_")))
+  d <- d %>% mutate(time = factor(paste(cell_id, h, sep = "_")))
   d$rw <- lpdid_cell_weights(d$D_treat, d$time)
   d <- d %>% filter(is.finite(rw))
   if (nrow(d) == 0 || sum(d$D_treat) == 0 || n_distinct(d$D_treat) < 2)
@@ -403,12 +441,12 @@ pool_window <- function(dat, h_lo, h_hi, era, label) {
 
 cat("Estimating window/era pooled effects...\n")
 windows <- bind_rows(
-  pool_window(pooled_dat, 0L,  POST, "all",  "full_pooled"),
-  pool_window(pooled_dat, 12L, POST, "all",  "buildup_e12plus"),
-  pool_window(pooled_dat, 0L,  POST, "pre",  "pre_covid_cohorts"),
-  pool_window(pooled_dat, 0L,  POST, "post", "post_covid_cohorts"),
-  pool_window(pooled_dat, 12L, POST, "pre",  "buildup_pre"),
-  pool_window(pooled_dat, 12L, POST, "post", "buildup_post"))
+  pool_window(pooled_dat, POST_MIN, POST, "all",  "full_pooled"),
+  pool_window(pooled_dat, max(12L, POST_MIN), POST, "all",  "buildup_e12plus"),
+  pool_window(pooled_dat, POST_MIN, POST, "pre",  "pre_covid_cohorts"),
+  pool_window(pooled_dat, POST_MIN, POST, "post", "post_covid_cohorts"),
+  pool_window(pooled_dat, max(12L, POST_MIN), POST, "pre",  "buildup_pre"),
+  pool_window(pooled_dat, max(12L, POST_MIN), POST, "post", "buildup_post"))
 
 # ── Joint pre-trend test ─────────────────────────────────────────────────────
 # NOTE (2026-08-20). The original test was
@@ -445,9 +483,9 @@ build_pre_stack <- function(hs) {
   map_dfr(hs, function(h) {
     d <- build_h(h, "pre")
     if (nrow(d) == 0 || sum(d$D_treat) == 0) return(NULL)
-    d <- d %>% mutate(time = factor(t))
+    d <- d %>% mutate(time = factor(cell_id))
     if (REWEIGHT) {
-      d$rw <- lpdid_cell_weights(d$D_treat, d$t)
+      d$rw <- lpdid_cell_weights(d$D_treat, d$cell_id)
       d <- d %>% filter(is.finite(rw))
     } else d$rw <- 1
     if (nrow(d) == 0 || sum(d$D_treat) == 0) return(NULL)
@@ -465,7 +503,7 @@ if (!is.null(stk) && nrow(stk) > 0) {
   hs <- sort(unique(stk$h))
   # horizon-specific treatment indicators and horizon-specific time FE
   for (h in hs) stk[[paste0("Dh", h)]] <- stk$D_treat * (stk$h == h)
-  stk$th <- interaction(stk$t, stk$h, drop = TRUE)
+  stk$th <- interaction(stk$cell_id, stk$h, drop = TRUE)
   dvars  <- paste0("Dh", hs)
   f_u <- as.formula(paste("dy ~", paste(dvars, collapse = " + "), "| th"))
 
@@ -522,7 +560,9 @@ pretrend_p <- dplyr::coalesce(joint$p_boot, joint$p_F, joint$p_chisq)
 # ── Report ───────────────────────────────────────────────────────────────────
 sink(file.path(OUT_DIR, glue("lpdid_report_{TAG}.txt")), split = TRUE)
 cat(glue("LP-DiD — Dube, Girardi, Jorda & Taylor (2023)\n"))
-cat(glue("Treatment: {TREAT_DEF} | PMD baseline: {PMD} | drop straddling horizons: {DROP_STRADDLING}\n"))
+cat(glue("Treatment: {TREAT_DEF} | anchor: {ANCHOR} | PMD baseline: {PMD} | ",
+         "pooled event horizons: {POST_MIN}..{POST} | ",
+         "drop straddling horizons: {DROP_STRADDLING}\n"))
 cat(glue("Panel: {n_distinct(panel$state_abb)} states, {n_treat} treated, ",
          "{n_distinct(panel$t)} months, COVID window {DROP_START}..{DROP_END} dropped\n\n"))
 
@@ -533,7 +573,8 @@ print(es %>% mutate(across(c(att, se, p_analytic, p_wild), ~round(.x, 4))) %>%
         as.data.frame(), row.names = FALSE)
 
 if (!is.null(pooled)) {
-  cat("\n=== POOLED POST-TREATMENT ATT (horizons 0..", POST, ") ===\n", sep = "")
+  cat("\n=== POOLED POST-TREATMENT ATT (event horizons ", POST_MIN,
+      "..", POST, ") ===\n", sep = "")
   print(pooled %>% mutate(across(c(att, se, p_analytic, p_wild), ~round(.x, 4))) %>%
           as.data.frame(), row.names = FALSE)
   cat(glue("\n  In filings terms: {round(100 * (exp(pooled$att) - 1), 2)}% ",
@@ -542,8 +583,8 @@ if (!is.null(pooled)) {
 }
 
 cat("\n=== POOLED EFFECTS BY HORIZON WINDOW AND COHORT ERA ===\n")
-cat("Buildup window per NY Fed SR 1184: report only h >= 12 so markets have\n")
-cat("ramped. Era = switch-month cohort; the two eras are disjoint experiments.\n")
+cat("The default pool reports only h >= 12 after the event/maturity date.\n")
+cat("Era = event-month cohort; the two eras are disjoint experiments.\n")
 cat("pct = effect in filings terms, exp(att) - 1.\n\n")
 print(windows %>%
         mutate(pct = ifelse(is.finite(att), round(100 * (exp(att) - 1), 2), NA),
@@ -597,8 +638,8 @@ p1 <- ggplot(pl, aes(event_time, att)) +
   geom_ribbon(aes(ymin = lo, ymax = hi), alpha = 0.15) +
   geom_line() + geom_point(aes(shape = flag), size = 2) +
   scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 1), guide = "none") +
-  labs(x = "Months since treatment", y = "ATT (log filings)",
-       subtitle = str_wrap(glue("LP-DiD, {TREAT_DEF} dates, PMD baseline {PMD}. Hollow points have comparisons differencing across the dropped COVID window."), 95))
+  labs(x = "Months since event/maturity", y = "ATT (log filings)",
+       subtitle = str_wrap(glue("LP-DiD, {TREAT_DEF}, {ANCHOR} anchor, PMD baseline {PMD}. Hollow points difference across the dropped COVID window."), 95))
 ggsave(file.path(OUT_DIR, glue("lpdid_event_study_{TAG}.png")), p1,
        width = 8, height = 4.5, dpi = 150)
 

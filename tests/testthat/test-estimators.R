@@ -307,6 +307,52 @@ test_that("lpdid honors lpdid_weights and lpdid_pmd end to end", {
   expect_equal(run1(list()), a_ewatt, tolerance = 1e-12)
 })
 
+test_that("event_clean compares mature outcomes with a shared pre-launch baseline", {
+  toy <- build_toy_est(seed = 812L, n_states = 12L, n_months = 60L,
+                       treat = c(S02 = 26L, S04 = 32L), noise_sd = 0.005)
+  toy$sched$pseudo_launch <- as.Date(c("2017-08-01", "2018-02-01"))
+
+  # A launched state whose maturity event is beyond the panel must be dirty,
+  # not a control for the two supported cohorts.
+  toy$sched <- dplyr::bind_rows(
+    toy$sched,
+    tibble::tibble(state_abb = "S06", pseudo_g = as.Date("2025-01-01"),
+                   pseudo_launch = as.Date("2017-06-01")))
+
+  inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",
+                       shape = "step", delta = TRUTH, outcome = "y_log1p",
+                       seed = 8L)
+
+  # Put a large transitory movement in every legal-to-maturity interval. The
+  # clean estimator should ignore it in the baseline; legacy event anchoring
+  # deliberately uses it and therefore targets a different contrast.
+  launch <- setNames(toy$sched$pseudo_launch, toy$sched$state_abb)
+  event  <- setNames(toy$sched$pseudo_g, toy$sched$state_abb)
+  in_buildup <- !is.na(launch[inj$state_abb]) &
+    inj$month_date >= launch[inj$state_abb] &
+    inj$month_date < event[inj$state_abb]
+  inj$y_sim[in_buildup] <- inj$y_sim[in_buildup] + 0.70
+  inj$y_sim[inj$state_abb == "S06" &
+              inj$month_date >= launch[["S06"]]] <-
+    inj$y_sim[inj$state_abb == "S06" &
+                inj$month_date >= launch[["S06"]]] + 5
+
+  fit1 <- function(anchor) {
+    r <- run_estimator(
+      inj, estimator = "lpdid",
+      spec = list(lpdid_anchor = anchor, lpdid_hmin = 0L,
+                  lpdid_post = 0L, lpdid_pmd = 3L,
+                  lpdid_weights = "ewatt"))
+    r$att[r$inference == "analytic"][1]
+  }
+  clean <- fit1("event_clean")
+  legacy <- fit1("event")
+
+  expect_true(is.finite(clean))
+  expect_equal(clean, TRUTH, tolerance = 0.03)
+  expect_gt(abs(clean - legacy), 0.40)
+})
+
 # ---- LP-DiD <-> Callaway & Sant'Anna numerical equivalence -------------------
 # Dube, Girardi, Jorda & Taylor (2023) footnote 23: in a baseline setting
 # without covariates, with binary absorbing treatment, and using only

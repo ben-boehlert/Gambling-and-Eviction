@@ -419,6 +419,34 @@ test_that("lpdid_wild reaches the estimator spec through run_one_rep", {
   expect_true(length(seen$vals) > 0L && all(seen$vals))
 })
 
+test_that("event_clean is the hashed LP-DiD default and legacy event is reproducible", {
+  mk <- function(extra = character(), estimators = "[lpdid]") .write_yaml(c(
+    "level: state", "sample: [S2]", "covid: keep",
+    "treat_def: ramp75_start_date", "designs: [D1]",
+    "mechanisms: [deterministic]", "shapes: [step]",
+    paste0("estimators: ", estimators), "effect_grid: [0]",
+    "n_reps: 1", "base_seed: 123", "min_pre: 12", "min_post: 6",
+    extra
+  ))
+
+  g_default <- expand_scenario_grid(read_power_config(mk()))
+  g_clean <- expand_scenario_grid(read_power_config(
+    mk("lpdid_anchor: event_clean")))
+  g_legacy <- expand_scenario_grid(read_power_config(
+    mk("lpdid_anchor: event")))
+
+  expect_identical(g_default$lpdid_anchor, "event_clean")
+  expect_identical(g_default$scenario_id, g_clean$scenario_id)
+  expect_false(identical(g_clean$scenario_id, g_legacy$scenario_id))
+
+  # An LP-only setting never changes the identity of a scenario without LP.
+  no_lp_default <- expand_scenario_grid(read_power_config(
+    mk(estimators = "[twfe]")))
+  no_lp_legacy <- expand_scenario_grid(read_power_config(
+    mk("lpdid_anchor: event", estimators = "[twfe]")))
+  expect_identical(no_lp_default$scenario_id, no_lp_legacy$scenario_id)
+})
+
 # ---------------------------------------------------------------------------
 # exclude_states scenario axis (2026-08-19, dose-tercile subdesigns): states
 # listed are dropped from the panel BEFORE schedule/template derivation, so

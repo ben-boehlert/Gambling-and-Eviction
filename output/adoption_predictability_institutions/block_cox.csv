@@ -1,0 +1,12 @@
+window,model,outcome,n,events,n_pred,cv_cindex,cindex_null_mean,p_cindex
+pre-PASPA political / pre-repeal macro,gambling institutions (pre-PASPA),"adoption hazard (Cox, censored)",50,30,2,0.7031906614785992,0.47877431906614787,0
+pre-PASPA political / pre-repeal macro,  lottery maturity only,"adoption hazard (Cox, censored)",50,30,1,0.6991634241245136,0.47044941634241244,0
+pre-PASPA political / pre-repeal macro,  casino authorized only,"adoption hazard (Cox, censored)",50,30,1,0.5169455252918288,0.4718424124513619,0.224
+pre-PASPA political / pre-repeal macro,political (ideology 1991),"adoption hazard (Cox, censored)",49,29,2,0.5288775510204081,0.4938,0.356
+pre-PASPA political / pre-repeal macro,region,"adoption hazard (Cox, censored)",50,30,3,0.5641050583657587,0.47742996108949415,0.12
+pre-PASPA political / pre-repeal macro,"macro (mortgage, size)","adoption hazard (Cox, censored)",50,30,3,0.5539494163424125,0.491295719844358,0.22
+pre-PASPA political / pre-repeal macro,"eviction (level, slope)","adoption hazard (Cox, censored)",40,23,2,0.4460842433697348,0.49605616224648985,0.712
+pre-PASPA political / pre-repeal macro,gambling + political,"adoption hazard (Cox, censored)",49,29,4,0.7125918367346938,0.4894204081632653,0
+pre-PASPA political / pre-repeal macro,gambling + region,"adoption hazard (Cox, censored)",50,30,5,0.6724805447470817,0.49410700389105056,0.004
+pre-PASPA political / pre-repeal macro,gambling + political + region,"adoption hazard (Cox, censored)",49,29,7,0.6765510204081633,0.49479183673469385,0.008
+pre-PASPA political / pre-repeal macro,everything incl. eviction,"adoption hazard (Cox, censored)",40,23,12,0.6610608424336973,0.48973478939157566,0.02

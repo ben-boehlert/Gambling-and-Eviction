@@ -1,0 +1,141 @@
+
+=== MODEL ===
+                              fit_full            fit_bin             fit_rf
+                                  main      cohort-binned       retail-first
+Dependent Var.:                      y                  y                  y
+                                                                            
+B1                  0.9210*** (0.0867) 0.4686*** (0.1119) 0.9324*** (0.0987)
+B2                  0.8574*** (0.1242) 0.8732*** (0.1936) 0.8936*** (0.1273)
+B3                   2.643*** (0.4840)  3.285*** (0.6438)  2.736*** (0.5129)
+B4                   1.834*** (0.4958)  3.513*** (0.8259)  1.969*** (0.5372)
+CX1                 -0.3279** (0.1026)                    -0.3299** (0.0964)
+CX2                   0.3894. (0.1971)                      0.3784. (0.2056)
+cbin2018-19 x Craw1                       0.6438 (0.4476)                   
+cbin2020-21 x Craw1                      -0.0097 (0.3713)                   
+cbin2018-19 x Craw2                     -2.862** (0.8790)                   
+cbin2020-21 x Craw2                      -1.809* (0.6915)                   
+RF1                                                         -0.1948 (0.2819)
+RF2                                                         -0.3110 (0.2602)
+Fixed-Effects:      ------------------ ------------------ ------------------
+State                              Yes                Yes                Yes
+moy                                Yes                Yes                Yes
+covid                              Yes                Yes                Yes
+___________________ __________________ __________________ __________________
+S.E.: Clustered              by: State          by: State          by: State
+Observations                     1,736              1,736              1,736
+R2                             0.88620            0.88333            0.88738
+Within R2                      0.58118            0.57060            0.58552
+
+                                 fit_wt
+                           pop-weighted
+Dependent Var.:                       y
+                                       
+B1                   0.8924*** (0.0731)
+B2                   0.8006*** (0.0829)
+B3                    2.117*** (0.2818)
+B4                    1.279*** (0.2458)
+CX1                 -0.4193*** (0.0568)
+CX2                     0.1545 (0.0918)
+cbin2018-19 x Craw1                    
+cbin2020-21 x Craw1                    
+cbin2018-19 x Craw2                    
+cbin2020-21 x Craw2                    
+RF1                                    
+RF2                                    
+Fixed-Effects:      -------------------
+State                               Yes
+moy                                 Yes
+covid                               Yes
+___________________ ___________________
+S.E.: Clustered               by: State
+Observations                      1,736
+R2                              0.92259
+Within R2                       0.70977
+---
+Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+=== PREDICTED EXPOSURE: share of long-run (48-month) market intensity ===
+95% CIs from state-clustered vcov of the spline coefficients.
+'*' marks event ages this cohort has not yet reached (extrapolated).
+
+ cohort n_states            6mo           12mo           24mo           36mo
+   2018        2   29% [23, 36]   47% [39, 57]   79% [69, 91]  94% [86, 102]
+   2019        6   34% [29, 40]   52% [46, 59]   80% [72, 88]   91% [84, 99]
+   2020        4   40% [35, 45]   58% [53, 63]   80% [73, 88]   89% [80, 98]
+   2021        5   47% [41, 54]   64% [57, 71]   81% [71, 92]   86% [76, 98]
+   2022        5   55% [45, 67]   71% [60, 83]   82% [68, 98]  84% [71, 100]
+   2023        4   65% [50, 85]   79% [62, 99]  82% [64, 105]  82% [66, 101]
+   2024        3  77% [54, 108]  87% [64, 118]  83% [61, 113] 79% [61, 102]*
+   2025        1 90% [59, 138]* 97% [66, 141]* 84% [58, 122]* 77% [57, 104]*
+
+--- Same, net of the 6.3%/yr national secular trend (anchored) ---
+ cohort n_states  6mo 12mo 24mo 36mo
+   2018        2  36%  57%  90% 100%
+   2019        6  42%  63%  91%  97%
+   2020        4  50%  70%  91%  95%
+   2021        5  59%  77%  92%  92%
+   2022        5  69%  86%  93%  89%
+   2023        4  81%  95%  94%  87%
+   2024        3  96% 105%  94%  84%
+   2025        1 113% 117%  95%  82%
+
+--- Robustness: long-run defined at month 24 instead of 48 ---
+The 48-month denominator is not observed for the 2023-25 cohorts, so their
+index levels rely on extrapolation. Renormalizing on month 24, which every
+cohort through 2024 has reached, is a ratio of the curve above and needs no
+refit. If the cohort ordering survives, it is not an extrapolation artifact.
+
+ cohort   m6  m12  m24
+   2018  36%  59% 100%
+   2019  42%  65% 100%
+   2020  49%  72% 100%
+   2021  58%  79% 100%
+   2022  68%  87% 100%
+   2023  79%  95% 100%
+   2024  92% 105% 100%
+   2025 108% 115% 100%
+
+=== LEAVE-ONE-OUT vs FULL-SAMPLE INDEX ===
+ mean_abs_diff max_abs_diff       cor
+   0.008361343    0.1721004 0.9974018
+
+  Largest LOO shifts (states whose own data most influenced the curve):
+                State  max_shift
+ District of Columbia 0.17210041
+           New Jersey 0.08350928
+             Michigan 0.05797969
+             Colorado 0.05639221
+         Rhode Island 0.03720688
+             Arkansas 0.03379571
+
+=== EXPOSURE AT SELECTED EVENT AGES, BY STATE (leave-one-out) ===
+                State cohort mo12 mo24
+           New Jersey   2018   47   80
+        West Virginia   2018   48   78
+              Indiana   2019   51   79
+                 Iowa   2019   53   80
+        New Hampshire   2019   52   78
+               Oregon   2019   53   83
+         Pennsylvania   2019   52   80
+         Rhode Island   2019   50   78
+             Colorado   2020   58   80
+ District of Columbia   2020   57   82
+             Illinois   2020   58   81
+            Tennessee   2020   57   81
+              Arizona   2021   64   81
+          Connecticut   2021   64   81
+             Michigan   2021   62   79
+             Virginia   2021   64   81
+              Wyoming   2021   64   81
+             Arkansas   2022   74   84
+               Kansas   2022   71   82
+            Louisiana   2022   72   82
+             Maryland   2022   71   82
+             New York   2022   71   82
+             Kentucky   2023   79   82
+                Maine   2023   78   82
+        Massachusetts   2023   79   83
+                 Ohio   2023   79   83
+             Delaware   2024   87   83
+       North Carolina   2024   87   83
+              Vermont   2024   87   83

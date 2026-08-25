@@ -1,0 +1,6 @@
+design,n_treated_states,n_exact_month_cohorts,n_singleton_cohorts,largest_cohort,added_states_vs_strict,added_cohorts_vs_strict
+strict_online_postcovid,7,6,5,2,0,0
+strict_plus_25pct_candidates,8,6,4,2,1,0
+strict_plus_50pct_candidates,8,7,6,2,1,1
+strict_plus_75pct_candidates,13,7,3,4,6,1
+strict_plus_sustained_50pct_candidates,8,6,4,2,1,0

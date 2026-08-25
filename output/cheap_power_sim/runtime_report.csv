@@ -1,0 +1,2 @@
+mean_seconds_per_fit,fits_per_rep,seconds_per_rep_serial,hours_250_reps_serial,hours_1000_reps_serial,hours_2500_reps_serial,hours_250_reps_8cores,della_warranted
+14.305781958579995,6,85.83469175147997,5.960742482741665,23.84296993096666,59.607424827416644,0.7450928103427081,FALSE

@@ -1,0 +1,122 @@
+LP-DiD — Dube, Girardi, Jorda & Taylor (2023)Treatment: ramp75 | PMD baseline: 3 | drop straddling horizons: FALSEPanel: 26 states, 16 treated, 91 months, COVID window 2020-03-01..2021-07-31 dropped
+=== EVENT STUDY ===
+n_straddling counts observations whose [t-PMD, t+h] window spans the dropped
+COVID months. Those comparisons difference across the pandemic.
+
+ side event_time     att     se p_analytic p_wild n_obs n_switchers
+  pre        -12 -0.0517 0.0514     0.3240 0.3598   177          11
+  pre        -11 -0.0113 0.0460     0.8085 0.8160   177          11
+  pre        -10 -0.0303 0.0460     0.5167 0.5086   177          11
+  pre         -9 -0.0880 0.0340     0.0158 0.0196   177          11
+  pre         -8 -0.0175 0.0363     0.6342 0.6240   177          11
+  pre         -7 -0.0212 0.0320     0.5138 0.5045   196          12
+  pre         -6 -0.0047 0.0327     0.8861 0.8840   196          12
+  pre         -5 -0.0331 0.0297     0.2749 0.2490   196          12
+  pre         -4 -0.0107 0.0347     0.7610 0.7552   196          12
+  pre         -3 -0.0125 0.0182     0.4965 0.4570   196          12
+  pre         -2  0.0403 0.0209     0.0657 0.0610   196          12
+  pre         -1  0.0000 0.0000         NA     NA    NA          NA
+ post          0 -0.0721 0.0341     0.0444 0.0467   196          12
+ post          1 -0.0287 0.0390     0.4696 0.4747   195          12
+ post          2 -0.0523 0.0432     0.2366 0.2280   189          12
+ post          3 -0.0512 0.0395     0.2068 0.1942   188          12
+ post          4 -0.0476 0.0436     0.2860 0.2860   184          12
+ post          5 -0.0767 0.0359     0.0425 0.0327   159          11
+ post          6 -0.0525 0.0436     0.2394 0.2516   157          11
+ post          7 -0.0339 0.0422     0.4293 0.4261   157          11
+ post          8 -0.0105 0.0402     0.7953 0.7975   155          11
+ post          9 -0.0341 0.0410     0.4130 0.4071   154          11
+ post         10 -0.0259 0.0323     0.4307 0.3225   117           9
+ post         11 -0.0846 0.0531     0.1241 0.1140   116           9
+ post         12 -0.0309 0.0610     0.6179 0.6078   101           7
+ post         13 -0.0098 0.0563     0.8630 0.8561   100           7
+ post         14 -0.0458 0.0736     0.5403 0.5288    85           6
+ post         15 -0.0360 0.0667     0.5948 0.6260    84           6
+ post         16 -0.0348 0.0757     0.6504 0.6819    71           5
+ post         17 -0.0746 0.0548     0.1859 0.2008    71           5
+ post         18 -0.0706 0.0487     0.1609 0.2387    69           5
+ n_clean_controls n_straddling
+              166            0
+              166            0
+              166            0
+              166            0
+              166            0
+              184            0
+              184            0
+              184            0
+              184            0
+              184            0
+              184            0
+               NA           NA
+              184            0
+              183            0
+              177            0
+              176            0
+              172            0
+              148            0
+              146            0
+              146            0
+              144            0
+              143            0
+              108            0
+              107            0
+               94            0
+               93            0
+               79            0
+               78            0
+               66            0
+               66            0
+               64            0
+
+=== POOLED POST-TREATMENT ATT (horizons 0..18) ===
+    att    se p_analytic p_wild n_obs n_straddling
+ -0.046 0.033     0.1761 0.1921  2548            0
+In filings terms: -4.49% (95% CI -10.48% to 1.89%) 
+
+=== POOLED EFFECTS BY HORIZON WINDOW AND COHORT ERA ===
+Buildup window per NY Fed SR 1184: report only h >= 12 so markets have
+ramped. Era = switch-month cohort; the two eras are disjoint experiments.
+pct = effect in filings terms, exp(att) - 1.
+
+             window  era h_lo h_hi     att     se p_analytic p_wild   pct
+        full_pooled  all    0   18 -0.0460 0.0330     0.1761 0.2008 -4.49
+    buildup_e12plus  all   12   18 -0.0407 0.0552     0.4682 0.4890 -3.99
+  pre_covid_cohorts  pre    0   18 -0.0466 0.0256     0.0804 0.3615 -4.56
+ post_covid_cohorts post    0   18 -0.0456 0.0497     0.3704 0.3793 -4.46
+        buildup_pre  pre   12   18 -0.0830 0.0246     0.0025 0.4459 -7.96
+       buildup_post post   12   18 -0.0232 0.0774     0.7677 0.7764 -2.30
+ n_switch_states n_control_states n_cells note
+              12               25     162 <NA>
+               7               24      41 <NA>
+               3               25      34 <NA>
+               9               18     128 <NA>
+               1               24       7 <NA>
+               6               15      34 <NA>
+=== JOINT PRE-TREND TEST (event time < -1) ===11 pre-period coefficients, 26 state clustersWald (full cross-horizon covariance, state-clustered) = 59.416p, wild cluster bootstrap (HEADLINE) = 0.119p, F(11, 25)                        = 2e-04p, chi-sq(11)                          = 0[superseded] naive sum(z^2), independence assumed = 0.2105stacking check: max |stacked coef - per-horizon ATT| = 4.86e-17  The naive statistic assumed independent horizons. Every horizon shares
+  the same baseline (build_h: base does not depend on h), so they are
+  positively correlated and the naive test over-rejects. Do not cite it.
+
+=== CLEAN-CONTROL AVAILABILITY BY HORIZON ===
+The clean-control pool shrinks as the horizon grows; this is the binding
+constraint on how far out LP-DiD can look with only 9 never-treated states.
+
+ event_time n_switchers n_clean_controls n_straddling
+          0          12              184            0
+          1          12              183            0
+          2          12              177            0
+          3          12              176            0
+          4          12              172            0
+          5          11              148            0
+          6          11              146            0
+          7          11              146            0
+          8          11              144            0
+          9          11              143            0
+         10           9              108            0
+         11           9              107            0
+         12           7               94            0
+         13           7               93            0
+         14           6               79            0
+         15           6               78            0
+         16           5               66            0
+         17           5               66            0
+         18           5               64            0

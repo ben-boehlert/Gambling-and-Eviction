@@ -1,10 +1,17 @@
 # Pre-trends Diagnostics Output
 
-Generated: 2026-02-13 13:07:18.616038
+Generated: 2026-08-14 17:23:17.506608
 
 ## Configuration
 - Panel: `data/processed/state_month_panel_handle50_treatment.csv`
-- Excluded states: ME
+- Treatment source: `panel`
+- Expected treatment source: `panel`
+- Require panel treatment: TRUE
+- Resolved schedule: `treatment_schedule_resolved.csv` and `.rds`
+- Treatment file: `data/raw/sports_gambling_legalization_dates.csv`
+- Requested file-treatment date column: `online_start_date`
+- Resolved treatment date column: `treat_start`
+- Excluded states: <none>
 - Date range: 2022-04-01 to 2024-12-31
 - Dropped window: <none> to <none>
 - Coverage threshold: 33
@@ -16,26 +23,26 @@ Generated: 2026-02-13 13:07:18.616038
 - Alpha: 0.05
 
 ## Panel Summary
-- 27 states (16 treated, 11 never-treated)
-- 12 treatment cohorts
-- 33 months, 891 observations
+- 28 states (18 treated, 10 never-treated)
+- 15 treatment cohorts
+- 33 months, 924 observations
 
 ## Headline CS Inference Method
 **ANALYTIC**
 
 ## CS-DiD Pretrends (Analytic)
 - Pre-periods tested: 12
-- Joint test (Holm): min_p = 5e-04, reject = TRUE
-- Overall ATT: 0.1477 (SE = 0.1246)
+- Joint test (Holm): min_p = 0.0335, reject = TRUE
+- Overall ATT: 0.1121 (SE = 0.0993)
 
 ## CS-DiD Pretrends (Bootstrap)
 - Pre-periods tested: 12
-- Joint test (Holm): min_p = 7e-04, reject = TRUE
-- Overall ATT: 0.1477 (SE = 0.1378)
+- Joint test (Holm): min_p = 0.0659, reject = FALSE
+- Overall ATT: 0.1121 (SE = 0.1177)
 - Bootstrap iterations: 199
 
 ## TWFE / Sun-Abraham Pretrends
-- Joint test (Holm): min_p = 0.026, reject = TRUE
+- Joint test (Holm): min_p = 0.0046, reject = TRUE
 
 ## Inference Notes
 - CS p-values: pointwise t-test with df = n_states - 1, Holm step-down for joint test

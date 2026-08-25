@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --job-name=power_primary
-#SBATCH --array=1-11
+#SBATCH --array=1-9
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=16G
-#SBATCH --time=23:59:00
+#SBATCH --mem=32G
+#SBATCH --time=71:59:00
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=bb1806@princeton.edu
 #SBATCH --output=slurm-power-primary-%A_%a.out
@@ -19,10 +19,21 @@
 # tasks queue separately (better turnaround), and a failure costs one scenario
 # instead of the run.
 #
-#   --array=1-11  MUST match the expanded scenario count. Check it with
+#   --array=1-9   MUST match the expanded scenario count (9 after the
+#                 2026-08-13 S3 drop). Check it with
 #                 `bash list_scenarios.sh config/power_primary.yml` — an
 #                 out-of-range task id fails loudly rather than silently
 #                 skipping work.
+#
+# 2026-08-13: --time raised 24h -> 72h and --mem 16G -> 32G for the CS arm
+# (county+CS needs ~50-63h; the 2026-08-08 attempt was OOM-killed at 16G with
+# all work lost pre-checkpointing). Per-batch checkpointing (commit 45e3cc1,
+# run_scenario_grid) now makes a timeout/OOM lose at most one batch.
+#
+# STALE PARTIALS: delete output_blinded_power/primary/ partials produced
+# before the 2026-08-10 schedule repair (job 12114571) BEFORE submitting —
+# scenario hashes do not encode the input data, so resume would skip them:
+#   rm -rf output_blinded_power/primary/
 #
 # Resume-safe: re-submitting skips scenarios whose partial is already
 # complete, so `sbatch run_primary.slurm` after a partial failure only re-runs

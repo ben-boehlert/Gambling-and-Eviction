@@ -1,0 +1,40 @@
+DDD power run | tag=smoke | n_reps=20 | 2026-08-21 10:54:52.867411
+
+=== COVID window: drop ===
+skeleton: 57382 rows | 1226 counties | 27 states | H=1 share 0.485 | months 2016-01-01..2025-09-01
+elapsed: 3.0 min | feasible reps: 20/20
+
+=== COVID window: keep ===
+skeleton: 64939 rows | 1295 counties | 28 states | H=1 share 0.486 | months 2016-01-01..2025-09-01
+elapsed: 1.9 min | feasible reps: 20/20
+
+--- SIZE GATE (delta = 0, nominal 5%) ---
+ covid estimator n_conv mean_est sd_est mean_se se_sd rej_rate
+  drop       ddd     20  0.01541 0.0223  0.0295 1.324     0.00
+  drop  did_twfe     20  0.00565 0.0208  0.0232 1.111     0.00
+  keep       ddd     20  0.00263 0.0337  0.0312 0.927     0.05
+  keep  did_twfe     20 -0.02116 0.0385  0.0444 1.151     0.00
+
+--- MDE-80 ---
+ covid estimator  mde80 max_power
+  drop       ddd 0.0688         1
+  drop  did_twfe 0.0625         1
+  keep       ddd 0.0750         1
+  keep  did_twfe 0.1250         1
+
+--- PLACEBO: uniform effect must not register as DDD ---
+ covid delta  mean_est rej_rate
+  drop 0.000  0.015409     0.00
+  drop 0.025  0.013397     0.00
+  drop 0.050  0.011137     0.00
+  drop 0.075  0.008924     0.00
+  drop 0.100  0.008716     0.00
+  drop 0.150  0.004758     0.00
+  drop 0.200  0.000648     0.00
+  keep 0.000  0.002628     0.05
+  keep 0.025  0.000516     0.05
+  keep 0.050 -0.001762     0.10
+  keep 0.075 -0.004210     0.10
+  keep 0.100 -0.005707     0.15
+  keep 0.150 -0.010781     0.10
+  keep 0.200 -0.014313     0.15

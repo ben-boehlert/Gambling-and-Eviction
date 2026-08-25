@@ -1,0 +1,11 @@
+sample,treatment_definition,n_event_times,n_states_at_event_0,n_states_at_event_12,n_states_at_event_24,max_post_event_with_five_states
+balanced_postcovid_28,online_legal,49,7,5,2,13
+balanced_postcovid_28,handle_25,49,8,6,3,14
+balanced_postcovid_28,handle_50,49,8,6,2,14
+balanced_postcovid_28,handle_75,54,13,11,1,14
+balanced_postcovid_28,handle_50_sustained,51,8,6,2,14
+all_handle_eligible_37,online_legal,51,9,6,2,15
+all_handle_eligible_37,handle_25,51,10,7,3,21
+all_handle_eligible_37,handle_50,51,10,7,2,21
+all_handle_eligible_37,handle_75,54,15,12,1,14
+all_handle_eligible_37,handle_50_sustained,51,10,7,2,15

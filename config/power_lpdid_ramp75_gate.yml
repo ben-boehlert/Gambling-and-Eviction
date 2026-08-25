@@ -52,6 +52,14 @@ effect_grid:  [0]                # SIZE ONLY — this is a gate, not an MDE
 estimators:   [twfe, lpdid]
 lpdid_wild:   true              # the arm power_lpdid_mde.yml never switched on
 
+# Clean mature-period estimand: event time is the 75%-maturity date, every
+# treated/control change starts from the cohort's pre-legalization baseline,
+# and only months 12..24 after maturity enter the pooled ATT. Control states
+# must remain unlaunched through the relevant mature outcome month.
+lpdid_anchor: event_clean
+lpdid_hmin:   12
+lpdid_post:   24
+
 # ---- Execution --------------------------------------------------------------
 
 n_reps:     300
