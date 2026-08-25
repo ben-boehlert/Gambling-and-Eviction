@@ -28,6 +28,8 @@ Decision rule: **size gate first** (any estimator whose null rejection rate is m
 
 Source: [`output_blinded_power/lpdid_shift12_gate_ewatt/oc_summary.csv`, `lpdid_shift12_gate_vwatt/oc_summary.csv`, `lpdid_shift12_mde_ewatt/mde_table.csv`, `lpdid_shift12_mde_vwatt/mde_table.csv`].
 
+**Null bias (extracted 2026-08-25, same gate artifacts): every state arm's δ=0 mean estimate is positive** — vwatt **+0.042 (+1.06 SD, ≈48% of its MDE)**, ewatt +0.013 (+0.27 SD), TWFE +0.021/+0.025 (~+0.4 SD), LDAM postcovid +0.042. Wild inference recenters under the null, so size gates pass despite the shift; the county CS analogue (+0.101) was already documented. Undiagnosed (candidates: D1 placement × post-COVID recovery trend; count_nb augmentation asymmetry). **Report MDEs jointly with null bias in the PAP until diagnosed** — full table: [ESTIMATOR_MATRIX.md](ESTIMATOR_MATRIX.md).
+
 **Postcovid window (no COVID splice) is much weaker for both LP-DiD arms**: ewatt wild MDE 0.240, vwatt wild MDE 0.368 — the postcovid design simply has a much thinner (7 treated / 7 control) sample. [same files]
 
 **Recommended state spec**: LP-DiD **vwatt + wild bootstrap, spliced window, NV excluded — MDE 8.75%**, if the PAP wants the tightest size-valid bound; **ewatt + wild — MDE 11.5%** if the PAP wants the estimand that matches CS/the credit literature exactly (both are honest, size-valid choices; pick by which estimand the PAP wants to defend).

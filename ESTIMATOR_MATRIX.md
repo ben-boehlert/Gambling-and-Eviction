@@ -1,81 +1,78 @@
-# ESTIMATOR_MATRIX.md — Estimators × Specs × Runs
+# ESTIMATOR_MATRIX.md — Design Diagnostics for the PAP (Estimators × Specs × Runs)
 
-The cross-cut view of [RUN_LEDGER.md](RUN_LEDGER.md): what has each estimator been run on, under which spec, and what came out. Numbers are the artifact-verified values from [FINDINGS.md](FINDINGS.md) and the 2026-08-25 audit; dead/superseded numbers are shown ~~struck~~ with their killer. Mortgage runs are parked and excluded (see RUN_LEDGER Open items).
+**Results-free by design.** This document carries only pre-analysis design diagnostics — size, SE/SD calibration, null bias, coverage, MDE, pre-trends validity. Real-data treatment estimates are deliberately excluded to keep PAP spec choices blind; they live in [FINDINGS.md](FINDINGS.md) and [RUN_LEDGER.md](RUN_LEDGER.md). Mortgage arms are parked and excluded.
 
-Spec shorthand: **level** state/county · **window** spliced (2016–24, COVID dropped) / postcovid / keepcovid · **treat_def** online / shift12 (launch+12mo) / ramp75 / maturation50 · **NV** in/out of control pool · LP-DiD **weights** ewatt/vwatt/cellsize(retired).
+All numbers extracted directly from run artifacts (`oc_summary.csv` / `mde_table.csv` / `size_gate.csv`) on 2026-08-25. Spec shorthand: window **spliced** (2016–24, COVID dropped) / **postcovid** / **keepcovid**; treat_def **shift12** = launch+12mo (blind, no outcome data); **NV out** = Nevada excluded from controls; LP-DiD weights **ewatt** (equally-weighted ATT = CS's estimand) / **vwatt** (variance-weighted stack) / ~~cellsize~~ (retired).
 
 ---
 
-## 1. Size gates & MDEs (blinded power framework, state level)
+## 1. State-level decision table (blinded framework; S2 / D1 / count_nb / y_log1p)
 
-All state-level, `S2` panel, D1 pseudo-schedules, `count_nb` DGP. **Bold = on the live PAP decision path.**
+Gates are 2,000 reps; MDEs 300 reps × 13 δ. Decision rule: size gate first, MDE among survivors. **Bias = mean ATT-hat at δ=0** (pure null), from the 2,000-rep gate runs.
 
-| Estimator | Inference | treat_def | Window | NV | Weights | Size (δ=0) | MDE | Run(s) | Status |
-|---|---|---|---|---|---|---:|---:|---|---|
-| **LP-DiD** | **wild** | **shift12** | **spliced** | **out** | **vwatt** | **0.0515 PASS** (2,000 reps) | **0.0875** (CI 8.3–9.1%) | `lpdid_shift12_gate_vwatt`, `lpdid_shift12_mde_vwatt` | **LIVE — recommended spec** |
-| **LP-DiD** | **wild** | **shift12** | **spliced** | **out** | **ewatt** | **0.0325 PASS** (2,000 reps) | **0.115** | `lpdid_shift12_gate_ewatt`, `lpdid_shift12_mde_ewatt` | **LIVE — CS-matching estimand** |
-| **TWFE** | **analytic** | **shift12** | **spliced** | **out** | — | **0.0495 PASS** | **0.163–0.165** | TWFE arm of the shift12 runs | **LIVE** |
-| LP-DiD | analytic | shift12 | spliced | out | ewatt | 0.145 FAIL | n/a | `lpdid_shift12_gate_ewatt` | LIVE (gate evidence: analytic disqualified) |
-| LP-DiD | analytic | shift12 | spliced | out | vwatt | 0.097 borderline | 0.075 (don't lead) | `lpdid_shift12_gate_vwatt` | LIVE (gate evidence) |
-| LP-DiD | wild | shift12 | postcovid | out | ewatt | 0.071 pass | 0.240 | shift12 ewatt runs | LIVE (thin 7/7 design) |
-| LP-DiD | wild | shift12 | postcovid | out | vwatt | 0.0615 pass | 0.368 | shift12 vwatt runs | LIVE (vwatt hostile to thin designs) |
-| LDAM | jackknife | online | spliced / keepcovid / postcovid | out | — | 0.037 / 0.030 / 0.010 PASS | **none run — open item** | `ldam_gate_noNV`, `_keepcovid_noNV`, `_postcovid_noNV` | LIVE (gate only) |
-| LDAM | analytic | online | all 3 windows | out | — | 0.57–0.70 FAIL, SE/SD 0.18–0.27 | n/a | same runs | LIVE (verdict: never quote LDAM analytic) |
-| LP-DiD | wild | shift12 | spliced | out | ~~cellsize~~ | ~~0.058~~ | ~~0.0628~~ | `lpdid_shift12_gate_noNV`, `_mde_noNV` | SUPERSEDED — dead estimand (2026-08-24 weights fix) |
-| LP-DiD | wild | ramp75 | spliced | out | ~~cellsize~~ | ~~0.037~~ | ~~0.0707~~ | `lpdid_ramp75_gate_noNV`, `_mde_noNV` | SUPERSEDED — dead estimand + ramp75 vintage artifact |
-| LP-DiD | analytic | ramp75 | spliced | out | ~~cellsize~~ | ~~0.073~~ | ~~0.0597~~ | `lpdid_ramp75_mde_noNV` | SUPERSEDED — same |
-| LP-DiD | wild/analytic | online (raw) | spliced | out | ~~cellsize~~ | ~~0.103 analytic FAIL~~ | ~~0.0487 (artifact)~~ | `lpdid_gate_noNV`, `lpdid_mde_noNV`, `lpdid_wild_gate_noNV` | SUPERSEDED — raw online fails size; the lag (shift12) is what fixes it |
-| LP-DiD | all | online | spliced/postcovid | **in** | ~~cellsize~~ | various | various | `lpdid_gate`, `lpdid_gate_postcovid`, `lpdid_mde`, `lpdid_wild_gate`, `lpdid_ramp75_*` (non-noNV), `lpdid_mde_fixedpanel` | CONTAMINATED — pre-rebuild panel and/or NV in controls |
-| LDAM | both | online | all 3 windows | **in** | — | ~~0.67–0.71 analytic~~ | n/a | `ldam_gate`, `_keepcovid`, `_postcovid` | CONTAMINATED (NV) → superseded by `_noNV` trio |
-| TWFE | analytic | online | postcovid | out | — | 0.097 FAIL | n/a | ramp75 noNV runs (TWFE arm) | Note: NV was masking TWFE's postcovid miscalibration |
-| did2s | analytic | online | spliced | in | — | ~~0.23–0.29 FAIL~~ | n/a | pre-rebuild state cheap runs | CONTAMINATED (pre-rebuild) — but state did2s failed size in every vintage tested |
+| Arm | Spec | Size (δ=0) | SE/SD | Null bias (÷SD) | Coverage | MDE-80 | Runs | Status |
+|---|---|---:|---:|---:|---:|---:|---|---|
+| **LP-DiD vwatt + wild** | shift12 · spliced · NV out | **0.0515 PASS** | 1.14 | **+0.042 (+1.06 SD)** ⚠ | n/a (wild) | **0.0875** (CI 8.3–9.1%) | `lpdid_shift12_gate_vwatt` · `_mde_vwatt` | LIVE — recommended, but see bias caveat |
+| **LP-DiD ewatt + wild** | shift12 · spliced · NV out | **0.0325 PASS** | 0.67 | +0.013 (+0.27 SD) | n/a (wild) | **0.115** (CI 10.2–12.5%) | `lpdid_shift12_gate_ewatt` · `_mde_ewatt` | LIVE — CS-matching estimand |
+| **TWFE analytic** | shift12 · spliced · NV out | **0.044–0.0495 PASS** | 1.02–1.04 | +0.021/+0.025 (+0.4 SD) | 0.951–0.956 | **0.163–0.165** | TWFE arm of shift12 runs | LIVE |
+| LP-DiD ewatt analytic | shift12 · spliced · NV out | 0.145 FAIL | 0.67 | +0.013 | 0.855 | n/a — fails gate | `lpdid_shift12_gate_ewatt` | LIVE (disqualifies analytic arm) |
+| LP-DiD vwatt analytic | shift12 · spliced · NV out | 0.097 borderline | 1.14 | +0.042 | 0.903 | 0.075 (don't lead) | `lpdid_shift12_gate_vwatt` | LIVE (gate evidence) |
+| LP-DiD ewatt + wild | shift12 · postcovid · NV out | 0.071 pass | 0.81 | +0.038 (+0.62 SD) | n/a | 0.240 | shift12 ewatt runs | LIVE — thin 7T/7C design |
+| LP-DiD vwatt + wild | shift12 · postcovid · NV out | 0.0615 pass | 0.84 | +0.029 | n/a | 0.368 | shift12 vwatt runs | LIVE — vwatt hostile to thin designs |
+| TWFE analytic | shift12 · postcovid · NV out | 0.078–0.0845 marginal FAIL | 0.98–0.99 | +0.019 | 0.915–0.922 | — | shift12 runs | LIVE (postcovid TWFE not size-valid) |
+| LDAM + jackknife | online · spliced / keep / postcovid · NV out | 0.037 / 0.030 / 0.010 PASS | 1.01 / 0.98 / 1.25 | +0.003 / +0.009 / **+0.042** | 0.963 / 0.970 / 0.990 | **no MDE run — open gap** | `ldam_gate*_noNV` | LIVE (gates only) |
+| LDAM analytic | online · all 3 windows · NV out | 0.57–0.70 FAIL | 0.18–0.27 | same | 0.30–0.43 | n/a | same runs | never quote LDAM analytic |
+| did2s analytic | online · spliced / keep / postcovid · NV out (state) | 0.153 / 0.110 / 0.273 FAIL | 0.77 / 0.82 / 0.64 | +0.037 / +0.011 / +0.020 | 0.847–0.890 | n/a | LDAM-gate runs (did2s arm) | **state did2s fails size in every window** |
+| ~~LP-DiD cellsize~~ (all treat_defs) | various | ~~0.037–0.103~~ | — | — | — | ~~0.0487–0.0933~~ | `lpdid_gate*`, `lpdid_mde*`, `ramp75*`, `shift12*_noNV` | SUPERSEDED — dead estimand (2026-08-24) and/or CONTAMINATED (panel / NV vintage) |
 
-## 2. Size gates & MDEs (blinded framework, county level)
+### ⚠ Null-bias caveat (new, 2026-08-25)
 
-| Estimator | Inference | Window | Size (δ=0) | MDE | Run(s) | Status |
-|---|---|---|---:|---:|---|---|
-| **CS-DiD** | analytic | spliced | **0.612 FAIL** (SE/SD 0.23, coverage 39%) | n/a | `county_cs_adaptive` (250 reps, faster_mode=FALSE, safe patches) | **LIVE — CS eliminated** |
-| **CS-DiD** | boot / boot_t | spliced | **0.044 / 0.032 PASS** but SE/SD ≈ 1.74 | **none exists** — power flat ≈5–7% through δ=0.20, `never_crosses_target` | `county_cs_adaptive` | **LIVE — no finite MDE; CI ≈ 2 log points** |
-| did2s | analytic | spliced | 4.1% (smoke-scale) | full 500-rep county cheap run: Della job 12248328 | `smoke` (contaminated state cell; county cell ok), `cheap` incomplete | county did2s power never completed at scale — gap |
-| LP-DiD | wild | spliced/postcovid | — | abandoned at batch 5/12, 7/30 | `lpdid_mde_county` | DEAD (never finished; only NV-free county LP-DiD arm ever attempted) |
-| CS-DiD | analytic | spliced | ~~—~~ | ~~—~~ | `county_cs` (shift-mode partial) | SUPERSEDED — shift mode barred for CS by Opus review → adaptive grid |
+Every state arm's δ=0 mean estimate is **positive**: the pseudo-null distribution is not centered at zero on this design. For **vwatt the bias is +0.042 — 1.06× its own SD and ~48% of its 0.0875 MDE**; wild inference recenters under the null, which is why the size gate passes anyway. Consequences: (a) the measured power curve — and hence the MDE — is shifted by the bias for positive δ; (b) a real-data point estimate near +0.04 on this spec would be indistinguishable from the design's null artifact. **Undiagnosed** (candidates: D1 placement interacting with post-COVID recovery trends; count_nb augmentation asymmetry) — see gap 6. The county CS analogue is already documented (null bias +0.101); the principle "size-valid ≠ unbiased" now provably applies to the state arms too.
+
+## 2. County-level
+
+| Arm | Size (δ=0) | SE/SD | Null bias | MDE-80 | Runs | Status |
+|---|---:|---:|---:|---:|---|---|
+| CS-DiD analytic | **0.612 FAIL** (coverage 0.39) | 0.23 | +0.101 (t≈4.7) | n/a | `county_cs_adaptive` (250 reps, faster_mode=FALSE, safe patches) | LIVE — CS analytic eliminated |
+| CS-DiD boot / boot_t | 0.044 / 0.032 PASS | ~1.74 (uncalibrated) | +0.101 | **none — power flat ≈5–7% through δ=0.20** (`never_crosses_target`; CI ≈ 2 log pts) | `county_cs_adaptive` | LIVE — CS eliminated on power |
+| did2s analytic | 4.1% (smoke-scale only) | 0.96 | — | **never completed at production scale** | `smoke` county cell; `cheap` incomplete; Della 12248328 | open gap |
+| LP-DiD wild | — | — | — | abandoned (batch 5/12, 7/30) | `lpdid_mde_county` | DEAD — only NV-free county LP-DiD attempt |
 
 ## 3. Null-calibration tests (real design skeleton, δ=0)
 
-| Estimator | Level | Size | SE/SD | Verdict | Run | Status |
+| Estimator | Level / window | Size | SE/SD | Verdict | Run | Status |
 |---|---|---:|---:|---|---|---|
-| **did2s** | county | **4%** | **0.97** | **calibrated — county workhorse** | `cs_calibration_multi_county` | LIVE |
+| **did2s** | county | **4%** | **0.97** | calibrated — county workhorse | `cs_calibration_multi_county` | LIVE |
 | TWFE | county | 8% | 0.95 | mildly anti-conservative; use wild | same | LIVE |
 | didimputation | county | 14% | 0.73 | robustness only | same | LIVE |
 | Sun-Abraham | county | 30% | 0.51 | broken — skip | same | LIVE |
 | CS analytic | county | 0% | 2.46 | over-corrects — skip | same | LIVE |
-| CS analytic | state | ~~14%~~ | ~~0.67~~ | superseded by county test; DGP contained the panel breaks | `cs_calibration_multi_estimator` (2026-04-09) | SUPERSEDED |
-| Sun-Abraham | state | ~~21%~~ | ~~0.58~~ | same | same | SUPERSEDED |
-| TWFE | state | ~~1%~~ | ~~1.14~~ | same | same | SUPERSEDED |
-| CS analytic | state, postcovid monthly | 5.0% PASS | 1.06–1.14 | **the COVID splice, not cohort count, is what breaks CS** | `time_agg_covid_gates` | LIVE |
-| CS analytic | state, spliced, month/quarter/year | 18.3% / 16.7% / 24.7% FAIL | — | time-aggregation does NOT fix CS | same | LIVE |
+| CS analytic | state · postcovid monthly | 5.0% PASS | 1.06–1.14 | **the COVID splice, not cohort count, breaks CS** | `time_agg_covid_gates` | LIVE |
+| CS analytic | state · spliced · month/qtr/year | 18.3 / 16.7 / 24.7% FAIL | — | time aggregation does not fix CS; CS null bias −0.20 to −0.58 on postcovid cells even where size passes | same | LIVE |
+| CS / SunAb / TWFE | state (2026-04 harness) | ~~14 / 21 / 1%~~ | ~~0.67 / 0.58 / 1.14~~ | superseded by county test | `cs_calibration_multi_estimator` | SUPERSEDED |
 
-## 4. Real-data estimates (eviction)
+## 4. Identification & design-validity diagnostics (no effect estimates)
 
-| Estimator | Spec | Estimate | Run | Status |
+| Check | Spec | Diagnostic | Run | Status |
 |---|---|---|---|---|
-| **CS-DiD** | state, 26 states (17T/9N), spliced, unconditional | **ATT +0.020 (SE 0.057)**, PT not rejected (Holm p 0.170) | `pretrends_lottery_A_baseline` | **LIVE — headline pretrends baseline** |
-| CS-DiD | + lottery-legal binary covariate | ATT +0.048 (SE 0.055), Holm p 0.914 | `pretrends_lottery_C_binary` | LIVE (preferred conditional spec) |
-| CS-DiD | + lottery vintage continuous | ATT +0.136 (SE 0.128) — SE blowup at thin e=−2,−1 | `pretrends_lottery_B_conditional` | LIVE (do not use continuous conditioning) |
-| **did2s** | county, pre-COVID cohorts, excl. NH | **+9.1%** (coef +0.087, SE 0.045; CI −0.001 to +0.175 log points ≈ −0.1% to +19.1%) | `border_diagnostic` | **LIVE — exploratory signal, not the PAP headline** |
-| 2×2 long diff | annual court panel, binary online-by-2022, pseudo-treatment era | MDE-80 = 0.2401 (+27%) under RI; CRVE fails size (8.4%); selection placebo passes (τ −0.30%, RI p 0.976) | `longdiff_2x2_pseudo`, `longdiff_2x2_selection` | LIVE — descriptive contrast only, underpowered |
-| LP-DiD | state real-data event studies (ramp75/shift12 launch) | ~~all outputs~~ | `output/deprecated/lpdid_statepanel/` | CONTAMINATED — cellsize weights; re-run post-fix pending |
-| LP-DiD vs CS | equivalence decomposition (toy + real) | ewatt+pmd1 ≡ CS to 2.2e-16 on contiguous panels; breaks on interior time gaps (COVID splice) | `lpdid_cs_equivalence{,_keep}`, `lpdid_weights_compare{,_mde}` | LIVE — the weighting-fix proof |
-| CS-DiD (old) | pre-repair panels/schedules | ~~ATT +0.011 / −0.225 / +0.080 …~~ | `pretrends_statepanel_me_included`, `pretrends_rebuild_*`, etc. | CONTAMINATED / DEAD — see ledger |
-| TWFE | staggered power sim, "MDE = 5%" | ~~5% at 80% power~~ | `data/output/twfe_power_out_2024_with_me` | STALE — pre-schedule-repair; re-run is an open item |
+| CS joint pre-trend test | state · 26 states (17T/9N) · spliced · unconditional | Holm p = 0.170 — PT not rejected; mean \|pre-ATT\| 0.0285, max 0.0689 | `pretrends_lottery_A_baseline` | LIVE baseline |
+| CS joint pre-trend test | + lottery-legal **binary** covariate | Holm p = 0.914; mean \|pre-ATT\| 0.0285 (identical to unconditional), max 0.0648 | `pretrends_lottery_C_binary` | LIVE — preferred conditional spec |
+| CS joint pre-trend test | + lottery vintage **continuous** | Holm p = 0.449 but SE blowup concentrated at thin cells e=−2,−1 (max \|pre-ATT\| 0.2308) | `pretrends_lottery_B_conditional` | LIVE — do **not** use continuous conditioning |
+| Sun-Abraham pre-trends | same panel | no rejection (companion arm of the lottery runs) | same runs | LIVE |
+| Selection-on-adoption placebo | annual court panel, eventual online legalizers vs never | RI p = 0.976 — no pre-treatment divergence | `longdiff_2x2_selection` | LIVE |
+| 2×2 long-diff power | annual court panel · pseudo-treatment era | MDE-80 = 0.2401 (+27%) under RI; RI size exactly nominal (5.0%); CRVE FAILS size (8.4%); Type M 2–4× at small δ | `longdiff_2x2_pseudo` | LIVE — descriptive contrast only, underpowered |
+| LP-DiD ≡ CS equivalence | toy + real decomposition | ewatt+pmd1 ≡ CS to 2.2e-16 on contiguous panels; an interior time gap (the COVID splice) breaks it — unbalancedness does not | `lpdid_cs_equivalence{,_keep}` · `lpdid_weights_compare{,_mde}` | LIVE — the weighting-fix proof |
+| Era-variance inflation | matched-geometry window sweep | post/pre σ ratio ≈ 2.04 (NV-free); pre-era MDEs must be inflated accordingly; Idaho excluded (extreme in 100% of pre-era placements) | `longdiff_era_variance` (NV-free re-run) | LIVE |
 
-## 5. Coverage gaps visible in this matrix
+## 5. Coverage gaps (the PAP to-do list this matrix exposes)
 
-1. **LDAM has gates but no MDE** — the only size-valid state arm missing from the MDE comparison.
-2. **County did2s power never completed at production scale** (the `cheap`/Della county runs died); the county workhorse's MDE rests on the older border-diagnostic simulations.
-3. **County LP-DiD was abandoned** (`lpdid_mde_county`, batch 5/12).
-4. **No post-weights-fix real-data LP-DiD event study** — `lpdid_statepanel` outputs are all cellsize-era.
-5. **TWFE staggered power sim stale** (schedule vintage).
+1. **LDAM has gates but no MDE** — the only size-valid state arm missing from the MDE comparison. If its jackknife MDE lands under 0.0875, the recommended spec changes.
+2. **County did2s power never completed at production scale** — the county workhorse's MDE rests on older simulations outside the blinded framework.
+3. **County LP-DiD abandoned** at batch 5/12 (`lpdid_mde_county`).
+4. **TWFE staggered power sim stale** (pre-schedule-repair); its old headline MDE cannot be cited until re-run.
+5. **TWFE postcovid is not size-valid** (0.078–0.097 across runs) — the postcovid window currently has only LP-DiD wild arms as size-valid options.
+6. **NEW — diagnose the systematic positive null bias** (§1 caveat): +0.013 to +0.042 across all state arms, worst for vwatt (+1.06 SD). Candidate diagnostics: run the deterministic benchmark mechanism at δ=0; vary placement rule; check count_nb augmentation symmetry. Until diagnosed, report MDEs jointly with null bias in the PAP.
+7. **`boundary_B_2022_08` unfinalized** — 3,501 reps of finished work awaiting an aggregation step.
 
 ---
-Maintained with RUN_LEDGER.md: when a run adds or changes a cell here, update both. History: `docs/findings-archive/`.
+Maintained with RUN_LEDGER.md — update both when a run adds or changes a cell. History: `docs/findings-archive/`. Results (quarantined from this doc): FINDINGS.md.
