@@ -1,0 +1,21 @@
+group,mean_att,n,target,contrast,p_value
+FALSE,0.041872608367154236,2000,vwatt: lpdid (variance-weighted),churn_states_all_control,NA
+"[-0.453,-0.258]",0.05741907581227433,500,vwatt: lpdid (variance-weighted),cor_date_trend_quartile,NA
+"(-0.258,-0.193]",0.047614158865572395,500,vwatt: lpdid (variance-weighted),cor_date_trend_quartile,NA
+"(-0.193,-0.121]",0.041618643043752616,500,vwatt: lpdid (variance-weighted),cor_date_trend_quartile,NA
+"(-0.121,0.0658]",0.02083855574701761,500,vwatt: lpdid (variance-weighted),cor_date_trend_quartile,NA
+FALSE,0.02065870777709955,2000,vwatt: twfe,churn_states_all_control,NA
+"[-0.453,-0.258]",0.0680674068290017,500,vwatt: twfe,cor_date_trend_quartile,NA
+"(-0.258,-0.193]",0.042794978958286024,500,vwatt: twfe,cor_date_trend_quartile,NA
+"(-0.193,-0.121]",0.009248343908684446,500,vwatt: twfe,cor_date_trend_quartile,NA
+"(-0.121,0.0658]",-0.037475898587573976,500,vwatt: twfe,cor_date_trend_quartile,NA
+FALSE,0.013180053616469017,2000,ewatt: lpdid (equally-weighted),churn_states_all_control,NA
+"[-0.463,-0.27]",0.027722590434029196,500,ewatt: lpdid (equally-weighted),cor_date_trend_quartile,NA
+"(-0.27,-0.197]",0.019901016196073828,500,ewatt: lpdid (equally-weighted),cor_date_trend_quartile,NA
+"(-0.197,-0.125]",0.008153670354108274,500,ewatt: lpdid (equally-weighted),cor_date_trend_quartile,NA
+"(-0.125,0.0752]",-0.003057062518335232,500,ewatt: lpdid (equally-weighted),cor_date_trend_quartile,NA
+FALSE,0.024545574602274724,2000,ewatt: twfe,churn_states_all_control,NA
+"[-0.463,-0.27]",0.07304710027225157,500,ewatt: twfe,cor_date_trend_quartile,NA
+"(-0.27,-0.197]",0.045488619266324956,500,ewatt: twfe,cor_date_trend_quartile,NA
+"(-0.197,-0.125]",0.0123575971124861,500,ewatt: twfe,cor_date_trend_quartile,NA
+"(-0.125,0.0752]",-0.03271101824196372,500,ewatt: twfe,cor_date_trend_quartile,NA

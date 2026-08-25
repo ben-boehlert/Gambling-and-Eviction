@@ -37,6 +37,10 @@ Nearly every contamination reason below reduces to "this ran before one of these
 
 See [Adding a row](#adding-a-row) at the bottom for the template.
 
+**Infrastructure landmines (2026-08-25).**
+> - **`lpdid_anchor` default has drifted.** Reproducing the live `lpdid_shift12_gate_ewatt` run requires pinning `lpdid_anchor="event"`; current code defaults to `"event_clean"`. Any re-run or resume of the ewatt arm under today's defaults will NOT reproduce the published numbers. Pin explicitly.
+> - **The framework leaks memory on long county runs.** County gates die at ~batch 34–38 of 80 (2,000 reps), with batch times degrading 55s → 2.5min → 8.5min before a worker is killed — the local, small-scale reproduction of the documented Della OOM. Per-batch partials checkpoint correctly, so resumes are convergent; run county configs with ≤3 workers and expect to resume 1–2 times.
+
 **Reading notes.** (1) Run dates are `finished_at` times from `run_metadata.json`, not start times — consecutive runs can share a timestamp across rows. (2) For `county_cs_adaptive`, `size_gate.csv` is the authoritative file for the CS analytic arm (61.2% rejection); the same directory's `oc_summary.csv` analytic rows are a partial/misaggregated subset (rej05 = 0.06) — do not cite them.
 
 ---
@@ -71,6 +75,8 @@ See [Adding a row](#adding-a-row) at the bottom for the template.
 | `ldam_gate_postcovid_noNV` | Blinded power | LDAM postcovid gate: analytic 0.57 FAIL, jackknife 0.01 PASS (SE/SD 1.25) | [`output_blinded_power/ldam_gate_postcovid_noNV/`](output_blinded_power/ldam_gate_postcovid_noNV/) |
 | `lpdid_shift12_gate_ewatt` | Blinded power | **Current PAP decision-table row**: shift12/EWATT/wild, spliced size 0.0325 PASS (analytic 0.145 FAIL) | [`output_blinded_power/lpdid_shift12_gate_ewatt/`](output_blinded_power/lpdid_shift12_gate_ewatt/) |
 | `lpdid_shift12_gate_vwatt` | Blinded power | **Current PAP decision-table row**: shift12/VWATT/wild, both windows PASS (spliced 0.0515, postcovid 0.0615) | [`output_blinded_power/lpdid_shift12_gate_vwatt/`](output_blinded_power/lpdid_shift12_gate_vwatt/) |
+| `lpdid_shift12_gate_county_vwatt` | 2026-08-25 | [`config/power_lpdid_shift12_gate_county_vwatt.yml`](config/power_lpdid_shift12_gate_county_vwatt.yml) | county / shift12 / vwatt / NV n-a / post-rebuild | δ=0 gate, 2,000 reps, both windows. Spliced: TWFE-wild 0.041 PASS (bias +0.003), LP-DiD analytic 0.151 FAIL, did2s 0.111 FAIL. Postcovid: only TWFE-wild size-valid (0.046). County cuts null bias ~3-4x vs state | [`output_blinded_power/lpdid_shift12_gate_county_vwatt/`](output_blinded_power/lpdid_shift12_gate_county_vwatt/) | **LIVE** |
+| `lpdid_shift12_gate_county_ewatt` | 2026-08-25 | [`config/power_lpdid_shift12_gate_county_ewatt.yml`](config/power_lpdid_shift12_gate_county_ewatt.yml) | county / shift12 / ewatt / NV n-a / post-rebuild | δ=0 gate, 2,000 reps, both windows. Companion to the vwatt county gate | [`output_blinded_power/lpdid_shift12_gate_county_ewatt/`](output_blinded_power/lpdid_shift12_gate_county_ewatt/) | **RUNNING** (2026-08-25; resumes after memory-death, see landmines) |
 | `lpdid_shift12_mde_ewatt` | Blinded power | **Current PAP headline MDE (EWATT)**: spliced wild MDE 0.115 (CI 10.2–12.5%) | [`output_blinded_power/lpdid_shift12_mde_ewatt/`](output_blinded_power/lpdid_shift12_mde_ewatt/) |
 | `lpdid_shift12_mde_vwatt` | Blinded power | **Current PAP headline MDE (VWATT)**: spliced wild MDE 0.0875 (CI 8.3–9.1%) — best state MDE among size-valid arms | [`output_blinded_power/lpdid_shift12_mde_vwatt/`](output_blinded_power/lpdid_shift12_mde_vwatt/) |
 

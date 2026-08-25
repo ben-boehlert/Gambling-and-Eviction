@@ -1,0 +1,90 @@
+# =============================================================================
+# power_lpdid_shift12_gate_county_ewatt.yml — COUNTY shift12 size gate, EWATT.
+#
+# County companion to power_lpdid_shift12_gate_vwatt.yml (state), requested
+# 2026-08-25 after two findings:
+#   (1) every STATE arm carries a positive delta=0 null bias (vwatt +0.042 =
+#       +1.06 SD, ~48% of its 0.0875 MDE; TWFE ~+0.02) — see the null-bias
+#       caveat in ESTIMATOR_MATRIX.md;
+#   (2) the recovered county partial (deprecated/lpdid_mde_county, online
+#       treat_def, cellsize-era) shows bias ~0 at county (TWFE +0.002).
+# This run tests whether county-level estimation kills the bias under the
+# CURRENT spec (shift12 + corrected weights), and reads analytic size/SE-SD
+# for the county LP-DiD arm that has never been run post-weights-fix.
+#
+# did2s included deliberately: the same recovered partial has county did2s
+# FAILING size inside this framework (0.106) despite its 4% in the
+# calibration harness — this run re-measures that at 2,000 reps.
+#
+# lpdid_wild stays OFF at county: boottest cannot do WLS with absorbed fixed
+# effects, so the wild arm would dummy-expand the stacked (t x h) cell factor
+# (see power_lpdid_mde_county.yml header and .re_lpdid). vwatt is unweighted
+# OLS, so wild MAY be plumbable later — separate task if analytic lands near
+# the 0.075 line. Bias and SE/SD are inference-independent either way.
+#
+# exclude_states NV is a no-op at county (monthly_county_data_download.csv has
+# no NV rows) — kept so the spec string matches the state gates exactly.
+#
+# 2,000 reps: a 300-rep run cannot classify size near the 0.075 line
+# (MC SE 0.0147 at p=0.07; the ramp75 lesson). delta = 0 only.
+#
+# COST (from the 08-17 county run: ~3.8 s per rep x delta for twfe+did2s+lpdid
+# on county/drop): ~2.1h serial per scenario, ~35-50 min at 4 workers.
+# =============================================================================
+
+run_name: lpdid_shift12_gate_county_ewatt
+
+exclude_states: [NV]
+
+schedule:   data/processed/shift12_schedule.csv
+
+# ---- Top-level defaults -----------------------------------------------------
+
+level:      county
+sample:     [S2]
+covid:      drop
+treat_def:  shift12_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+
+template:   panel
+
+effect_grid:  [0]
+
+estimators:   [twfe, did2s, lpdid]
+lpdid_wild:   false             # see header — no wild at county yet
+lpdid_weights: ewatt
+
+# ---- Execution --------------------------------------------------------------
+
+n_reps:     2000
+base_seed:  20260723           # pairs rep-for-rep with the state shift12 gates
+mde_boot:   200
+
+alpha:      [0.1, 0.05, 0.01]
+
+min_pre:    12
+min_post:   6
+
+anticipation_months: 6
+
+# ---- Scenario families ------------------------------------------------------
+
+scenarios:
+
+  # A. Spliced panel (the standard framework window).
+  - name: gate_county_spliced
+    covid: drop
+
+  # B. Clean post-COVID window. Thin at county (5 treated states in the 08-17
+  #    run under online dating; shift12 shifts dates 12mo later, so expect
+  #    thinner still — read as a probe, and expect possible D1 infeasibility
+  #    failure rows rather than a crash).
+  - name: gate_county_postcovid
+    covid: post

@@ -25,11 +25,36 @@ Gates are 2,000 reps; MDEs 300 reps × 13 δ. Decision rule: size gate first, MD
 | did2s analytic | online · spliced / keep / postcovid · NV out (state) | 0.153 / 0.110 / 0.273 FAIL | 0.77 / 0.82 / 0.64 | +0.037 / +0.011 / +0.020 | 0.847–0.890 | n/a | LDAM-gate runs (did2s arm) | **state did2s fails size in every window** |
 | ~~LP-DiD cellsize~~ (all treat_defs) | various | ~~0.037–0.103~~ | — | — | — | ~~0.0487–0.0933~~ | `lpdid_gate*`, `lpdid_mde*`, `ramp75*`, `shift12*_noNV` | SUPERSEDED — dead estimand (2026-08-24) and/or CONTAMINATED (panel / NV vintage) |
 
-### ⚠ Null-bias caveat (new, 2026-08-25)
+### ⚠ Null-bias caveat — DIAGNOSED 2026-08-25
 
-Every state arm's δ=0 mean estimate is **positive**: the pseudo-null distribution is not centered at zero on this design. For **vwatt the bias is +0.042 — 1.06× its own SD and ~48% of its 0.0875 MDE**; wild inference recenters under the null, which is why the size gate passes anyway. Consequences: (a) the measured power curve — and hence the MDE — is shifted by the bias for positive δ; (b) a real-data point estimate near +0.04 on this spec would be indistinguishable from the design's null artifact. **Undiagnosed** (candidates: D1 placement interacting with post-COVID recovery trends; count_nb augmentation asymmetry) — see gap 6. The county CS analogue is already documented (null bias +0.101); the principle "size-valid ≠ unbiased" now provably applies to the state arms too.
+Every state arm's δ=0 mean estimate is **positive**: the pseudo-null distribution is not centered at zero. For **vwatt the bias is +0.042 — 1.06× its own SD and ~48% of its 0.0875 MDE**; wild inference recenters under the null, which is why the size gate passes anyway.
+
+**Cause (memo: [`quality_reports/nullbias_decomposition_2026-08-25.md`](quality_reports/nullbias_decomposition_2026-08-25.md); placements regenerated from recorded seeds and verified to reproduce the recorded estimates to 2.8e-17): eligibility-constrained pseudo-treatment placement.** `.assign_cohorts()` fills scarcest cohorts first, which makes assignment non-exchangeable: a pseudo-treated state's adoption date is negatively correlated with its own real trend slope in **all 4,000 draws examined** — never positive. That skew explains 62–64% of TWFE's rep-to-rep bias variance (6–15% for LP-DiD, whose weighting adds state-identity heterogeneity in the same family); across its observed range the bias swings +0.07 → −0.05, wider than the mean bias itself. Ruled out: composition-break artifacts (the panel is fixed-basket — `basket_share` = 1 for every state-month, verified independently) and calendar timing (D1 cohort dates barely move; center-of-mass SD ≈ 0.8 months).
+
+**Consequences for the PAP.** The δ=0 distribution is the design's *reference null*, not a zero. (a) Power curves and MDEs are shifted by the bias for positive δ; (b) a real-data estimate near +0.04 on the state vwatt spec would be indistinguishable from the design artifact. The defensible, pre-registrable fix is to **recenter/bias-correct the null before computing size and MDE** (or stratify the gate by eligibility skew) rather than assume unbiasedness — this would change every number in the decision table, so it is a decision for Ben, not a silent adjustment. Censoring "churn states" is a no-op on this panel and should not be pursued.
+
+**County comparison (§2): the bias shrinks ~3–4× but does not vanish** — consistent with a mechanism that enters through state-level placement and is diluted, not broken, by disaggregation.
 
 ## 2. County-level
+
+**Shift12 county gate (NEW, 2026-08-25 — 2,000 reps, corrected weights, `lpdid_shift12_gate_county_vwatt`).** Run to test whether county estimation escapes the state arms' null bias. Wild is unavailable for the LP-DiD arm at county (boottest cannot do WLS with absorbed FEs), so LP-DiD is analytic-only here.
+
+| Arm | Window | Size (δ=0) | SE/SD | Null bias (÷SD) | Coverage | Clusters | Verdict |
+|---|---|---:|---:|---:|---:|---:|---|
+| **TWFE + wild** | spliced | **0.0410 PASS** | 0.92 | **+0.003 (+0.10 SD)** | — | 17T/12C | **the size-valid + near-unbiased county arm** |
+| TWFE analytic | spliced | 0.0685 marginal | 0.92 | +0.003 | 0.931 | 17T/12C | use wild |
+| LP-DiD vwatt analytic | spliced | 0.1510 FAIL | 0.77 | +0.012 (+0.36 SD) | 0.849 | 17T/12C | no size-valid inference at county yet |
+| did2s analytic | spliced | 0.1112 FAIL | 0.65 | −0.004 (−0.08 SD) | 0.889 | 17T/12C | **fails size in-framework** (cf. 4% in the calibration harness) |
+| **TWFE + wild** | postcovid | **0.0460 PASS** | 0.68 | +0.003 (+0.03 SD) | — | 5T/9C | only size-valid arm in this window |
+| TWFE analytic | postcovid | 0.1610 FAIL | 0.68 | +0.003 | 0.839 | 5T/9C | — |
+| LP-DiD vwatt analytic | postcovid | 0.2785 FAIL | 0.55 | +0.004 (+0.03 SD) | 0.722 | 5T/9C | thin design (5 treated states) |
+| did2s analytic | postcovid | 0.2360 FAIL | 0.62 | −0.002 | 0.764 | 5T/9C | — |
+
+Convergence: 2.4% did2s failures spliced / 1.1% postcovid (Lapack `dgesdd`); LP-DiD and TWFE 100%.
+
+**Reading:** county estimation **cuts the null bias ~3–4× but does not remove the mechanism** — LP-DiD 1.06 SD → 0.36 SD, TWFE 0.4 SD → 0.10 SD, with the LP-DiD:TWFE bias ratio (~4×) preserved at both levels. Consistent with the decomposition: the bias enters through *state-level* pseudo-adoption placement, which county disaggregation dilutes but does not break. County's real advantage here is calibration (TWFE-wild is both size-valid and near-unbiased in both windows); its cost is that the LP-DiD arm has no size-valid inference until wild-at-county is plumbed.
+
+### Earlier county work
 
 | Arm | Size (δ=0) | SE/SD | Null bias | MDE-80 | Runs | Status |
 |---|---:|---:|---:|---:|---|---|
@@ -67,12 +92,13 @@ Every state arm's δ=0 mean estimate is **positive**: the pseudo-null distributi
 ## 5. Coverage gaps (the PAP to-do list this matrix exposes)
 
 1. **LDAM has gates but no MDE** — the only size-valid state arm missing from the MDE comparison. If its jackknife MDE lands under 0.0875, the recommended spec changes.
-2. **County did2s power never completed at production scale** — the county workhorse's MDE rests on older simulations outside the blinded framework.
-3. **County LP-DiD abandoned** at batch 5/12 (`lpdid_mde_county`).
-4. **TWFE staggered power sim stale** (pre-schedule-repair); its old headline MDE cannot be cited until re-run.
-5. **TWFE postcovid is not size-valid** (0.078–0.097 across runs) — the postcovid window currently has only LP-DiD wild arms as size-valid options.
-6. **NEW — diagnose the systematic positive null bias** (§1 caveat): +0.013 to +0.042 across all state arms, worst for vwatt (+1.06 SD). Candidate diagnostics: run the deterministic benchmark mechanism at δ=0; vary placement rule; check count_nb augmentation symmetry. Until diagnosed, report MDEs jointly with null bias in the PAP.
-7. **`boundary_B_2022_08` unfinalized** — 3,501 reps of finished work awaiting an aggregation step.
+2. **Wild-at-county for LP-DiD is unbuilt** — boottest cannot do WLS with absorbed fixed effects, so the county LP-DiD arm has no size-valid inference (analytic size 0.151 spliced / 0.279 postcovid). vwatt is unweighted OLS so wild may be plumbable there; ewatt is not without new machinery.
+3. **County did2s power never completed at production scale** — the county workhorse's MDE rests on older simulations outside the blinded framework.
+4. **County LP-DiD MDE still unrun** — the 2026-08-17 attempt was abandoned at batch 5/12 (`lpdid_mde_county`, online treat_def + retired weights); the new county gate is δ=0 only. Blocked behind gap 2 in any case.
+5. **TWFE staggered power sim stale** (pre-schedule-repair); its old headline MDE cannot be cited until re-run.
+6. **Postcovid window is inference-fragile.** At state, TWFE analytic is not size-valid (0.078–0.097), leaving only LP-DiD wild arms. At county, TWFE-wild IS size-valid in both windows (0.041 spliced / 0.046 postcovid) while every analytic arm fails badly (0.16–0.28).
+7. **Null bias — DIAGNOSED, decision pending** (§1 caveat; memo `quality_reports/nullbias_decomposition_2026-08-25.md`). Cause is eligibility-constrained placement in `.assign_cohorts()`. **Open decision for Ben:** recenter the null before computing size/MDE (changes every decision-table number) vs. report MDEs alongside uncorrected null bias.
+8. **`boundary_B_2022_08` unfinalized** — 3,501 reps of finished work awaiting an aggregation step.
 
 ---
 Maintained with RUN_LEDGER.md — update both when a run adds or changes a cell. History: `docs/findings-archive/`. Results (quarantined from this doc): FINDINGS.md.
