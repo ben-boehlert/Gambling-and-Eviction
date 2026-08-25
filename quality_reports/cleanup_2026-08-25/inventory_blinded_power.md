@@ -1,0 +1,130 @@
+# Inventory: `output_blinded_power/` (2026-08-25)
+
+Classifies all 92 top-level entries in `output_blinded_power/` (68 directories,
+incl. `deprecated/`, + 24 top-level `*.log` files). `output_blinded_power/` is
+gitignored, so any cleanup based on this table is a filesystem move only.
+
+Key dates used throughout: **state-panel double-count fix / rebuild = 2026-08-20
+01:26** (only `level: state` runs are affected — county runs read
+`monthly_county_data_download.csv` directly and are immune); **treatment-schedule
+repair = 2026-08-10 ~16:16** (added online dates for DE/NC/KY/ME/FL/VT/MO — affects
+any run, state or county, built on the old schedule file); **LP-DiD weighting
+fix = 2026-08-24** (default flipped from the unlabelled `cellsize` weighting to
+`ewatt`; every `lpdid` estimator row computed before this date is a dead
+estimand, even where the run's TWFE/did2s/LDAM rows remain informative);
+**NV-exclusion fix = 2026-08-21** (state-level D1 runs without
+`exclude_states: [NV]` carry an always-treated state in the control pool).
+
+## Counts by status
+
+| Status | Count |
+|---|---|
+| LIVE | 10 |
+| SUPERSEDED | 10 |
+| CONTAMINATED | 16 |
+| DEAD | 49 (25 dirs + 24 top-level `.log` files) |
+| EXPLORATORY | 5 |
+| UNKNOWN | 1 |
+| already-deprecated (`deprecated/`) | 1 |
+| **Total** | **92** |
+
+## Inventory
+
+| dir | last modified | config / run_name | level + treat_def + weights | status | status evidence | move? |
+|---|---|---|---|---|---|---|
+| `_amde_county_smoke` | 2026-08-19 | `power_county_cs_adaptive.yml` (dev probe, run_name `county_cs_adaptive`) | county / online / — | DEAD | Underscore dev-probe dir; `faster_mode=FALSE, safe_patches=TRUE` (correct CS path) but this is the adaptive-vs-brute equivalence smoke test that preceded the real `county_cs_adaptive` run; has `size_gate.csv`/`mde_adaptive.csv` but was never cited. | yes |
+| `_amde_county_smoke.log` | 2026-08-19 | — | — | DEAD | Ancillary run log for the dir above. | yes |
+| `_amde_state_check.log` | 2026-08-19 | — | — | DEAD | Ancillary run log; paired dirs are `_amde_state_check_adaptive`/`_amde_state_check_brute` below. | yes |
+| `_amde_state_check_adaptive` | 2026-08-19 | run_name `state_cs_adaptive_check` | state / online / — | DEAD | `faster_mode=FALSE, safe_patches=TRUE`; dev verification comparing adaptive-grid CS to brute force at state level (feeds the "bit-identical" equivalence claim behind `county_cs_adaptive`, `R/power/adaptive_mde.R`). Underscore probe, never cited standalone. | yes |
+| `_amde_state_check_brute` | 2026-08-19 | run_name `state_cs_adaptive_check` | state / online / — | DEAD | Paired brute-force counterpart to the adaptive check above; same verification purpose, same disposition. | yes |
+| `_cs_cty_111` | 2026-08-03 | no config match (pre-flag era) | county / online / — | CONTAMINATED (CS faster_mode) | `run_metadata.json` has no `cs_faster_mode`/`cs_safe_patches` keys → R default `cs_faster_mode=TRUE` applied (pre-dates the 08-17 flag system entirely). `oc_summary.csv` has `estimator=cs` rows, so this is exactly "every CS run under faster_mode=TRUE used a non-estimating code path." | yes |
+| `_cs_cty_222` | 2026-08-03 | same as above | county / online / — | CONTAMINATED (CS faster_mode) | Same as `_cs_cty_111`. | yes |
+| `_cs_probe_111` | 2026-08-03 | — | — | DEAD | Empty directory (no files at all). | yes |
+| `_cs_probe_111b` | 2026-08-03 | — | — | DEAD | Empty directory. | yes |
+| `_cs_probe_222` | 2026-08-03 | no config match | state / online / — | CONTAMINATED (CS faster_mode) | Same default-`TRUE` faster_mode issue as `_cs_cty_*`; has `estimator=cs` rows in `oc_summary.csv`. | yes |
+| `_cs_probe_333` | 2026-08-03 | — | — | DEAD | Empty directory. | yes |
+| `_cs_probe_444` | 2026-08-03 | — | — | DEAD | Empty directory. | yes |
+| `_e2e_brute_verify` | 2026-08-17 | dev probe | state / online / — | DEAD | `faster_mode=TRUE` but estimators are only `did2s`/`twfe` (no `cs`), so the flag is moot; this is a brute-force-vs-shift-mode dev verification predating the adaptive framework (shift mode was later barred by an Opus review — see `county_cs_adaptive`). Underscore probe. | yes |
+| `_e2e_shift_verify` | 2026-08-17 | dev probe | state / online / — | DEAD | Same family as above (`did2s`/`twfe` only); shift-mode verification superseded by the adaptive-grid approach. | yes |
+| `_e2e_shift_verify2` | 2026-08-17 | dev probe | state / online / — | DEAD | Follow-up shift-mode verification (adds `.shift_loading.csv` diagnostics); same disposition. | yes |
+| `_int_cs6` | 2026-08-03 | — | — | DEAD | Empty directory. | yes |
+| `_int_cs6b` | 2026-08-03 | — | — | DEAD | Empty directory. | yes |
+| `_int_subset` | 2026-08-03 | — | state / — / — | DEAD | Only a single stray partial CSV, no run_metadata/oc_summary; never completed. | yes |
+| `_smoke_ewatt` | 2026-08-24 15:55 | pre-run smoke for `lpdid_shift12_gate_ewatt.yml` | state / shift12 / ewatt | DEAD | Small smoke run 32 min before the real `lpdid_shift12_gate_ewatt` (16:27) — sanity check before committing the 2,000-rep gate. | yes |
+| `_smoke_parallel_realmods` | 2026-07-23 | early parallel-runner smoke test | state / online / deterministic | DEAD | Earliest dated run in the whole tree (07-23, same day as `validation`/`primary`); tests the parallel harness itself, single deterministic scenario, not a scenario result. | yes |
+| `boundary_A0_2021_08` | 2026-08-21 14:07 | `power_boundary_A0_2021_08.yml` | state / online / — (loader_anticipation=0) | EXPLORATORY | Complete 300-rep run, NV **included** (no `exclude_states`); this is the WITH-NV baseline contrast for the `boundary_A0_noNV_2021_08` infeasibility finding — not a headline result on its own. Note: `did2s` reject_005 = 1.0 at δ=0 (anomalous — flag if reused). | no |
+| `boundary_A0_noNV_2021_08` | 2026-08-21 14:08 | `power_boundary_A0_noNV_2021_08.yml` | state / online / — (NV excluded, loader_anticipation=0) | LIVE | Directly cited in CLAUDE.md: "3,600/3,600 reps fail... `output_blinded_power/boundary_A0_noNV_2021_08/failures.csv`" — the state-D1-infeasible-without-NV finding. Verified: all `oc_summary.csv` rows are `NA` (every rep failed to place). | no |
+| `boundary_A_2021_08` | 2026-08-21 12:17 | `power_boundary_A_2021_08.yml` | state / online / — (loader_anticipation=6, the pre-fix default) | EXPLORATORY | Complete 300-rep run; part of the same anticipation-boundary sensitivity investigation as A0 (contrasts loader_anticipation 6 vs 0 months) but not itself cited by name in CLAUDE.md. | no |
+| `boundary_B_2022_08` | 2026-08-21 12:17 | `power_boundary_B_2022_08.yml` | state / online / — | UNKNOWN | Only `partials/` present (3,501 rows in the partial CSV — substantial progress) but no `oc_summary.csv`/`mde_table.csv`/`failures.csv` — never finalized. Genuinely unclear whether abandoned or pending a finalize step (per instructions, defaulting to UNKNOWN over DEAD given the size of the partial). | no |
+| `boundary_SMOKE` | 2026-08-21 11:56 | dev smoke for `power_boundary_B_2022_08.yml` (run_name in metadata reads `boundary_b_2022_08`) | state / online / — | DEAD | Only 10 reps — smoke-scale precursor to `boundary_B_2022_08`/`boundary_A_2021_08`. | yes |
+| `cheap` | 2026-08-10 21:57 | `power_cheap.yml` (Run Ladder: "8 scenarios (4 county, 4 state)") | county+state (mixed scenario blocks) / online / — | CONTAMINATED (pre-rebuild panel) | Only `partials/` present (5 scenario files, `state_nb_step`/`state_nb_dynamics`×2/`state_det_benchmark`/`headline_county_nb_step`), no final `oc_summary.csv` — incomplete. Predates the 2026-08-20 01:26 state-panel rebuild; its state-level cells are contaminated by the pre-rebuild double count (county cells would be immune but the run never finished aggregating anyway). | yes |
+| `county_cs` | 2026-08-17 19:13 | `power_county_cs.yml` | county / online / — | SUPERSEDED | CLAUDE.md: "the old shift-mode partial `output_blinded_power/county_cs/` is preserved untouched" — shift mode was barred by an Opus review (`quality_reports/sufficient_statistics_shift_mode_code_review.md`); replaced by the adaptive-grid `county_cs_adaptive`. Only `partials/`, no final summary. | yes |
+| `county_cs_adaptive` | 2026-08-19 09:39 | `power_county_cs_adaptive.yml` | county / online / — | LIVE | Task-flagged LIVE. Full outputs (`size_gate.csv`, `mde_adaptive.csv`, `ADAPTIVE_CS_MDE_REPORT.md`, `oc_summary.csv`); `faster_mode=FALSE, safe_patches=TRUE` (correct CS code path). This is the definitive county-CS verdict: boot/boot_t size-valid but power curve flat (never crosses target), analytic 61% fail. | no |
+| `county_cs_adaptive_run.log` | 2026-08-19 | — | — | DEAD | Ancillary run log for `county_cs_adaptive` (LIVE dir retains the real evidence). | yes |
+| `county_cs_adaptive_run2.log` | 2026-08-19 | — | — | DEAD | Same. | yes |
+| `county_cs_adaptive_run3_finalize.log` | 2026-08-19 | — | — | DEAD | Same (finalize-step log). | yes |
+| `county_cs_run.log` | 2026-08-17 | — | — | DEAD | Ancillary run log for the superseded `county_cs/` (shift-mode) run. | yes |
+| `cs_probe` | 2026-08-17 16:44 | `power_cs_probe.yml` | state / online / — | CONTAMINATED (pre-rebuild panel) | Correct CS flags (`faster_mode=FALSE, safe_patches=TRUE`) and complete `oc_summary.csv` (3 mechanism/shape cells) — but level=state and dated before the 2026-08-20 01:26 rebuild, so its state-panel figures inherit the pre-rebuild double count. No re-run exists post-rebuild under this name. | yes |
+| `cs_probe_run.log` | 2026-08-17 | — | — | DEAD | Ancillary run log for `cs_probe`. | yes |
+| `deprecated/` | 2026-08-21 | n/a | n/a | already-deprecated | Existing deprecated folder holding 5 smoke-scale probes: `ldam_gate_smoke_2026-08-21`, `lpdid_gate_postcovid_smoke3rep`, `lpdid_gate_smoke2rep`, `lpdid_mde_county_smoke2rep`, `lpdid_mde_smoke2rep`. Already moved by a prior session; no action needed. | no |
+| `dose_tercile_gates` | 2026-08-19 12:38 | `power_dose_tercile_gates.yml` | county / online / — (cellsize weights, pre-08-24 fix) | SUPERSEDED | Gambling-intensity-by-tercile heterogeneity probe (`dose_t1_low`/`dose_pooled`/`dose_t3_high`), county level (immune to the panel rebuild), 300 reps, complete. Its `lpdid` rows were computed under the pre-2026-08-24 default (`cellsize`) weighting → dead estimand per the LP-DiD fix note ("every LP-DiD size and MDE figure... was computed on the cellsize estimand"). `did2s` rows are unaffected by that specific bug but no live re-run of this heterogeneity question exists. | yes |
+| `dose_tercile_gates_run.log` | 2026-08-19 | — | — | DEAD | Ancillary run log. | yes |
+| `e2e_smoke_validation` | 2026-07-23 14:19 | dev smoke | state / online / deterministic | DEAD | `n_reps=3`, trivial smoke test from the framework's first day. | yes |
+| `ldam_gate` | 2026-08-21 11:01 | `power_ldam_gate.yml` | state / online / — | CONTAMINATED (NV) | No `exclude_states` in config; NV sits in the D1 control pool. Superseded same-day by `ldam_gate_noNV` (14:0x–17:xx). Post-rebuild (11:01 > 08-20 01:26) so not pre-rebuild-contaminated, only NV. | yes |
+| `ldam_gate_keepcovid` | 2026-08-21 14:06 | `power_ldam_gate_keepcovid.yml` | state / online / — | CONTAMINATED (NV) | Same NV issue; superseded by `ldam_gate_keepcovid_noNV` (17:48). | yes |
+| `ldam_gate_keepcovid_noNV` | 2026-08-21 17:48 | `power_ldam_gate_keepcovid_noNV.yml` | state / online / — (NV excluded) | LIVE | Current LDAM keep-COVID gate: did2s analytic reject005=0.11, ldam analytic 0.69 (FAIL), ldam **jackknife** 0.03 (PASS, SE/SD 0.98) — matches CLAUDE.md's standing "LDAM+jackknife passes... never quote LDAM analytic" conclusion. Embedded `lpdid` row (reject005=0.027) uses pre-08-24 cellsize weights — stale for LP-DiD purposes but not why this run is cited. | no |
+| `ldam_gate_noNV` | 2026-08-21 17:36 | `power_ldam_gate_noNV.yml` | state / online / — (NV excluded) | LIVE | Current LDAM drop-COVID/spliced gate: ldam analytic 0.70 FAIL, ldam jackknife 0.037 PASS (SE/SD 1.01) — matches the "LDAM: analytic inference catastrophically miscalibrated... LDAM+jackknife passes" finding. | no |
+| `ldam_gate_postcovid` | 2026-08-21 11:26 | `power_ldam_gate_postcovid.yml` | state / online / — | CONTAMINATED (NV) | Same NV issue; superseded by `ldam_gate_postcovid_noNV` (17:54). | yes |
+| `ldam_gate_postcovid_noNV` | 2026-08-21 17:54 | `power_ldam_gate_postcovid_noNV.yml` | state / online / — (NV excluded) | LIVE | Current LDAM postcovid gate: ldam analytic 0.57 FAIL, ldam jackknife 0.01 PASS (SE/SD 1.25) — the third of the "0.037, 0.030, 0.010" jackknife-pass triple cited in CLAUDE.md. | no |
+| `longdiff_power` | 2026-08-19 19:07 | `power_longdiff.yml` | state / online / — | CONTAMINATED (pre-rebuild panel) | Complete 4-cell run (`ld_keep`/`ld_keep_exny`/`ld_drop`/`ld_drop_exny`) testing the `longdiff` (LDAM-style) estimator jackknife inference. Predates the 2026-08-20 01:26 rebuild. Distinct from `output/longdiff_2x2_pseudo/` (the annual-court-panel binary 2×2 analysis, which is unaffected — different data source). No re-run of this LP-DiD-framework longdiff test exists post-rebuild. | yes |
+| `longdiff_power_run.log` | 2026-08-19 | — | — | DEAD | Ancillary run log. | yes |
+| `lpdid_anchor_probe` | 2026-08-21 15:54 | dev probe, run_name `lpdid_anchor_probe` | state / ramp75 / — | CONTAMINATED (NV) | Complete run testing launch-date vs event-time anchoring (`spliced_event`/`spliced_launch`/`postcovid_event`/`postcovid_launch`); no `exclude_states` in `run_metadata.json` → NV in control pool. Also predates the 08-24 LP-DiD weighting fix (cellsize). No noNV or corrected-weight re-run of this specific anchor question exists. | yes |
+| `lpdid_gate` | 2026-08-15 03:31 | `power_lpdid_gate.yml` | state / online / — | CONTAMINATED (pre-rebuild panel) | Explicitly named in CLAUDE.md's PANEL-ERA TRAP list ("`lpdid_gate` (08-15)... do NOT pair with new arms"). Superseded by `lpdid_gate_noNV`. | yes |
+| `lpdid_gate_noNV` | 2026-08-21 16:53 | `power_lpdid_gate_noNV.yml` | state / online / — (NV excluded, cellsize weights) | SUPERSEDED | Post-rebuild, NV-free, but (a) uses pre-08-24 cellsize LP-DiD weights and (b) treat_def is raw `online_start_date`, which CLAUDE.md documents fails the size gate outright ("Raw online LP-DiD fails size everywhere... spliced 0.103"). Superseded by the `shift12`/`ramp75` lagged-definition runs. | yes |
+| `lpdid_gate_postcovid` | 2026-08-17 12:28 | `power_lpdid_gate_postcovid.yml` | state / online / — | CONTAMINATED (pre-rebuild panel) | Named in the PANEL-ERA TRAP list ("`lpdid_gate_postcovid` (08-17)"). Superseded by `lpdid_gate_postcovid_noNV`. | yes |
+| `lpdid_gate_postcovid_noNV` | 2026-08-21 16:57 | `power_lpdid_gate_postcovid_noNV.yml` | state / online / — (NV excluded, cellsize weights) | SUPERSEDED | Same online-treat_def / cellsize-weight issues as `lpdid_gate_noNV`. | yes |
+| `lpdid_gate_postcovid_run.log` | 2026-08-17 | — | — | DEAD | Ancillary run log. | yes |
+| `lpdid_gate_run.log` | 2026-08-15 | — | — | DEAD | Ancillary run log. | yes |
+| `lpdid_mde` | 2026-08-17 12:40 | `power_lpdid_mde.yml` | state / online / — | CONTAMINATED (pre-rebuild panel) | Named in the PANEL-ERA TRAP list ("`lpdid_mde` (08-17)"). Superseded by `lpdid_mde_noNV` (via `lpdid_mde_fixedpanel`). | yes |
+| `lpdid_mde_county` | 2026-08-17 12:46 | `power_lpdid_mde_county.yml` | county / online / — | DEAD | CLAUDE.md: "the only NV-free arm... was never finished: it stopped at batch 5/12 (spliced) and 7/30 (postcovid)... has `partials/` but no `mde_table.csv`/`oc_summary.csv`." Abandoned, county-level so immune to the panel rebuild, but never completed. | yes |
+| `lpdid_mde_county_run.log` | 2026-08-17 | — | — | DEAD | Ancillary run log. | yes |
+| `lpdid_mde_county_run2.log` | 2026-08-17 | — | — | DEAD | Ancillary run log. | yes |
+| `lpdid_mde_fixedpanel` | 2026-08-20 02:21 | re-run of `power_lpdid_mde.yml` under an overridden run_name, ~1h after the panel rebuild | state / online / — (NV **not** excluded) | CONTAMINATED (NV) | Metadata `run_name` still reads `lpdid_mde` (config unchanged) but output dir renamed per the "use a fresh run_name" rule after the 01:26 rebuild — genuinely post-rebuild-panel, but no `exclude_states` set, so NV-contaminated. Superseded by `lpdid_mde_noNV`. | yes |
+| `lpdid_mde_noNV` | 2026-08-21 18:07 | `power_lpdid_mde_noNV.yml` | state / online / — (NV excluded, cellsize weights) | SUPERSEDED | Post-rebuild, NV-free, but online-treat_def (fails size per CLAUDE.md) + pre-08-24 cellsize weights. Superseded by shift12/ramp75 lagged-definition MDE runs. | yes |
+| `lpdid_mde_run.log` | 2026-08-17 | — | — | DEAD | Ancillary run log. | yes |
+| `lpdid_ramp75_anchor` | 2026-08-21 15:57 | `power_lpdid_ramp75_anchor.yml` | state / ramp75 / — | DEAD | Only `partials/` (6 files, one with `.done_reps` mid-progress marker), no `oc_summary.csv` — never completed. Extends `lpdid_anchor_probe` (which DID complete 3 min earlier) with an extra `spliced_launch_aligned` variant; superseded in effect by the completed probe. | yes |
+| `lpdid_ramp75_gate` | 2026-08-20 19:04 | `power_lpdid_ramp75_gate.yml` (v1) | state / ramp75 / — | DEAD | Only one partial file (`mde_spliced`, `.done_reps` present, no `mde_postcovid` cell, no final summary) — incomplete, redone 6 minutes later as `lpdid_ramp75_gate_v2`. | yes |
+| `lpdid_ramp75_gate_noNV` | 2026-08-21 17:09 | `power_lpdid_ramp75_gate_noNV.yml` | state / ramp75 / — (NV excluded, cellsize weights) | SUPERSEDED | Complete, NV-free, size-valid on `lpdid` (wild 0.037–0.083 per delta) but pre-08-24 cellsize weights → the "ramp75 7.1% MDE" figure CLAUDE.md declares dead ("every LP-DiD size and MDE figure... ramp75 7.1%... was computed on the cellsize estimand"). Superseded by shift12 ewatt/vwatt. | yes |
+| `lpdid_ramp75_gate_v2` | 2026-08-20 19:10 | `power_lpdid_ramp75_gate.yml` (v2, completed) | state / ramp75 / — (NV **not** excluded, cellsize weights) | CONTAMINATED (NV) | Complete 2-cell run but no `exclude_states`; superseded same-family by `lpdid_ramp75_gate_noNV`. This is the run CLAUDE.md's "SHIFT12 BEATS RAMP75" section cites as the with-NV comparator. | yes |
+| `lpdid_ramp75_mde` | 2026-08-20 19:57 | `power_lpdid_ramp75_mde.yml` | state / ramp75 / — (NV **not** excluded, cellsize weights) | CONTAMINATED (NV) | Complete, but no `exclude_states`. Superseded by `lpdid_ramp75_mde_noNV`. | yes |
+| `lpdid_ramp75_mde_noNV` | 2026-08-21 16:26 | `power_lpdid_ramp75_mde_noNV.yml` | state / ramp75 / — (NV excluded, cellsize weights) | SUPERSEDED | Complete; this is the run behind the CLAUDE.md "spliced LP-DiD analytic MDE 0.0733 → 0.0597 (NV-free)" comparison — cellsize weights, dead estimand per the 08-24 fix. Superseded by shift12 ewatt/vwatt MDE runs. | yes |
+| `lpdid_shift12_gate_ewatt` | 2026-08-24 16:27 | `power_lpdid_shift12_gate_ewatt.yml` | state / shift12 / **ewatt** (NV excluded) | LIVE | 2,000-rep gate; matches CLAUDE.md exactly: spliced analytic 0.145 FAIL, spliced **wild 0.0325 PASS**; postcovid analytic 0.115 FAIL, wild 0.071 PASS. Directly cited as the corrected shift12/ewatt gate. | no |
+| `lpdid_shift12_gate_ewatt_run.log` | 2026-08-24 | — | — | DEAD | Ancillary run log for the LIVE dir above. | yes |
+| `lpdid_shift12_gate_noNV` | 2026-08-21 19:17 | `power_lpdid_shift12_gate_noNV.yml` | state / shift12 / — (cellsize weights — pre-08-24 default) | SUPERSEDED | This IS the run behind the now-dead "shift12 6.3% MDE" headline (spliced lpdid wild reject005=0.058, matching CLAUDE.md's "SHIFT12 BEATS RAMP75" table exactly). CLAUDE.md: "the 6.3% figure is dead: it was the mislabelled estimand." Superseded by `lpdid_shift12_gate_ewatt`/`_vwatt`. | yes |
+| `lpdid_shift12_gate_vwatt` | 2026-08-24 17:24 | `power_lpdid_shift12_gate_vwatt.yml` | state / shift12 / **vwatt** (NV excluded) | LIVE | 2,000-rep gate; matches CLAUDE.md's vwatt gate exactly: spliced wild 0.0515 PASS, postcovid wild 0.0615 PASS, SE/SD 1.14. Directly cited as the vwatt gate. | no |
+| `lpdid_shift12_gate_vwatt_run.log` | 2026-08-24 | — | — | DEAD | Ancillary run log. | yes |
+| `lpdid_shift12_mde_ewatt` | 2026-08-24 17:11 | `power_lpdid_shift12_mde_ewatt.yml` | state / shift12 / **ewatt** (NV excluded) | LIVE | 300-rep MDE run behind CLAUDE.md's "corrected shift12 spliced wild MDE 0.115" and "postcovid wild 0.240" figures. | no |
+| `lpdid_shift12_mde_ewatt_run.log` | 2026-08-24 | — | — | DEAD | Ancillary run log. | yes |
+| `lpdid_shift12_mde_noNV` | 2026-08-21 19:28 | `power_lpdid_shift12_mde_noNV.yml` | state / shift12 / — (cellsize weights) | SUPERSEDED | Companion 300-rep MDE run to `lpdid_shift12_gate_noNV`, same dead-cellsize-estimand issue (the "shift12 MDE 0.0628" figure CLAUDE.md flags dead). Superseded by `lpdid_shift12_mde_ewatt`/`_vwatt`. | yes |
+| `lpdid_shift12_mde_vwatt` | 2026-08-24 17:36 | `power_lpdid_shift12_mde_vwatt.yml` | state / shift12 / **vwatt** (NV excluded) | LIVE | 300-rep MDE run behind CLAUDE.md's "vwatt MDE spliced wild 0.0875 (CI 8.3–9.1%)" figure. | no |
+| `lpdid_shift12_mde_vwatt_run.log` | 2026-08-24 | — | — | DEAD | Ancillary run log. | yes |
+| `lpdid_wild_gate` | 2026-08-20 17:33 | `power_lpdid_wild_gate.yml` | state / online / — (NV **not** excluded, cellsize weights) | CONTAMINATED (NV) | No `exclude_states`; superseded by `lpdid_wild_gate_noNV`. | yes |
+| `lpdid_wild_gate_noNV` | 2026-08-21 17:04 | `power_lpdid_wild_gate_noNV.yml` | state / online / — (NV excluded, cellsize weights) | SUPERSEDED | NV-free but online-treat_def + cellsize weights (both superseded rules apply). Superseded by shift12 ewatt/vwatt gates. | yes |
+| `postcovid_maturation` | 2026-08-19 10:25 | `power_postcovid_maturation.yml` | state / maturation50 / — | CONTAMINATED (pre-rebuild panel) | Complete 300-rep run (`postcovid_legalization` vs `postcovid_maturation50` treat_defs), but level=state and dated before the 2026-08-20 01:26 rebuild. No post-rebuild re-run of the state-level maturation50 spec exists. | yes |
+| `postcovid_maturation_county` | 2026-08-19 11:07 | `power_postcovid_maturation_county.yml` | county / maturation50 / — (cellsize weights) | EXPLORATORY | County-level, immune to the panel rebuild; complete run comparing `postcovid_legalization` vs `postcovid_maturation50`. Embedded `lpdid` rows use pre-08-24 cellsize weights (stale for LP-DiD purposes) but this run isn't cited as a headline LP-DiD figure anywhere in CLAUDE.md — a maturation-timing heterogeneity probe, not superseded by anything specific. | no |
+| `postcovid_maturation_county_run.log` | 2026-08-19 | — | — | DEAD | Ancillary run log. | yes |
+| `postcovid_maturation_county_wild` | 2026-08-19 11:37 | `power_postcovid_maturation_county_wild.yml` | county / maturation50 / — (cellsize weights) | EXPLORATORY | Wild-bootstrap companion to `postcovid_maturation_county`; same disposition. | no |
+| `postcovid_maturation_county_wild_run.log` | 2026-08-19 | — | — | DEAD | Ancillary run log. | yes |
+| `postcovid_maturation_run.log` | 2026-08-19 | — | — | DEAD | Ancillary run log for the contaminated state-level `postcovid_maturation`. | yes |
+| `primary` | 2026-07-23 14:39 | `power_primary.yml` | county (headline unit per config comment) / online / — | DEAD | Directory contains only an empty `partials/` subfolder — zero scenario files were ever written. Run Ladder table lists status "partial (see below)" as of the CLAUDE.md snapshot, but on disk this is simply empty. | yes |
+| `sensitivity` | 2026-07-23 14:46 | `power_sensitivity.yml` | state / online (+ first_start_date variant) / — | DEAD | Empty `partials/` subfolder only. Run Ladder table: "not started." | yes |
+| `smoke` | 2026-08-10 21:56 | `power_smoke.yml` | county+state (2 scenarios: `headline_county_nb_step`, `state_nb_step`) / online / — | CONTAMINATED (pre-rebuild panel) | This is the Run Ladder's "smoke | run 12220717, 2026-08-10" record. Complete (`oc_summary.csv` present, did2s/twfe across 4 deltas) but its `state_nb_step` cell predates the 2026-08-20 01:26 rebuild; the county cell is immune but the run as a whole was purely a framework-validation smoke test, already superseded functionally by `cheap`/`primary`-scale runs. | yes |
+| `time_agg_covid_gates` | 2026-08-19 17:26 | `power_time_agg_covid_gates.yml` | state / online / — | LIVE | Task-flagged evidence class; `faster_mode=FALSE, safe_patches=TRUE` (correct CS path). This is the "Time Aggregation Does Not Fix CS; the COVID Splice Is What Breaks It" run — 13 cells (month/quarter/year × keep/drop/post × complete-periods variants), CS analytic 18.3%→24.7% across aggregation but 5.0% on the clean post-COVID monthly window. Directly cited by name in CLAUDE.md and in `quality_reports/time_agg_covid_calibration_memo_2026-08-19.md`. | no |
+| `time_agg_covid_gates_run.log` | 2026-08-19 15:37 | — | — | DEAD | Ancillary run log for the LIVE dir above. | yes |
+| `time_agg_covid_gates_run2.log` | 2026-08-19 17:17 | — | — | DEAD | Same. | yes |
+| `time_agg_covid_gates_run3_serial.log` | 2026-08-19 17:26 | — | — | DEAD | Same (serial-mode retry log). | yes |
+| `validation` | 2026-07-23 14:20 | framework self-test (BHNS-style engine validation, design doc §13) | state / synthetic S1 panel / — | EXPLORATORY | `validation_report.md` + `validation_results.csv`: PASS on all 4 engine checks (blindness assertion, forbidden-path guard, zero-delta identity, count-augmentation non-negativity) using a synthetic 30-state pseudo-treatment panel — not a scenario power result, an infrastructure self-test that stands on its own regardless of later panel/schedule/weighting fixes. | no |
+
+## Notable UNKNOWNs
+
+- **`boundary_B_2022_08`** — 3,501-row partial CSV with a `.done_reps` marker but no finalized `oc_summary.csv`/`mde_table.csv`/`failures.csv`. Genuinely ambiguous whether this was abandoned mid-run or just never re-invoked to finalize; the smoke-scale precursor `boundary_SMOKE` (10 reps, run_name also `boundary_b_2022_08`) suggests the full run was at least started in earnest. Recommend checking whether a finalize step (analogous to `county_cs_adaptive_run3_finalize.log`) was ever run before deciding DEAD vs re-finalizable.

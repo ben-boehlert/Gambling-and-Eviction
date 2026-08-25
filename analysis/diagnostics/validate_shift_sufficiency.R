@@ -126,7 +126,7 @@ source("R/power/summarize_operating_characteristics.R")
 # under output_blinded_power/cs_probe/partials, a primary run, etc.) without
 # editing this file. Defaults reproduce the original cheap-run analysis.
 INPUT_DIR  <- Sys.getenv("SHIFT_INPUT_DIR",
-                         "output_blinded_power/cheap/partials")
+                         "output_blinded_power/deprecated/cheap/partials")
 OUTPUT_DIR <- Sys.getenv("SHIFT_OUTPUT_DIR", "output/shift_validation")
 # Created HERE, not next to the final writes: loading_by_delta.csv is written
 # well before that point, so a fresh OUTPUT_DIR aborted the run partway. Latent

@@ -1,2 +1,0 @@
-method,n_states,n_obs,n_pre_periods,joint_test_type,joint_test_stat,joint_test_p,joint_reject,max_abs_pre_att,mean_abs_pre_att,overall_att,overall_se,headline
-TWFE_SunAb,27,1107,11,holm,26.411999774983986,2.885772862154444e-19,TRUE,0.4433469294180291,0.1328557445446154,NA,NA,TRUE

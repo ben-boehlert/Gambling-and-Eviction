@@ -1,2 +1,0 @@
-reduced_form_coef,reduced_form_se,first_stage_coef,first_stage_se,wald_ratio,wald_se_delta,iv_coef_feols,wald_iv_diff,note
--0.06554744186662677,0.12999569177049283,8.451587189374978,1.229571485191943,-0.007755636946990334,0.015422546127837822,-0.007755636946990307,-2.688821387764051e-17,wald_ratio should approximately equal iv_coef_feols

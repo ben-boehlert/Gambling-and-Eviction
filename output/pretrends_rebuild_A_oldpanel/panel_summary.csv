@@ -1,2 +1,0 @@
-n_states,n_treated,n_never_treated,n_cohorts,n_months,n_obs,min_date,max_date,coverage_threshold,outcome,treat_source,expected_treat_source,require_panel_treatment,requested_treat_date_col,resolved_treat_date_col
-26,17,9,16,91,2366,2016-01-01,2024-12-01,91,log1p_filings_count,file,NA,FALSE,online_start_date,online_start_date
