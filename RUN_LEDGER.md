@@ -305,6 +305,11 @@ items).
 
 ## Open items
 
+> **2026-08-25 (Ben):** mortgage-side items are PARKED — the project's focus is the
+> eviction side for now. Parked: UNKNOWNs 2, 4, 5, 6, 7 and the first two flagged
+> inconsistencies (mortgage power sim vs prose; mortgage pretrends NV re-run). They stay
+> listed so nothing is lost, but do not work them without a new instruction.
+
 ### The 9 UNKNOWNs
 
 1. **`annual_data_usefulness`** (`output/`) — no producing script found anywhere in the repo via grep of `analysis/`, `scripts/`, `R/`, `data_prep/`.
