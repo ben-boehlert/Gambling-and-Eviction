@@ -10,10 +10,10 @@ When searching for or evaluating eviction data sources (state AOC/court dashboar
 
 ## Key Entry Points
 
+- `FINDINGS.md` — current results (artifact-verified); `RUN_LEDGER.md` — run registry with statuses
 - `README.md` — repo overview and structure
-- `START_HERE.md` — navigation guide for the CS-DiD debugging work
-- `QUICK_START.md` — one-page reference for outputs and plots
 - `INSTALL_PACKAGES.R` — run first to install all R dependencies
+- NOTE (2026-08-25): this file predates the repo cleanup; where it conflicts with CLAUDE.md / FINDINGS.md / RUN_LEDGER.md, those win. Deprecated artifacts were moved per `MOVES.md`.
 
 ## Repository Structure
 
