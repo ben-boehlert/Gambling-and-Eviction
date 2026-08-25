@@ -37,7 +37,7 @@ Every state arm's δ=0 mean estimate is **positive**: the pseudo-null distributi
 
 ## 2. County-level
 
-**Shift12 county gate (NEW, 2026-08-25 — 2,000 reps, corrected weights, `lpdid_shift12_gate_county_vwatt`).** Run to test whether county estimation escapes the state arms' null bias. Wild is unavailable for the LP-DiD arm at county (boottest cannot do WLS with absorbed FEs), so LP-DiD is analytic-only here.
+**Shift12 county gate (NEW, 2026-08-25 — 2,000 reps, corrected weights, `lpdid_shift12_gate_county_vwatt` + `_ewatt`).** Run to test whether county estimation escapes the state arms' null bias. Wild is unavailable for the LP-DiD arm at county (boottest cannot do WLS with absorbed FEs), so LP-DiD is analytic-only here.
 
 | Arm | Window | Size (δ=0) | SE/SD | Null bias (÷SD) | Coverage | Clusters | Verdict |
 |---|---|---:|---:|---:|---:|---:|---|
@@ -45,12 +45,27 @@ Every state arm's δ=0 mean estimate is **positive**: the pseudo-null distributi
 | TWFE analytic | spliced | 0.0685 marginal | 0.92 | +0.003 | 0.931 | 17T/12C | use wild |
 | LP-DiD vwatt analytic | spliced | 0.1510 FAIL | 0.77 | +0.012 (+0.36 SD) | 0.849 | 17T/12C | no size-valid inference at county yet |
 | did2s analytic | spliced | 0.1112 FAIL | 0.65 | −0.004 (−0.08 SD) | 0.889 | 17T/12C | **fails size in-framework** (cf. 4% in the calibration harness) |
-| **TWFE + wild** | postcovid | **0.0460 PASS** | 0.68 | +0.003 (+0.03 SD) | — | 5T/9C | only size-valid arm in this window |
+| LP-DiD **ewatt** analytic | spliced | 0.1720 FAIL | 0.66 | +0.007 (+0.16 SD) | — | 17T/12C | worse-calibrated than vwatt at county |
+| did2s analytic (ewatt run) | spliced | 0.1205 FAIL | 0.63 | −0.002 (−0.05 SD) | — | 17T/12C | replicates the vwatt run's did2s failure |
+| TWFE + wild (ewatt run) | spliced | 0.0490 PASS | 0.90 | +0.003 (+0.12 SD) | — | 17T/12C | TWFE stability check — matches the vwatt run within MC noise |
+| **TWFE + wild** | postcovid | **0.0460 / 0.0440 PASS** | 0.68 | +0.003 (+0.03 SD) | — | 5T/9C | only size-valid arm in this window (vwatt / ewatt runs) |
+| LP-DiD ewatt analytic | postcovid | 0.3055 FAIL | 0.52 | −0.007 (−0.04 SD) | 0.695 | 5T/9C | worst-calibrated cell measured |
 | TWFE analytic | postcovid | 0.1610 FAIL | 0.68 | +0.003 | 0.839 | 5T/9C | — |
 | LP-DiD vwatt analytic | postcovid | 0.2785 FAIL | 0.55 | +0.004 (+0.03 SD) | 0.722 | 5T/9C | thin design (5 treated states) |
 | did2s analytic | postcovid | 0.2360 FAIL | 0.62 | −0.002 | 0.764 | 5T/9C | — |
 
-Convergence: 2.4% did2s failures spliced / 1.1% postcovid (Lapack `dgesdd`); LP-DiD and TWFE 100%.
+Convergence: 2.4–2.5% did2s failures spliced / 0.9–1.1% postcovid (Lapack `dgesdd`); LP-DiD and TWFE 100% in all four scenario-runs.
+
+**Both county configs are complete** (`_vwatt` and `_ewatt`, 2,000 reps × 2 windows each). Every county LP-DiD analytic cell fails size (0.151 / 0.172 spliced; 0.279 / 0.306 postcovid) with SE/SD 0.52–0.77; TWFE + wild passes all four (0.041–0.049).
+
+**The null-bias 2×2 (LP-DiD, spliced, δ=0, 2,000 reps each).** Both axes reduce the bias, and they compound:
+
+| | vwatt | ewatt |
+|---|---:|---:|
+| **state** | **+0.042 (+1.06 SD)** | +0.013 (+0.27 SD) |
+| **county** | +0.012 (+0.36 SD) | **+0.007 (+0.16 SD)** |
+
+State→county cuts it ~2–3.4×; vwatt→ewatt cuts it ~1.8–3.2×. The worst cell is the current recommended spec (state vwatt); the best is county ewatt — which has no usable inference arm, so it cannot be adopted on that basis alone. TWFE is stable across the two runs (+0.0027 vs +0.0032, size 0.0685 vs 0.0715), the intended check that only the LP-DiD knob moved (the runs are not rep-paired: `lpdid_weights` is hashed into `seed_rep`).
 
 **Reading:** county estimation **cuts the null bias ~3–4× but does not remove the mechanism** — LP-DiD 1.06 SD → 0.36 SD, TWFE 0.4 SD → 0.10 SD, with the LP-DiD:TWFE bias ratio (~4×) preserved at both levels. Consistent with the decomposition: the bias enters through *state-level* pseudo-adoption placement, which county disaggregation dilutes but does not break. County's real advantage here is calibration (TWFE-wild is both size-valid and near-unbiased in both windows); its cost is that the LP-DiD arm has no size-valid inference until wild-at-county is plumbed.
 
