@@ -10,6 +10,7 @@ This file describes the repo's **structure, data, and conventions**. It does not
 
 - **[FINDINGS.md](FINDINGS.md)** — current truth only: headline answers, the PAP decision table, calibration verdicts, standing design traps, open questions. Every number there is artifact-verified.
 - **[RUN_LEDGER.md](RUN_LEDGER.md)** — the run registry: every sim/pretrends/calibration/diagnostic run with status `LIVE / SUPERSEDED / CONTAMINATED / DEAD / EXPLORATORY / UNKNOWN`, config, vintage, and output path. Answers "has X been run, and can I cite it?"
+- **[ESTIMATOR_MATRIX.md](ESTIMATOR_MATRIX.md)** — the cross-cut view: estimator × spec → runs, results, and coverage gaps. Update together with the ledger.
 - **[docs/findings-archive/](docs/findings-archive/INDEX.md)** — the chronological findings/corrections history that used to live in this file, split by topic, preserved verbatim.
 - **[MOVES.md](MOVES.md)** — where the 2026-08-25 cleanup relocated every deprecated artifact (old → new paths).
 
