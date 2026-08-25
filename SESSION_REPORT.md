@@ -1591,3 +1591,31 @@ checkpoint at reduced concurrency (6 → 5 workers), no data lost.
 **Status:**
 - Done: registry, findings doc, CLAUDE.md slim, moves, audit
 - Pending (Ben): 9 UNKNOWN dirs to adjudicate (RUN_LEDGER Open items); FINDINGS §6 open questions; git-hygiene (branch reconciliation) deliberately out of scope
+
+## 2026-08-25 18:10 — County shift12 gates + null-bias diagnosis
+
+**Operations:**
+- New configs: `config/power_lpdid_shift12_gate_county_{vwatt,ewatt}.yml` (county shift12 size gates, corrected weights, 2,000 reps x 2 windows each). Both complete.
+- Null-bias decomposition: `analysis/diagnostics/nullbias_{verify_reconstruction,decomposition,decomposition_analysis}.R` -> `output/nullbias_decomposition/`, memo `quality_reports/nullbias_decomposition_2026-08-25.md`
+- Reaped 8 orphaned `future` workers (~290% CPU) left by crashed runs
+
+**Decisions:**
+- Did NOT trim estimators to save memory — `estimators` is hashed into scenario_id, would have orphaned 950 completed reps
+- Kept LP-DiD wild OFF at county (boottest cannot do WLS with absorbed FEs)
+
+**Results:**
+- County gate: TWFE+wild size-valid in all four scenario-runs (0.041–0.049); every county LP-DiD analytic cell FAILS (0.151/0.172 spliced, 0.279/0.306 postcovid); did2s fails in-framework (0.111–0.237) despite 4% in the calibration harness
+- Null-bias 2x2 (LP-DiD spliced): state vwatt +1.06 SD, state ewatt +0.27, county vwatt +0.36, county ewatt +0.16 — both axes compound; current recommended spec is the worst cell
+- Bias CAUSE: eligibility-constrained placement in `.assign_cohorts()` (adoption date correlates negatively with own trend slope in 4,000/4,000 draws; 62–64% of TWFE bias variance). Composition breaks + calendar timing ruled out.
+- Infrastructure: crashed masters orphan their workers, starving later runs (first diagnosis "memory leak" was WRONG — corrected in RUN_LEDGER)
+- `lpdid_anchor` default drifted to `event_clean`; pin `"event"` to reproduce the ewatt gate
+
+**Commits:**
+- `04d00b0` county vwatt gate + null-bias diagnosis integrated
+- `f9f23e4` corrected failure diagnosis (orphans, not leak)
+- `b067ed0` county ewatt gate complete
+
+**Status:**
+- Done: repo cleanup, RUN_LEDGER, FINDINGS, ESTIMATOR_MATRIX, county gates, bias diagnosis
+- Pending (Ben): PAP decision — recenter the null before size/MDE vs report bias alongside MDEs
+- Pending (queue): LDAM MDE; wild-at-county plumbing; TWFE staggered re-run; boundary_B finalize
