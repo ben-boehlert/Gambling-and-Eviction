@@ -33,6 +33,8 @@ Every state arm's δ=0 mean estimate is **positive**: the pseudo-null distributi
 
 **Consequences for the PAP.** The δ=0 distribution is the design's *reference null*, not a zero. (a) Power curves and MDEs are shifted by the bias for positive δ; (b) a real-data estimate near +0.04 on the state vwatt spec would be indistinguishable from the design artifact. The defensible, pre-registrable fix is to **recenter/bias-correct the null before computing size and MDE** (or stratify the gate by eligibility skew) rather than assume unbiasedness — this would change every number in the decision table, so it is a decision for Ben, not a silent adjustment. Censoring "churn states" is a no-op on this panel and should not be pursued.
 
+**Can it be fixed by resampling? No — tested 2026-08-26.** Randomizing the cohort fill order moves the date/trend correlation from −0.196 to −0.190; strict exchangeable (uniform) sampling is infeasible in 300/300 draws; common support is 7 states against 21 treated slots. The skew comes from the eligibility structure (pseudo-adoption date is pinned to coverage, corr 0.58), not from the fill heuristic — so **recentering is the correct handling, not a patch**, and the earlier "fix the placement instead" recommendation is withdrawn. Residual caveat for the PAP: the real adoption process shows no such skew (−0.078 / +0.215, both n.s.), so the simulated null still does not match the real assignment mechanism — declare it, don't silently correct it. Memo: [`quality_reports/placement_exchangeability_test_2026-08-26.md`](quality_reports/placement_exchangeability_test_2026-08-26.md).
+
 **County comparison (§2): the bias shrinks ~3–4× but does not vanish** — consistent with a mechanism that enters through state-level placement and is diluted, not broken, by disaggregation.
 
 ## 2. County-level
@@ -112,7 +114,7 @@ State→county cuts it ~2–3.4×; vwatt→ewatt cuts it ~1.8–3.2×. The worst
 4. **County LP-DiD MDE still unrun** — the 2026-08-17 attempt was abandoned at batch 5/12 (`lpdid_mde_county`, online treat_def + retired weights); the new county gate is δ=0 only. Blocked behind gap 2 in any case.
 5. **TWFE staggered power sim stale** (pre-schedule-repair); its old headline MDE cannot be cited until re-run.
 6. **Postcovid window is inference-fragile.** At state, TWFE analytic is not size-valid (0.078–0.097), leaving only LP-DiD wild arms. At county, TWFE-wild IS size-valid in both windows (0.041 spliced / 0.046 postcovid) while every analytic arm fails badly (0.16–0.28).
-7. **Null bias — DIAGNOSED, decision pending** (§1 caveat; memo `quality_reports/nullbias_decomposition_2026-08-25.md`). Cause is eligibility-constrained placement in `.assign_cohorts()`. **Open decision for Ben:** recenter the null before computing size/MDE (changes every decision-table number) vs. report MDEs alongside uncorrected null bias.
+7. **Null bias — diagnosed, unfixable by resampling, decision pending.** Cause is the eligibility structure (not the fill heuristic — tested 2026-08-26: exchangeable placement infeasible 300/300, common support 7 states vs 21 slots). **Open decision:** recenter the null before computing size/MDE — which is now the recommended handling and would raise MDEs by roughly the bias (vwatt ~0.0875 → ~0.13, likely reversing the vwatt-over-ewatt ranking) — vs. report MDEs alongside uncorrected bias.
 8. **`boundary_B_2022_08` unfinalized** — 3,501 reps of finished work awaiting an aggregation step.
 
 ---

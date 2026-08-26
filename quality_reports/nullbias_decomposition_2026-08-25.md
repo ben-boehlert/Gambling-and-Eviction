@@ -1,3 +1,10 @@
+> **PARTIALLY SUPERSEDED 2026-08-26.** The finding that placement is non-exchangeable stands, but the
+> attribution to `.assign_cohorts()`'s scarcest-first ORDERING does not: randomizing the fill order moves the
+> date/trend correlation by 0.006 (−0.196 → −0.190). The cause is the ELIGIBILITY STRUCTURE (common support is
+> 7 states against 21 slots; strict exchangeable sampling fails 300/300). Consequently the memo's recommended
+> fix — repair the placement rather than recenter — is withdrawn. See
+> `quality_reports/placement_exchangeability_test_2026-08-26.md`.
+
 # Null-bias decomposition: why the state-level D1 arms show +0.042 (vwatt) / +0.013 (ewatt) / +0.021–0.025 (twfe) at δ=0
 
 **Date:** 2026-08-25

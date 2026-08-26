@@ -85,37 +85,89 @@ if (!exists("eviction_state_name_to_abb", mode = "function")) {
 
 #' Assign cohorts to eligible states without replacement (shared by D1/D3/D4)
 #'
-#' Cohorts are filled in ascending order of eligible-state count (scarcest
-#' first) so that tight cohorts are not starved by earlier draws. Returns NULL
-#' on infeasibility unless \code{error = TRUE}.
+#' @param placement Cohort-fill rule.
+#'   \describe{
+#'     \item{\code{"scarcest"}}{Historical default. Cohorts are filled in
+#'       ascending order of eligible-state count (scarcest first) so that tight
+#'       cohorts are not starved by earlier draws. This is DETERMINISTIC in the
+#'       cohort order, which routes coverage-constrained states to particular
+#'       cohort dates and makes assignment NON-EXCHANGEABLE: the pseudo-adoption
+#'       date correlates negatively with a state's own outcome trend in 4,000 of
+#'       4,000 draws examined, producing the positive delta = 0 null bias
+#'       documented in quality_reports/nullbias_decomposition_2026-08-25.md.
+#'       Kept as the default so every pre-2026-08-26 run reproduces exactly.}
+#'     \item{\code{"random_order"}}{Fill cohorts in a RANDOM order, restarting
+#'       on infeasibility. Breaks the systematic scarcest-first skew while
+#'       keeping acceptance high. Not exactly uniform over feasible assignments.}
+#'     \item{\code{"uniform"}}{Strict rejection sampling: draw a uniformly
+#'       random assignment of sum(counts) pool states to cohort slots, keep it
+#'       only if every assigned state is eligible for its own cohort. Exactly
+#'       uniform over feasible assignments, hence exchangeable by construction —
+#'       but acceptance can be very low when eligibility binds.}
+#'   }
+#' @param max_tries Restart/rejection budget for the non-default rules.
+#' Returns NULL on infeasibility unless \code{error = TRUE}.
 #' @keywords internal
 .assign_cohorts <- function(dates, counts, pool, cov, min_pre, min_post,
-                            error = TRUE, label = "assignment") {
+                            error = TRUE, label = "assignment",
+                            placement = c("scarcest", "random_order", "uniform"),
+                            max_tries = 200L) {
+  placement <- match.arg(placement)
   K <- length(dates)
   elig_all <- lapply(seq_len(K), function(k)
     .eligible_states(pool, dates[k], cov, min_pre, min_post))
-  ord <- order(vapply(elig_all, length, integer(1)), dates)
 
-  used <- character(0)
-  assigned <- tibble(state_abb = character(0), pseudo_g = as.Date(character(0)))
-  for (k in ord) {
-    elig <- setdiff(elig_all[[k]], used)
-    need <- counts[k]
-    if (length(elig) < need) {
-      if (error) {
-        stop(label, " infeasible: cohort at ", dates[k], " needs ", need,
-             " eligible state(s) but only ", length(elig), " available ",
-             "(min_pre = ", min_pre, ", min_post = ", min_post, ").",
-             call. = FALSE)
-      }
-      return(NULL)
+  # One greedy pass over cohorts in the supplied order. Row order and RNG
+  # consumption match the pre-2026-08-26 implementation exactly.
+  .fill <- function(ord) {
+    used <- character(0)
+    out  <- list()
+    for (k in ord) {
+      elig <- setdiff(elig_all[[k]], used)
+      need <- counts[k]
+      if (length(elig) < need) return(NULL)
+      pick <- if (length(elig) == need) elig else sample(elig, need)
+      out[[length(out) + 1L]] <- tibble(state_abb = pick, pseudo_g = dates[k])
+      used <- c(used, pick)
     }
-    pick <- if (length(elig) == need) elig else sample(elig, need)
-    assigned <- bind_rows(assigned,
-                          tibble(state_abb = pick, pseudo_g = dates[k]))
-    used <- c(used, pick)
+    bind_rows(out)
   }
-  assigned
+
+  res <- NULL
+  if (placement == "scarcest") {
+    res <- .fill(order(vapply(elig_all, length, integer(1)), dates))
+
+  } else if (placement == "random_order") {
+    for (i in seq_len(max_tries)) {
+      res <- .fill(sample.int(K))
+      if (!is.null(res)) break
+    }
+
+  } else {
+    total <- sum(counts)
+    slot_k <- rep(seq_len(K), times = counts)
+    for (i in seq_len(max_tries)) {
+      res <- NULL
+      if (length(pool) < total) break
+      pick <- sample(pool, total)
+      ok <- all(vapply(seq_along(pick), function(j)
+        pick[j] %in% elig_all[[slot_k[j]]], logical(1)))
+      if (ok) {
+        res <- tibble(state_abb = pick, pseudo_g = dates[slot_k])
+        break
+      }
+    }
+  }
+
+  if (is.null(res)) {
+    if (error) {
+      stop(label, " infeasible under placement = ", placement,
+           " (min_pre = ", min_pre, ", min_post = ", min_post, ").",
+           call. = FALSE)
+    }
+    return(NULL)
+  }
+  res
 }
 
 #' Generate a pseudo-treatment schedule
@@ -149,9 +201,12 @@ make_pseudo_schedule <- function(design = c("D1", "D2", "D3", "D4"),
                                  panel, real_schedule, treat_def,
                                  min_pre = 12L, min_post = 6L, seed,
                                  template = c("national", "panel"),
-                                 never_treated = NULL) {
-  design   <- match.arg(design)
-  template <- match.arg(template)
+                                 never_treated = NULL,
+                                 placement = c("scarcest", "random_order",
+                                               "uniform")) {
+  design    <- match.arg(design)
+  template  <- match.arg(template)
+  placement <- match.arg(placement)
   if (missing(seed)) stop("`seed` is required for reproducibility.", call. = FALSE)
   set.seed(seed)
   min_pre  <- as.integer(min_pre)
@@ -213,7 +268,8 @@ make_pseudo_schedule <- function(design = c("D1", "D2", "D3", "D4"),
       dts <- (feasible_start %m+% months(so)) %m+% months(offs)
       res <- .assign_cohorts(dts, counts, pool = pool, cov = cov,
                              min_pre = min_pre, min_post = min_post,
-                             error = FALSE, label = label)
+                             error = FALSE, label = label,
+                             placement = placement)
       if (!is.null(res)) return(res)
     }
     stop(label, " infeasible: no template placement within the panel window ",
@@ -266,6 +322,7 @@ make_pseudo_schedule <- function(design = c("D1", "D2", "D3", "D4"),
       dts <- sort(feas_months[sample.int(length(feas_months), K,
                                          replace = TRUE)])
       res <- .assign_cohorts(dts, cohorts$n_states, pool = cov$state_abb,
+                             placement = placement,
                              cov = cov, min_pre = min_pre, min_post = min_post,
                              error = FALSE, label = "D3")
       if (!is.null(res)) { assigned <- res; break }
