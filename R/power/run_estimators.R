@@ -24,9 +24,9 @@
 #          (lowest horizon entering the pool, default 0), lpdid_anchor
 #          ("event_clean" default / "event" legacy / "launch" legacy; see the
 #          LP-DiD block below), lpdid_wild (wild
-#          cluster bootstrap arm, default FALSE in simulation - WLS forces
-#          boottest to dummy-expand the stacked time-cell factor, which is
-#          memory-unsafe on county panels; see .re_lpdid).
+#          cluster bootstrap arm, default FALSE in simulation; county-safe
+#          via the FWL engine — see the WILD ARM block above .re_lpdid),
+#          lpdid_wild_engine ("fwl" default / "dummy" legacy, test-only).
 #   ldam   Debiased linear autoregression (Antonelli, Rubinstein, Agniel et
 #          al., AOAS 2026; arXiv:2408.09012 eq. 3), with calendar-month time
 #          effects: Y_it = a_t + b*(Y_{i,t-1} - theta*A_{i,t-1}) + theta*A_it.
@@ -1065,11 +1065,21 @@ run_estimator <- function(panel_sim,
 # (analysis/main/lpdid_statepanel.R). A consecutive index would instead
 # silently difference across the gap.
 #
-# WILD ARM (spec$lpdid_wild, default FALSE): boottest() does not support WLS
-# with absorbed fixed effects, so the wild arm dummy-expands the stacked
-# time-cell factor (~1-2k levels on the state panel; memory-unsafe on county
-# panels — the same failure mode as the fe-expansion OOM of Della job
-# 12223288). Enable only for state-level runs.
+# WILD ARM (spec$lpdid_wild, default FALSE). boottest() does not support WLS
+# with absorbed fixed effects, so passing the weighted absorbed-FE fit makes
+# it dummy-expand the stacked time-cell factor (~1-2k levels; memory-unsafe
+# on county panels — the same failure mode as the fe-expansion OOM of Della
+# job 12223288). The default engine ("fwl", 2026-08-28) avoids that by using
+# the fact that every weight scheme is cell-constant (rw is a function of the
+# cell's Dbar alone): the WLS with absorbed cell FE is EXACTLY the unweighted
+# OLS of the sqrt(w)-scaled variables with the same absorbed cell FE, so
+# boottest() takes its exact fe= absorption path (the one .re_twfe uses with
+# fe = "id") — same estimates, residuals, and cluster scores draw-for-draw,
+# verified against the dummy path by the enumerated-draws equivalence test in
+# test-estimators.R. No WLS, no dense design matrix, county-safe.
+# spec$lpdid_wild_engine = "dummy" retains the legacy dummy-expansion path
+# for that equivalence test; it is not reachable from configs and should not
+# be used in production runs.
 #' Observation weights that select the LP-DiD estimand
 #'
 #' See the estimand block above for the FWL derivation. Every cell reaching
@@ -1255,11 +1265,54 @@ run_estimator <- function(panel_sim,
 
   if (wild && ok) {
     t1 <- Sys.time()
+    engine <- match.arg(as.character(sp$lpdid_wild_engine %||% "fwl"),
+                        c("fwl", "dummy"))
+    # The boottest param name differs by path; needed for pval extraction only
+    # through the wb object, so no state is carried out of the tryCatch.
     wb <- tryCatch(
-      suppressMessages(suppressWarnings(
-        fwildclusterboot::boottest(res$fit, param = "D_treat",
-                                   clustid = ~state_abb, B = 999L,
-                                   type = "rademacher"))),
+      suppressMessages(suppressWarnings({
+        if (identical(engine, "dummy")) {
+          # Legacy path: boottest() dummy-expands the absorbed cell factor
+          # internally (weights block its fe= absorption). Memory-unsafe on
+          # county panels; kept only for the fwl-equivalence unit test.
+          fwildclusterboot::boottest(res$fit, param = "D_treat",
+                                     clustid = ~state_abb, B = 999L,
+                                     type = "rademacher")
+        } else {
+          # Every weight scheme is CELL-CONSTANT (rw is a function of the
+          # cell's Dbar alone — see .re_lpdid_weights; vwatt's constant is 1).
+          # A WLS with cell-constant weights and an absorbed cell FE is
+          # EXACTLY an unweighted OLS of the sqrt(w)-scaled variables with
+          # the same absorbed cell FE: within a cell, sqrt(w_c)*alpha_c is
+          # still one free constant, and the WLS normal equations, residuals,
+          # and cluster scores (w x e = (sqrt(w) x)(sqrt(w) e)) all coincide
+          # draw-for-draw. The scaled fit is plain OLS, so boottest() can
+          # absorb the cell factor via fe= (exact FE handling — the .re_twfe
+          # fe = "id" path) instead of dummy-expanding it: no WLS, no dense
+          # design matrix, county-safe. boottest requires numeric FE levels
+          # (see the .re_twfe note). Coefficient equality with the analytic
+          # WLS fit is asserted — it would break if a future weight scheme
+          # ever varied within cell.
+          sqw  <- sqrt(stack$rw)
+          sdat <- data.frame(ty = sqw * stack$dy,
+                             tD = sqw * stack$D_treat,
+                             cell_int = as.integer(stack$cell),
+                             state_abb = stack$state_abb,
+                             stringsAsFactors = FALSE)
+          fit_wb <- fixest::feols(ty ~ tD | cell_int, data = sdat,
+                                  cluster = ~state_abb, warn = FALSE,
+                                  notes = FALSE)
+          b <- as.numeric(stats::coef(fit_wb)["tD"])
+          if (!isTRUE(all.equal(b, att, tolerance = 1e-6))) {
+            stop(sprintf(
+              "lpdid wild (fwl path): scaled OLS %.6e != analytic WLS %.6e",
+              b, att))
+          }
+          fwildclusterboot::boottest(fit_wb, param = "tD",
+                                     clustid = ~state_abb, B = 999L,
+                                     type = "rademacher", fe = "cell_int")
+        }
+      })),
       error = function(e) structure(NA, err = conditionMessage(e)))
     rt1 <- as.numeric(difftime(Sys.time(), t1, units = "secs"))
     if (isTRUE(is.na(wb)) && !is.null(attr(wb, "err"))) {

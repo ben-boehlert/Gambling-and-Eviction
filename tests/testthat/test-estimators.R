@@ -408,3 +408,33 @@ test_that("reweighted first-lag LP-DiD reproduces CS at each horizon", {
   expect_gt(max(abs(arm("vwatt",    1L) - cs_att)), 1e-4)  # variance-weighted
   expect_gt(max(abs(arm("ewatt",    3L) - cs_att)), 1e-3)  # pre-mean-differenced
 })
+
+test_that("lpdid wild: fwl engine reproduces the legacy dummy-expansion engine", {
+  # 8 states => 2^8 = 256 < B = 999, so boottest() fully enumerates the
+  # Rademacher draws: both engines are deterministic and see the SAME draw
+  # set — any p-value gap is algebra, not simulation noise. delta = 0 keeps
+  # the p-values interior (multiples of 1/256) instead of piling up at ~0.
+  toy <- build_toy_est(seed = 555L, n_states = 8L)
+  inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",
+                       shape = "step", delta = 0, outcome = "y_log1p",
+                       seed = 3L)
+  for (w in c("ewatt", "vwatt")) {
+    new <- run_estimator(inj, "lpdid",
+                         spec = list(lpdid_weights = w, lpdid_wild = TRUE))
+    old <- run_estimator(inj, "lpdid",
+                         spec = list(lpdid_weights = w, lpdid_wild = TRUE,
+                                     lpdid_wild_engine = "dummy"))
+    nw <- new[new$inference == "wild", ]
+    ow <- old[old$inference == "wild", ]
+    expect_true(nw$converged, label = paste0(w, ": fwl wild converged"))
+    expect_true(ow$converged, label = paste0(w, ": dummy wild converged"))
+    # the wild arm reports the analytic point estimate in both engines
+    expect_equal(nw$att, new$att[new$inference == "analytic"][1],
+                 tolerance = 1e-10)
+    expect_equal(nw$att, ow$att, tolerance = 1e-10)
+    # engine equivalence: same p-value and CI on the enumerated draw set
+    expect_equal(nw$p, ow$p, tolerance = 1e-8)
+    expect_equal(c(nw$ci_lo, nw$ci_hi), c(ow$ci_lo, ow$ci_hi),
+                 tolerance = 1e-6)
+  }
+})

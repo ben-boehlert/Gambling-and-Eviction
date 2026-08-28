@@ -1,0 +1,78 @@
+# =============================================================================
+# power_lpdid_shift12_gate_county_ewatt_wildsmoke.yml — COUNTY wild SMOKE, EWATT.
+#
+# 300-rep smoke test of the county LP-DiD WILD arm, enabled 2026-08-28 by the
+# cell-scaled boottest engine in .re_lpdid (every lpdid weight scheme is
+# cell-constant, so the WLS is bootstrapped as sqrt(w)-scaled OLS with the
+# cell factor absorbed via boottest's fe= path — no dummy expansion, no OOM;
+# engine equivalence vs the legacy dummy path is unit-tested in
+# tests/testthat/test-estimators.R).
+#
+# SMOKE, NOT A GATE: 300 reps has MC SE ~0.013 at p=0.05 — enough to tell
+# "wild rescues size" (0.05-ish) from "wild fails like analytic" (0.15+),
+# NOT enough to classify near the 0.075 line (the ramp75 lesson). If the
+# smoke lands near the line, escalate to the 2,000-rep gate config.
+#
+# Differences from power_lpdid_shift12_gate_county_ewatt.yml (the 2,000-rep
+# analytic gate this smoke rides alongside):
+#   - estimators: [lpdid] only (twfe/did2s already measured at 2,000 reps)
+#   - lpdid_wild: true (the point of the run)
+#   - n_reps: 300
+# base_seed is unchanged, so reps 1..300 simulate the SAME panels as the
+# first 300 reps of the 2,000-rep gate (paired comparison of analytic rows).
+# =============================================================================
+
+run_name: lpdid_shift12_gate_county_ewatt_wildsmoke
+
+exclude_states: [NV]
+
+schedule:   data/processed/shift12_schedule.csv
+
+# ---- Top-level defaults -----------------------------------------------------
+
+level:      county
+sample:     [S2]
+covid:      drop
+treat_def:  shift12_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+
+template:   panel
+
+effect_grid:  [0]
+
+estimators:   [lpdid]
+lpdid_wild:   true              # county wild via the cell-scaled fwl engine
+lpdid_weights: ewatt
+
+# ---- Execution --------------------------------------------------------------
+
+n_reps:     300
+base_seed:  20260723           # pairs rep-for-rep with the county/state gates
+mde_boot:   200
+
+alpha:      [0.1, 0.05, 0.01]
+
+min_pre:    12
+min_post:   6
+
+anticipation_months: 6
+
+# ---- Scenario families ------------------------------------------------------
+
+scenarios:
+
+  # A. Spliced panel (the standard framework window).
+  - name: gate_county_spliced
+    covid: drop
+
+  # B. Clean post-COVID window: 5 treated / 9 control clusters — read as a
+  #    probe; even valid wild inference may be unreliable this thin.
+  - name: gate_county_postcovid
+    covid: post
