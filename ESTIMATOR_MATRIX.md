@@ -39,7 +39,7 @@ Every state arm's δ=0 mean estimate is **positive**: the pseudo-null distributi
 
 ## 2. County-level
 
-**Shift12 county gate (NEW, 2026-08-25 — 2,000 reps, corrected weights, `lpdid_shift12_gate_county_vwatt` + `_ewatt`).** Run to test whether county estimation escapes the state arms' null bias. Wild is unavailable for the LP-DiD arm at county (boottest cannot do WLS with absorbed FEs), so LP-DiD is analytic-only here.
+**Shift12 county gate (NEW, 2026-08-25 — 2,000 reps, corrected weights, `lpdid_shift12_gate_county_vwatt` + `_ewatt`).** Run to test whether county estimation escapes the state arms' null bias. Wild was unavailable for the LP-DiD arm at county when these gates ran (boottest cannot do WLS with absorbed FEs), so LP-DiD is analytic-only in this table; the 2026-08-28 cell-scaled engine has since unlocked it — see the wild smoke block below.
 
 | Arm | Window | Size (δ=0) | SE/SD | Null bias (÷SD) | Coverage | Clusters | Verdict |
 |---|---|---:|---:|---:|---:|---:|---|
@@ -60,6 +60,17 @@ Convergence: 2.4–2.5% did2s failures spliced / 0.9–1.1% postcovid (Lapack `d
 
 **Both county configs are complete** (`_vwatt` and `_ewatt`, 2,000 reps × 2 windows each). Every county LP-DiD analytic cell fails size (0.151 / 0.172 spliced; 0.279 / 0.306 postcovid) with SE/SD 0.52–0.77; TWFE + wild passes all four (0.041–0.049).
 
+**County LP-DiD wild SMOKE (2026-08-28 — 300 reps, lpdid-only, `lpdid_shift12_gate_county_{vwatt,ewatt}_wildsmoke`).** First runs of the county wild arm, enabled by the cell-scaled boottest engine (commit 8790c52: every LP-DiD weight scheme is cell-constant, so the WLS bootstraps exactly as √w-scaled OLS through boottest's `fe=` path; engine equivalence vs the legacy dummy path is unit-tested on enumerated draws). EXPLORATORY — MC SE ≈ 0.013 at p=0.05; a 300-rep smoke cannot classify against the 0.075 line:
+
+| Arm | Window | Size (δ=0) | Analytic same-reps | Verdict |
+|---|---|---:|---:|---|
+| LP-DiD vwatt + wild | spliced | **0.033** | 0.187 | wild rescues size — consistent with the state pattern |
+| LP-DiD ewatt + wild | spliced | **0.060** | 0.167 | near-nominal; too close to the 0.075 line to classify at 300 reps |
+| LP-DiD vwatt + wild | postcovid | 0.103 | 0.290 | improves but likely still fails — 5 treated clusters |
+| LP-DiD ewatt + wild | postcovid | 0.090 | 0.343 | same reading |
+
+Wild converged 300/300 in all four cells; `base_seed` is shared with the 2,000-rep gates, so the analytic columns are the same simulated panels as those gates' first 300 reps (spliced analytic 0.187/0.167 vs 0.151/0.172 at 2,000 reps — consistent within MC noise). **Next step before citing:** promote the spliced cells to a 2,000-rep gate (flip `lpdid_wild: true` in the full-rep county configs under a fresh `run_name`).
+
 **The null-bias 2×2 (LP-DiD, spliced, δ=0, 2,000 reps each).** Both axes reduce the bias, and they compound:
 
 | | vwatt | ewatt |
@@ -69,7 +80,7 @@ Convergence: 2.4–2.5% did2s failures spliced / 0.9–1.1% postcovid (Lapack `d
 
 State→county cuts it ~2–3.4×; vwatt→ewatt cuts it ~1.8–3.2×. The worst cell is the current recommended spec (state vwatt); the best is county ewatt — which has no usable inference arm, so it cannot be adopted on that basis alone. TWFE is stable across the two runs (+0.0027 vs +0.0032, size 0.0685 vs 0.0715), the intended check that only the LP-DiD knob moved (the runs are not rep-paired: `lpdid_weights` is hashed into `seed_rep`).
 
-**Reading:** county estimation **cuts the null bias ~3–4× but does not remove the mechanism** — LP-DiD 1.06 SD → 0.36 SD, TWFE 0.4 SD → 0.10 SD, with the LP-DiD:TWFE bias ratio (~4×) preserved at both levels. Consistent with the decomposition: the bias enters through *state-level* pseudo-adoption placement, which county disaggregation dilutes but does not break. County's real advantage here is calibration (TWFE-wild is both size-valid and near-unbiased in both windows); its cost is that the LP-DiD arm has no size-valid inference until wild-at-county is plumbed.
+**Reading:** county estimation **cuts the null bias ~3–4× but does not remove the mechanism** — LP-DiD 1.06 SD → 0.36 SD, TWFE 0.4 SD → 0.10 SD, with the LP-DiD:TWFE bias ratio (~4×) preserved at both levels. Consistent with the decomposition: the bias enters through *state-level* pseudo-adoption placement, which county disaggregation dilutes but does not break. County's real advantage here is calibration (TWFE-wild is both size-valid and near-unbiased in both windows); its cost — no size-valid LP-DiD inference — is now provisionally lifted by the wild smoke above, pending the full-rep gate.
 
 ### Earlier county work
 
@@ -109,7 +120,7 @@ State→county cuts it ~2–3.4×; vwatt→ewatt cuts it ~1.8–3.2×. The worst
 ## 5. Coverage gaps (the PAP to-do list this matrix exposes)
 
 1. **LDAM has gates but no MDE** — the only size-valid state arm missing from the MDE comparison. If its jackknife MDE lands under 0.0875, the recommended spec changes.
-2. **Wild-at-county for LP-DiD is unbuilt** — boottest cannot do WLS with absorbed fixed effects, so the county LP-DiD arm has no size-valid inference (analytic size 0.151 spliced / 0.279 postcovid). vwatt is unweighted OLS so wild may be plumbable there; ewatt is not without new machinery.
+2. **Wild-at-county for LP-DiD: BUILT 2026-08-28** (cell-scaled boottest engine, commit 8790c52; smoke: spliced wild 0.033 vwatt / 0.060 ewatt at 300 reps). Remaining gap: the 2,000-rep county wild gate has not run — the smoke is EXPLORATORY and cannot classify ewatt against the 0.075 line.
 3. **County did2s power never completed at production scale** — the county workhorse's MDE rests on older simulations outside the blinded framework.
 4. **County LP-DiD MDE still unrun** — the 2026-08-17 attempt was abandoned at batch 5/12 (`lpdid_mde_county`, online treat_def + retired weights); the new county gate is δ=0 only. Blocked behind gap 2 in any case.
 5. **TWFE staggered power sim stale** (pre-schedule-repair); its old headline MDE cannot be cited until re-run.

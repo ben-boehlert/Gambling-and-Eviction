@@ -1561,3 +1561,86 @@ checkpoint at reduced concurrency (6 → 5 workers), no data lost.
 **Status:**
 - Done: full three-way gate+MDE ladder, CLAUDE.md, diagnostics, tests
 - Pending: Ben's estimand choice for the PAP; the `.re_prep` CS splice-bridging issue (flagged, separate work)
+
+## 2026-08-25 12:35 — Repo cleanup: run ledger, findings doc, CLAUDE.md slim, deprecation moves
+
+**Operations:**
+- Built `RUN_LEDGER.md` (registry of all runs w/ statuses) from 4 parallel-agent inventories in `quality_reports/cleanup_2026-08-25/` (output/ 89 entries, output_blinded_power/ 92, config/ 49, run history 43 rows)
+- Wrote `FINDINGS.md` (current-truth only; every number artifact-verified) and `MOVES.md` (150 recorded moves)
+- Moved 48 output/ dirs + 63 blinded-power entries + 18 root relics to deprecated/; 8 reference PDFs copied to Literature/ (originals deprecated); 12 LIVE-run logs moved inside their run dirs; +1 late move (cheap_power_sim, audit-overturned)
+- CLAUDE.md slimmed 1,159 → ~195 lines; history split verbatim (sed line ranges) into `docs/findings-archive/` (12 topic files + INDEX); pre-slim copy at `deprecated/CLAUDE_2026-08-25_pre-slim.md`
+- Opus audit (10 findings) → all fixed
+
+**Decisions:**
+- Orchestration per model-routing: Fable orchestrated, Sonnet executed, Opus audited
+- Status vocabulary LIVE/SUPERSEDED/CONTAMINATED/DEAD/EXPLORATORY/UNKNOWN; UNKNOWN never guessed (9 flagged for Ben)
+- Maintenance rules added to CLAUDE.md: ledger row per run, FINDINGS update on LIVE change, dated archive files for corrections, deprecate-by-move, vintage check before pairing
+
+**Results:**
+- Audit BLOCKER caught & fixed: FINDINGS PAP table had post-COVID SE/SDs (0.81/0.98) pasted into spliced rows; artifact values are 0.67 (ewatt) / 1.02–1.04 (TWFE)
+- `cheap_power_sim` overturned LIVE → CONTAMINATED (pre-rebuild state panel; named in the old contaminated list)
+- 29→28 LIVE runs; 57 stale ledger links repaired after moves; 7-state court-data table restored to archive; 4 dropped TO DO items restored
+- Pre-existing unit-mix documented: +9.1% headline's "+17.5%" CI bound is the raw log endpoint (exponentiated: +19.1%)
+
+**Commits:**
+- `c3471e5` Pre-cleanup snapshot
+- `b791dc0` Cleanup phase 1: ledger, findings, moves
+- `8937853` Cleanup phase 2: CLAUDE.md slim + archive
+- (this commit) Cleanup phase 3: Opus audit fixes
+
+**Status:**
+- Done: registry, findings doc, CLAUDE.md slim, moves, audit
+- Pending (Ben): 9 UNKNOWN dirs to adjudicate (RUN_LEDGER Open items); FINDINGS §6 open questions; git-hygiene (branch reconciliation) deliberately out of scope
+
+## 2026-08-25 18:10 — County shift12 gates + null-bias diagnosis
+
+**Operations:**
+- New configs: `config/power_lpdid_shift12_gate_county_{vwatt,ewatt}.yml` (county shift12 size gates, corrected weights, 2,000 reps x 2 windows each). Both complete.
+- Null-bias decomposition: `analysis/diagnostics/nullbias_{verify_reconstruction,decomposition,decomposition_analysis}.R` -> `output/nullbias_decomposition/`, memo `quality_reports/nullbias_decomposition_2026-08-25.md`
+- Reaped 8 orphaned `future` workers (~290% CPU) left by crashed runs
+
+**Decisions:**
+- Did NOT trim estimators to save memory — `estimators` is hashed into scenario_id, would have orphaned 950 completed reps
+- Kept LP-DiD wild OFF at county (boottest cannot do WLS with absorbed FEs)
+
+**Results:**
+- County gate: TWFE+wild size-valid in all four scenario-runs (0.041–0.049); every county LP-DiD analytic cell FAILS (0.151/0.172 spliced, 0.279/0.306 postcovid); did2s fails in-framework (0.111–0.237) despite 4% in the calibration harness
+- Null-bias 2x2 (LP-DiD spliced): state vwatt +1.06 SD, state ewatt +0.27, county vwatt +0.36, county ewatt +0.16 — both axes compound; current recommended spec is the worst cell
+- Bias CAUSE: eligibility-constrained placement in `.assign_cohorts()` (adoption date correlates negatively with own trend slope in 4,000/4,000 draws; 62–64% of TWFE bias variance). Composition breaks + calendar timing ruled out.
+- Infrastructure: crashed masters orphan their workers, starving later runs (first diagnosis "memory leak" was WRONG — corrected in RUN_LEDGER)
+- `lpdid_anchor` default drifted to `event_clean`; pin `"event"` to reproduce the ewatt gate
+
+**Commits:**
+- `04d00b0` county vwatt gate + null-bias diagnosis integrated
+- `f9f23e4` corrected failure diagnosis (orphans, not leak)
+- `b067ed0` county ewatt gate complete
+
+**Status:**
+- Done: repo cleanup, RUN_LEDGER, FINDINGS, ESTIMATOR_MATRIX, county gates, bias diagnosis
+- Pending (Ben): PAP decision — recenter the null before size/MDE vs report bias alongside MDEs
+- Pending (queue): LDAM MDE; wild-at-county plumbing; TWFE staggered re-run; boundary_B finalize
+
+## 2026-08-28 12:34 — County LP-DiD wild plumbing + 300-rep smoke
+
+**Operations:**
+- New wild engine in `R/power/run_estimators.R` (.re_lpdid): every LP-DiD weight scheme is cell-constant, so the WLS with absorbed cell FE is exactly unweighted OLS of sqrt(w)-scaled variables with the same FE — boottest now takes its fe= absorption path (the .re_twfe fe="id" trick); no dummy expansion, county-safe. Legacy path kept as test-only `lpdid_wild_engine: "dummy"`.
+- Equivalence unit test (test-estimators.R): on enumerated Rademacher draws (8 states, 2^8 < B) the new engine reproduces legacy p-values/CIs EXACTLY, ewatt + vwatt. First attempt (fixed-projection FWL) was caught by this test at a 2/256-draw discrepancy and discarded.
+- Smoke configs + runs: `config/power_lpdid_shift12_gate_county_{vwatt,ewatt}_wildsmoke.yml` (300 reps, lpdid-only, both windows, base_seed shared with the 2,000-rep gates). Both complete, wild converged 300/300.
+- RUN_LEDGER (2 EXPLORATORY rows), ESTIMATOR_MATRIX (smoke block, gap #2 closed), FINDINGS §2 (new smoke paragraph) updated.
+
+**Decisions:**
+- Cell-scaling over hand-rolled WCR or WildBootTests.jl — exact vs legacy engine, no new dependencies.
+- 300-rep smoke, not 2,000-rep gate — Ben asked for fast preliminary numbers; smoke marked EXPLORATORY everywhere.
+
+**Results:**
+- Spliced wild size: vwatt 0.033, ewatt 0.060 (analytic same-reps 0.187 / 0.167) — wild rescues the spliced window, matching the state pattern; ewatt too close to the 0.075 line to classify at 300 reps.
+- Postcovid wild: 0.103 / 0.090 (analytic 0.290 / 0.343) — improves but likely still fails at 5 treated clusters.
+- CLAUDE.md drift noted: `run_from_config()` does not exist; real entry is `run_scenario_grid()` via scripts/run_power_*.sh.
+
+**Commits:**
+- `8790c52` County-safe LP-DiD wild engine: cell-scaled OLS through boottest fe= path
+- (next) smoke results + ledger/matrix/findings updates
+
+**Status:**
+- Done: engine, tests, smoke runs, doc updates
+- Pending: 2,000-rep county wild gate (flip lpdid_wild in the full-rep county configs, fresh run_name); Ben's PAP estimand/recentering decisions

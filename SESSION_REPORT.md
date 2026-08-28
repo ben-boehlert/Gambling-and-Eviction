@@ -1619,3 +1619,28 @@ checkpoint at reduced concurrency (6 → 5 workers), no data lost.
 - Done: repo cleanup, RUN_LEDGER, FINDINGS, ESTIMATOR_MATRIX, county gates, bias diagnosis
 - Pending (Ben): PAP decision — recenter the null before size/MDE vs report bias alongside MDEs
 - Pending (queue): LDAM MDE; wild-at-county plumbing; TWFE staggered re-run; boundary_B finalize
+
+## 2026-08-28 12:34 — County LP-DiD wild plumbing + 300-rep smoke
+
+**Operations:**
+- New wild engine in `R/power/run_estimators.R` (.re_lpdid): every LP-DiD weight scheme is cell-constant, so the WLS with absorbed cell FE is exactly unweighted OLS of sqrt(w)-scaled variables with the same FE — boottest now takes its fe= absorption path (the .re_twfe fe="id" trick); no dummy expansion, county-safe. Legacy path kept as test-only `lpdid_wild_engine: "dummy"`.
+- Equivalence unit test (test-estimators.R): on enumerated Rademacher draws (8 states, 2^8 < B) the new engine reproduces legacy p-values/CIs EXACTLY, ewatt + vwatt. First attempt (fixed-projection FWL) was caught by this test at a 2/256-draw discrepancy and discarded.
+- Smoke configs + runs: `config/power_lpdid_shift12_gate_county_{vwatt,ewatt}_wildsmoke.yml` (300 reps, lpdid-only, both windows, base_seed shared with the 2,000-rep gates). Both complete, wild converged 300/300.
+- RUN_LEDGER (2 EXPLORATORY rows), ESTIMATOR_MATRIX (smoke block, gap #2 closed), FINDINGS §2 (new smoke paragraph) updated.
+
+**Decisions:**
+- Cell-scaling over hand-rolled WCR or WildBootTests.jl — exact vs legacy engine, no new dependencies.
+- 300-rep smoke, not 2,000-rep gate — Ben asked for fast preliminary numbers; smoke marked EXPLORATORY everywhere.
+
+**Results:**
+- Spliced wild size: vwatt 0.033, ewatt 0.060 (analytic same-reps 0.187 / 0.167) — wild rescues the spliced window, matching the state pattern; ewatt too close to the 0.075 line to classify at 300 reps.
+- Postcovid wild: 0.103 / 0.090 (analytic 0.290 / 0.343) — improves but likely still fails at 5 treated clusters.
+- CLAUDE.md drift noted: `run_from_config()` does not exist; real entry is `run_scenario_grid()` via scripts/run_power_*.sh.
+
+**Commits:**
+- `8790c52` County-safe LP-DiD wild engine: cell-scaled OLS through boottest fe= path
+- (next) smoke results + ledger/matrix/findings updates
+
+**Status:**
+- Done: engine, tests, smoke runs, doc updates
+- Pending: 2,000-rep county wild gate (flip lpdid_wild in the full-rep county configs, fresh run_name); Ben's PAP estimand/recentering decisions
