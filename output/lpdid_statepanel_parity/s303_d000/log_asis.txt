@@ -1,0 +1,32 @@
+LP-DiD | treatment definition: shift12 | cell anchor: event_clean | PMD baseline: 6 month(s) | pooled event horizons: 0..12 
+Panel: 4 states (4 treated, 0 never-treated), 100 months 
+Dropped COVID window in calendar index: [243, 259] 
+
+=== TREATED-STATE ELIGIBILITY ===
+  Usable as switchers: 1 of 4 (TX) 
+  Excluded (no pre-treatment baseline in panel): AK, OK, UT 
+  ...of which legalized INSIDE the dropped COVID window:  
+
+Estimating event study...
+Error in `arrange()`:
+ℹ In argument: `..1 = event_time`.
+Caused by error:
+! object 'event_time' not found
+Backtrace:
+     ▆
+  1. ├─... %>% arrange(event_time)
+  2. ├─dplyr::arrange(., event_time)
+  3. ├─dplyr:::arrange.data.frame(., event_time)
+  4. │ └─dplyr:::arrange_rows(.data, dots = dots, locale = .locale)
+  5. │   ├─dplyr::mutate(data, `:=`("{name}", !!dot), .keep = "none")
+  6. │   └─dplyr:::mutate.data.frame(data, `:=`("{name}", !!dot), .keep = "none")
+  7. │     └─dplyr:::mutate_cols(.data, dplyr_quosures(...), by)
+  8. │       ├─base::withCallingHandlers(...)
+  9. │       └─dplyr:::mutate_col(dots[[i]], data, mask, new_columns)
+ 10. │         └─mask$eval_all_mutate(quo)
+ 11. │           └─dplyr (local) eval()
+ 12. └─base::.handleSimpleError(...)
+ 13.   └─dplyr (local) h(simpleError(msg, call))
+ 14.     └─rlang::abort(message, class = error_class, parent = parent, call = error_call)
+Execution halted
+FAILED /private/tmp/claude-501/-Users-bb1806-Documents-GitHub-Doc-Gambling-and-Eviction/7785b49c-25d6-4a74-a62d-1929fb81a507/scratchpad/parity/s303_d000 asis

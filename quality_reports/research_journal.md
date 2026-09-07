@@ -224,3 +224,17 @@ aggregation. Spliced + complete-periods = D1-infeasible.
 **Score:** Opus audit: 1 BLOCKER + 3 SHOULD-FIX + 6 NOTE, all resolved
 **Verdict:** Repo reorganized around a run registry + current-truth doc; 124 artifacts deprecated by move; CLAUDE.md no longer accumulates findings
 **Report:** quality_reports/cleanup_2026-08-25/ (inventories), quality_reports/plans/2026-08-25_repo-cleanup-run-ledger.md
+
+### 2026-09-04 — coder (feasibility probe)
+**Phase:** Execution
+**Target:** clean-anchor LP-DiD on state mortgage delinquency
+**Score:** N/A (no estimation performed)
+**Verdict:** Design is runnable in levels, not in logs; the binding choice is the COVID splice (24 / 13 / 7 contributing switchers under keep / eviction-window / forbearance-extended). Forbearance-extended is not viable.
+**Report:** `output/mortgage_lpdid_feasibility/`, script `analysis/diagnostics/mortgage_lpdid_feasibility_probe.R`
+
+### 2026-09-06 22:54 — coder (parity harness)
+**Phase:** Execution (pre-unblinding check)
+**Target:** `analysis/main/lpdid_statepanel.R` vs `R/power/run_estimators.R::.re_lpdid` under the headline PAP config
+**Score:** N/A (diagnostic)
+**Verdict:** Estimator identical to machine precision on six simulated panels; the script's sample construction (max-coverage balancing, 2024-12 date cap, no exclusion knob) breaks the spec and must be changed before the real run. Pre-trend block is empty under shift12.
+**Report:** `quality_reports/parity_check_lpdid_statepanel_2026-09-06.md`, `output/lpdid_statepanel_parity/`

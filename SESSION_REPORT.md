@@ -1644,3 +1644,372 @@ checkpoint at reduced concurrency (6 → 5 workers), no data lost.
 **Status:**
 - Done: engine, tests, smoke runs, doc updates
 - Pending: 2,000-rep county wild gate (flip lpdid_wild in the full-rep county configs, fresh run_name); Ben's PAP estimand/recentering decisions
+
+## 2026-08-28 14:20 — Calibration-sim audit: two silent sample-loss bugs found, fixed; re-runs pending
+
+**Operations:**
+- Audited `analysis/diagnostics/cs_calibration_multi_estimator_county.R` (source of LIVE FINDINGS §4 county verdicts) after Ben flagged recurring sim coding errors
+- Verified two bugs on synthetic known-truth panels; fixed 8 scripts (uncommitted): cs_calibration_multi_estimator{,_county,_mortgage}.R, permutation_placebo_real_data.R, power_simulation_cs.R, cheap_sims/00_common.R, pretrends_mortgage_delinquency.R, power_simulation_mortgage_delinquency.R
+- New diagnostic script `analysis/diagnostics/sunab_encoding_fix_rerun.R` (paired 50-seed SA re-run, bug vs fix) — was mid-run when session paused; wrote no output yet, relaunch needed
+
+**Decisions:**
+- sunab never-treated encoding standardized to g=0 (matches pretrends template + R/power) — NA encoding drops all never-treated rows (fixest silently removes NA-cohort obs; 30,024/91,384 county obs lost, SA SE halves when fixed: 0.051→0.022 on real data)
+- All att_gt call sites pinned to `faster_mode=FALSE` + double g — integer g under faster_mode=TRUE truncates the g==0→Inf recode to NA and drops every never-treated unit (did/R/pre_process_did2.R:132); clustervars documented as inert without bstrap=TRUE
+- County SA verdict (30%/0.51 "broken — skip") treated as SUSPENDED, not reversed, until corrected re-run lands
+
+**Results:**
+- Contaminated: county SA row (LIVE), state SA baseline (superseded), mortgage calibration (parked)
+- Clean/unaffected: R/power framework, pretrends template, CS adaptive gate — all PAP-relevant LP-DiD/TWFE/LDAM/did2s verdicts stand
+
+**Commits:**
+- none (fixes on disk, uncommitted by request-of-pause)
+
+**Status:**
+- Done: audit, root-cause verification, code fixes across 8 scripts, memory checkpoint (`sunab_attgt_encoding_bugs.md` has full resume checklist)
+- Pending: relaunch sunab_encoding_fix_rerun.R (~25 min); full corrected county calibration re-run (seeds reproduce exactly); deprecate old run artifacts + MOVES.md; FINDINGS §4 / RUN_LEDGER / ESTIMATOR_MATRIX / findings-archive correction doc; re-render fig4/fig5; commit
+
+## 2026-08-28 17:30 — Per-state basket rebuild (+NY/CO/SC/HI/MS) + h18-24 design probes
+
+**Operations:**
+- SD probes for the memo's mature-window LP-DiD (launch clock, h=18..24, ewatt): `config/power_lpdid_launch_h1824_sdprobe{,_pmd12}.yml`, run locally (analytic-only δ=0, ~90 s each)
+- `data_prep/rebuild_state_month_panel.R`: basket start now per state (each state's first reporting month), not global 2016-01; rebuild run
+- Configs `power_lpdid_launch_h1824_{gate,mde}_ewatt.yml` re-pointed to fresh `_p39` run_names; single-horizon h18 variants deprecated; `della_power_upload/` rebuilt with new panel + configs
+- Dead pre-basket gate partial moved to `output_blinded_power/deprecated/`; old panel vintage preserved in `data/raw/deprecated/`; MOVES/RUN_LEDGER/FINDINGS/CLAUDE.md updated (vintage boundary #6)
+
+**Decisions:**
+- Pooled h=18..24 (not open-ended 18+, not single h=18) — contributor pool collapses past 24
+- COVID drop window unchanged (2020-03..2021-07): end matches moratorium regime, not filings stabilization (~2022-04); extending would NA the mid-cohort pre-launch baselines
+- Panel rebuild done but NO sims launched on the 39-state panel yet (Ben: "don't run yet")
+
+**Results:**
+- SD probes (EXPLORATORY, pre-basket panel): mature-window design SD 0.111 vs shift12 0.049 → est. wild MDE ≈0.26; pmd=12 baseline averaging cuts to ≈0.17. The 11.5% shift12 MDE belonged to the legacy short-difference anchor
+- Rebuild adds CO/HI/MS/NY/SC (34→39 states; NY+CO treated); every pre-existing state-month unchanged bit-for-bit
+
+**Status:**
+- Done: rebuild, probes, configs, vintage bookkeeping
+- Pending: Della h1824 `_p39` gate+MDE runs (Ben to launch); null-recentering decision; `timing_covid_recovery_test.R` first run; memo text fixes (equation dates, 18-vs-24 censoring sentence)
+
+## 2026-08-28 17:35 — EWATT/VWATT equations rewritten to fit boss-explanation draft
+
+**Operations:**
+- Rewrote §§9–10 of tmp/lpdid_equation_bank/equations.md (EWATT/VWATT pooling weights) to match the Google Doc draft: launch clock, mature window h = 18–24 (per config/power_lpdid_launch_h1824_*.yml), pooled sum included so the draft's "our estimator, _" blank can be filled; all symbols defined in-place.
+- Rebuilt tmp/lpdid_equation_bank/LP_DiD_Equation_Bank_unsanitized.docx via pandoc (old copy → tmp/lpdid_equation_bank/deprecated/); render-verified in rendered_v5/.
+
+**Decisions:**
+- Kept EWATT/VWATT order and neutrality — strategy decision memo records the primary-estimand choice as unresolved; flagged the draft's "VWATT as primary" sentence for reconciliation.
+
+**Status:**
+- Done: draft-fitted weight equations, rebuilt docx.
+- Pending: Ben pastes equations into the Google Doc; fix "years"→"months" in draft EWATT prose; reconcile VWATT-primary sentence with the unresolved PAP choice.
+
+## 2026-08-28 18:05 — Memo equation sequence: Ohio 2×2 → general LP-DiD → weights (h = 12–24)
+
+**Operations:**
+- Updated tmp/lpdid_equation_bank/equations.md: §§9–10 weight windows moved 18–24 → 12–24 per Ben; appended memo-sequence §§22–23 (Ohio 2×2 with corrected dates; general launch-clock cell formula).
+- Rebuilt the docx (prior copy → deprecated/); rendered 4 paste-ready PNGs (eq22, eq23, eq09, eq10) in tmp/lpdid_equation_bank/.
+
+**Decisions:**
+- Ohio example anchored at h=22 (Nov 2024): draft's Nov 2023 is h=10 (outside window); NC exclusion requires h≥14 (NC online launch Mar 2024, verified in data/raw/sports_gambling_legalization_dates.csv); Nov 2024 matches the draft's existing BJS/did2s reference.
+- Baseline shown as P=3 (Oct–Dec 2022) matching the draft's toy model; pmd-12 alternative flagged, not imposed.
+
+**Status:**
+- Done: paste-ready sequence delivered.
+- Pending: Ben pastes into Google Doc; draft prose fixes (years→months, VWATT-primary vs unresolved memo choice, Ohio date update).
+
+## 2026-08-28 18:45 — Idaho gap, clean anchor, null-recentering implemented
+
+**Operations:**
+- ~10 SD probes (state/county, ewatt/vwatt, pmd variants, gap-tolerant, segment-constrained, noID) — all EXPLORATORY, ledger rows added
+- Estimator: `lpdid_pmd_min` (gap-tolerant baseline) + `lpdid_base_gapmax` (segment/no-straddle) knobs added, both probed and REJECTED as designs, default OFF
+- Null-recentering implemented per the 2026-08-25 memo: `summarize_oc()` emits `null_center` + `reject_rc_005`; every run now writes `mde_table_recentered.csv`; validated on LIVE ewatt run (0.115 → 0.124 recentered)
+- Formal Della configs created: `power_lpdid_shift12_{gate,mde}_{ewatt,vwatt}_noID.yml` (legacy anchor, ID fix) and `power_lpdid_shift12_clean_{gate,mde}_{ewatt,vwatt}.yml` (event_clean pmd12 — candidate primary); della_power_upload rebuilt
+
+**Results (all 300-rep probe estimates):**
+- IDAHO GAP: the 2026-08-19 "exclude ID here too" never reached any power config; LIVE table computed with ID in control pool. noID: legacy vwatt 8.75→~5.7%, ewatt 11.5→~9.4%, TWFE 16.3→~14.3%
+- CANDIDATE PRIMARY: shift12 event_clean pmd12 noID (pre-launch baseline, outcomes 12–24) — est. MDE ~9.6% (vwatt) / ~10.4% (ewatt); clean estimand at near-legacy power; legacy anchor's treated-months baseline retired as senseless
+- Mature-window h18–24 stays secondary (~15.6% vwatt); county level worse (panel lacks 8 KEEP_OLD states); null bias = placement artifact scaling with cell span, handled by recentering
+
+**Status:**
+- Done: diagnosis chain complete; all configs Della-ready
+- Pending (Ben): rsync + run clean gate/MDE pair on Della; MA series refresh via internal ETS; adaptive_mde.R recentering port; memo rewrite around clean anchor
+
+## 2026-08-28 18:25 — pmd-12 baseline in Ohio example; single-control 2×2; variable glossary
+
+**Operations:**
+- equations.md §22: Ohio example now Georgia-only control with 12-month calendar-2022 baseline (pmd 12); §3/§23/core-notation P=3 remnants → P=12; §§11–13 marked superseded; new §24 variable glossary (memo-ready prose).
+- Rebuilt docx (prior → deprecated/..._pre-2026-08-28-pmd12.docx); re-rendered eq22_ohio_2x2.png.
+
+**Status:**
+- Done: docx + image delivered with glossary text.
+- Pending: Ben pastes sequence + glossary into the Google Doc.
+
+## 2026-08-29 18:15 — Formal PAP numbers, vwatt sed incident, handoff
+
+**Operations:**
+- Della formal runs (via Ben, interactive RStudio): `lpdid_shift12_clean_{gate,mde}_ewatt_pmd6` — gate PASS (wild recentered 0.0396), **MDE recentered 0.127 [0.124–0.130]** (raw 0.0856) = new PAP headline; ledger + FINDINGS updated; artifacts on Della, rsync pending
+- vwatt incident: sed anchored `ewatt$` missed trailing-comment lines → three "vwatt" configs ran ewatt (Ben's 2026-08-29 Della run = bit-identical ewatt duplicate, scenario hash caught it). Configs fixed + audited (all 16 vwatt configs verified), bogus probe quarantined, MOVES entry; corrected vwatt run pending on Della
+- `timing_covid_recovery_test.R` first-ever run → LIVE, supportive (timing⊥trend p=0.70; ⊥COVID-shift p=0.28)
+- BHNS provenance check (paper in Literature/): they do NOT recenter ("accidental effects" kept as realism) — our recentering = disclosed deviation, PAP sentence drafted
+- Handoff: `quality_reports/HANDOFF_2026-08-29_pap_power_spec.md` (full state, queue, gotchas)
+
+**Status:**
+- Done: PAP primary spec formal + size-gated + recentered; ewatt/vwatt equivalence established (probe-level)
+- Pending: vwatt formal run; artifact rsync; memo doc fixes (Guo-vs-HLP citation!); MA ETS refresh; adaptive_mde recentering port; **commit the two-day session**
+
+## 2026-08-29 18:31 — vwatt companion results reviewed and logged
+
+**Operations:**
+- Reviewed Ben's Della paste for `lpdid_shift12_clean_{gate,mde}_vwatt_pmd6` against `quality_reports/HANDOFF_2026-08-29_pap_power_spec.md` §2
+- Verified the sed-bug tripwire: MDE scenario hash `Sac8e61abda` ≠ ewatt's `Sd61e18eba4` (local partials) — run is genuinely vwatt; config diff shows only `run_name` + `lpdid_weights` differ
+- RUN_LEDGER.md: two LIVE rows added; stale "Current PAP headline (VWATT)" legacy row marked SUPERSEDED
+- FINDINGS.md §2: vwatt-companion sentence replaced the "unrun" placeholder
+- ESTIMATOR_MATRIX.md: clean-anchor family added (ewatt headline row was missing too)
+
+**Results:**
+- Gate PASS (1,000 reps): lpdid wild raw 0.022 / recentered 0.0234; null center +0.031; SD(att) 0.0366; SE/SD 1.20
+- Recentered MDE 0.126 [0.123–0.130] vs ewatt 0.127 [0.124–0.130] — equivalence confirmed, within handoff's predicted 12.4–12.7 band; ewatt stays primary
+- Diagnosed TWFE drift vs ewatt run: scenario hash feeds the seed offset (`run_scenario_grid.R:358`), so ewatt/vwatt runs draw independent panels — MC noise, not a bug; comparison is unpaired
+- mde_postcovid companion scenario unrun (partials-only, `scenarios=1L`)
+
+**Status:**
+- Done: handoff queue item 1 (vwatt → ledger/FINDINGS/matrix)
+- Pending: artifact rsync (now incl. vwatt dirs); PAP equivalence sentence into the PAP draft; memo doc fixes; MA ETS refresh; adaptive_mde recentering port; commit the multi-day session
+
+## 2026-08-29 18:45 — Consolidated results doc + analytic-arm finding
+
+**Operations:**
+- Recomputed ewatt gate/MDE from complete local partials (`output_blinded_power/lpdid_shift12_clean_{gate,mde}_ewatt_pmd6/partials/`) — reproduce the ledger digit-for-digit, so local partials = the formal Della data
+- Created `quality_reports/power_results_2026-08-29_clean_anchor_formal_runs.md` — all 8 inference cells (2 weightings × 2 estimators × 2 inference arms), gate + raw/recentered MDE, provenance and hashes
+- FINDINGS.md §2 + ledger ewatt MDE row: added the analytic-arm numbers and decision-point flag
+
+**Results:**
+- NEW: LP-DiD analytic passes the gate in both weightings (ewatt 0.045/0.048, nearest nominal) with recentered MDE 0.117 [0.113–0.121] — ~1pp better than wild 0.127; literal gate→MDE rule would pick analytic over wild. Flagged for PAP-text resolution BEFORE unblinding, not decided.
+
+**Status:**
+- Pending: wild-vs-analytic PAP decision; size-adjusted power appendix column (~30 min, optional); rsync; commit
+
+## 2026-08-29 19:05 — Null-calibration literature check (ChatGPT search, verified)
+
+**Operations:**
+- Verified ChatGPT's candidate list (WebSearch + MNW-guide cross-ref); wrote `quality_reports/lit_check_null_calibration_2026-08-29.md`
+- MNW 2023 guide read earlier this session; notes in `quality_reports/power_results_2026-08-29_clean_anchor_formal_runs.md`
+
+**Results:**
+- Gap confirmed: no published DiD paper does recentered-placebo-null size calibration end-to-end; all components precedented
+- PAP citation chain: BHNS 2022 → Brewer–Crossley–Joyce 2018 (size-adjusted power/MDE in clustered DiD) → Schuemie et al. 2014 (nonzero empirical-null calibration); Shaikh–Toulis 2021 acknowledged (assignment-model alternative); Dench et al. 2024 = closest pre-registered applied precedent (diagnoses the problem, doesn't fix it)
+- Verified: Brewer et al. (via MNW refs), Schuemie 2014, Melo et al. 2026 (JPubE 262), Dench et al. 2024 (JPubE 234)
+
+**Status:**
+- Pending: fold chain into PAP power section; B=999→9999 decision; wild-vs-analytic decision; rsync; commit
+
+## 2026-08-29 19:40 — Size-adjusted MDE implemented (option 1)
+
+**Operations:**
+- Added `compute_mde_sizeadj()` to `R/power/summarize_operating_characteristics.R` (recentered + raw variants, bootstrap CI, optional `null_results` pooling); `run_scenario_grid.R` now writes `mde_table_sizeadj.csv` on full runs
+- Verified on local ewatt partials: (a) s>1 reproduces reject_rc_005 digit-for-digit in all 4 gate cells; (b) achieved δ=0 size 0.0473–0.0500 every cell; (c) calibration-noise check — within-run (300 draws) 0.102 vs gate-only (1,000) 0.116 → added pooling, headline uses 1,282–1,300 draws
+
+**Results:**
+- **Size-adjusted recentered MDE, lpdid wild: 0.110 [0.099–0.122]** (−1.7pp vs nominal-cutoff 0.127); analytic 0.108 — wild ≈ analytic at exact 5% size, so the wild/analytic gap was pure conservatism; largely dissolves the wild-vs-analytic decision point (keep wild + appendix column)
+- Documented: results doc (method + table), FINDINGS §2, ledger diagnostics row `sizeadj_mde_clean_ewatt_pmd6`
+
+**Status:**
+- Done: option 1 (size-adjusted appendix column) for ewatt
+- Pending: vwatt size-adjusted after partials rsync; `bash scripts/make_della_power_upload.sh` rebuild before next Della run (R/power changed); adaptive_mde port; B=9999 in real-data scripts; commit
+
+## 2026-09-03 14:55 — MD PDF refresh + panel series extension
+
+**Operations:**
+- Re-ran `data_prep/monthly_panel_expansion/01b_download_md_statistics_pdfs.R` (all 22 years; 2026 refetched live, 4.49 MB → 5.56 MB)
+- Re-ran `01c_parse_md_statistics_pdfs.R` → `data/raw/monthly_expansion/md_lt_county_month.csv` now 6,192 rows, 2005-01..2026-06
+- Wrote `data_prep/monthly_panel_expansion/07b_extend_md_in_panel.R` (new; idempotent, append-only)
+- Ran it: `data/raw/state_month_panel_with_treatment.csv` 3,897 → 3,904 rows
+- Backups: `data/raw/deprecated/state_month_panel_with_treatment_pre_md_extend_2026-09-03.csv`, `data/raw/monthly_expansion/deprecated/md_lt_county_month_pulled_2026-07-21.csv`, `data/raw/monthly_expansion/md_raw/statistics_pdfs/deprecated/Calendar_2026_pulled_2026-07-21.pdf`
+
+**Decisions:**
+- Did NOT write a new scraper — `01b_` already existed, ran clean, and covers 2005–2026. Verified rather than duplicated.
+- Wrote `07b_` instead of reusing `07_merge_md_into_panel.R` — the latter is one-shot (`stopifnot(!"MD" %in% panel$state_abb)`) and trims MD to the panel's extent at merge time, which is what clipped MD at 2025-11 back on 2026-07-23.
+- Append-only on the seam, with in-script assertions that every pre-existing row (MD and non-MD) is identical bit-for-bit.
+
+**Results:**
+- MD refresh was purely additive: 0 of the overlapping county-months changed value; one new month (2026-06).
+- MD in panel now 2012-01..2026-06 (was 2012-01..2025-11); +7 months, all post-treatment (treat_start 2022-11).
+- Caveat recorded: the added months sit in the panel's thin tail. Per-month state counts are 22 (2025-09), 6 (2025-10), 5 (2025-11), then 2 (2025-12..2026-06, MD + NC only). Both are treated, so these months carry no untreated comparison and contribute nothing to identification under any FE estimator.
+- Registered as vintage boundary 7 in `RUN_LEDGER.md`; `CLAUDE.md` vintage list updated. State-level runs need a fresh `run_name`.
+- Idempotency verified: second run appends nothing.
+
+**Commits:**
+- (uncommitted at time of writing)
+
+**Status:**
+- Done: MD PDFs current through 2026-06; parse current; panel extended; ledger + CLAUDE.md updated.
+- Pending: no estimation re-run performed — no LIVE result changed, so FINDINGS.md untouched. Any state-level re-run on this vintage needs a fresh `run_name`.
+
+## 2026-09-03 15:40 — Michigan JDW landlord/tenant PDF extraction
+
+**Operations:**
+- Downloaded `conditional-dismissals.pdf` (SCAO Judicial Data Warehouse, refresh date 6/1/2026) to `data/raw/michigan/`
+- Wrote `data_prep/parse_mi_jdw_lt_filings_pdf.py` (new; requires pdfplumber)
+- Produced `data/raw/michigan/mi_lt_statewide_week_year.csv` (392 cells, 53 weeks, complete) and `mi_lt_statewide_month_year.csv` (89 cells, 68 populated)
+- Documented both in `data/raw/michigan/README.md`
+
+**Decisions:**
+- Extracted the page-3 weekly TABLE as the primary target rather than reading the page-1 bar chart alone — the table is complete and self-validating; the chart labels only 65 of 89 bars.
+- Assigned bars by position within each month cluster, not by colour — the chart's legend gives 2019 and 2023 the SAME fill colour.
+- Rebuilt rotated bar labels from raw chars; `pdfplumber::extract_words()` reads them reversed (May-2020 "302" returned as "203"; palindromes 545/646 mask the bug).
+- Assigned weekly-table cells by right edge, not reading order, so blank cells cannot shift values into the wrong year column.
+- Derived 3 single-missing months (Jan 2020, Sep 2021, Jan 2026) by subtraction from published annual totals; left 21 cells empty where 2+ labels are missing. Never zero-filled.
+
+**Results:**
+- All validations pass: every weekly row sums to its printed Total; all 8 year columns sum to their printed annual totals and the grand total 1,090,431; every bar colour matches its legend position; 2019 and 2022 (fully labelled) sum exactly to their annual totals.
+- Weekly `week_month_bucket` is NOT a calendar month — of 65 comparable month-year cells, only 4 agree with the calendar-month chart (differences up to ~1,500 filings). Documented.
+- Series is STATEWIDE ONLY and on a smaller footprint than the annual county dashboard (excludes Berrien Co., Grand Rapids, Dearborn Hts, Center Line & Warren, Northern Macomb Co., Grandville & Walker), so it is not comparable to `mi_county_year_landlord_tenant_filings.csv` and cannot be allocated to counties.
+
+**Commits:**
+- (uncommitted)
+
+**Status:**
+- Done: extraction, validation, documentation.
+- Pending: not merged into any analysis panel — MI remains absent from the state-month panel, and this series' footprint differs from the county dashboard's. Merging is a design decision, not done here.
+
+## 2026-09-03 16:20 — Post-COVID trend parallelism test (Test C)
+
+**Operations:**
+- Wrote and ran `analysis/diagnostics/covid_trend_parallelism_test.R` -> `output/covid_trend_parallelism/`
+- Added LIVE ledger row `covid_trend_parallelism`
+
+**Decisions:**
+- Built it as a companion to `timing_covid_recovery_test.R` rather than editing that script — it tests the third piece (post-COVID SLOPE vs pre-COVID slope) that Tests A and B never measured.
+- Pre-treatment months only, lambda_t from never-treated states, so nothing measured can contain a treatment effect (blind-safe).
+- Used the LP-DiD configs' COVID window (2020-03-01..2021-07-31), not the older 2022-03 window in the companion script.
+- Report never-treated-only dispersion as the headline: treated states have a median of 25 post-COVID pre-treatment months vs 50, so their slope estimates carry extra estimation noise.
+
+**Results:**
+- No bias channel detected: slope change does not predict legalisation timing (p=0.483, n=11); treated-vs-never mean difference +0.144 log pts/yr (p=0.236). Consistent with Test A (p=0.70) and Test B (p=0.28), and with the same low-power caveat.
+- Large variance channel: among 13 never-treated states, SD of slope change 0.168 log pts/yr, SD of level shift 0.194 log pts.
+- Slope drift compounds with horizon: per-state straddle contamination 0.257 (h=12), 0.318 (h=18), 0.388 (h=24) log pts. At h=24 the slope channel (0.336) exceeds the level channel (0.194).
+- Total is ~3x the 0.127 recentered MDE, so the h=18..24 mature window is the worst case for straddle cells, not the best.
+
+**Status:**
+- Done: test written, run, ledger row added.
+- Pending: does not by itself decide the seg-vs-gaptol config choice — that needs the size/MDE comparison of the two existing configs.
+
+## 2026-09-03 16:45 — COVID-end sweep + correction to Test C
+
+**Operations:**
+- Swept COVID end date (2021-07 .. 2022-12) against slope/level dispersion and clean-treated-state count
+- Added method-of-moments noise correction: Var(observed) = Var(true) + mean(SE^2)
+- Corrected the `covid_trend_parallelism` ledger row
+
+**Decisions:**
+- Rejected the first sweep result as an artifact — MIN_OBS=6 lets a 6-month window produce a wild annualized slope, which produced a non-monotonic dispersion path (0.168 -> 0.271 -> 0.416 -> 0.783). Raising the minimum and noise-correcting made it well-behaved.
+
+**Results:**
+- CORRECTION to the 16:20 entry: h=24 straddle contamination is 0.350 log pts (~2.8x MDE), not 0.388 (~3x). The earlier figure used a 6-month minimum and no noise correction. True slope divergence at the configs' window is 0.145 log pts/yr, not 0.168 — about a quarter of the observed spread was estimation noise.
+- Ben's hypothesis (COVID really ended early 2022, not mid-2021) is directionally CORRECT: moving the end to 2022-03-31 cuts true slope divergence 0.145 -> 0.102 (-30%) and h=24 contamination 0.350 -> 0.272 (-22%).
+- But it does not fix the problem (still ~2.1x MDE) and costs 5 of 15 clean treated states, because AZ/CT/NY/LA/AR launches fall inside the wider gap.
+- Under the current `base_gapmax` segment rule a later COVID end is STRICTLY WORSE: straddle cells are excluded anyway, so the variance gain is unrealised while the state loss is real.
+- A 2021-12 end is the worst of all tested (true divergence 0.232) — plausibly because the post-window then starts mid-rebound, with states at different points of their recovery ramp.
+
+**Status:**
+- Done: sweep, noise correction, ledger corrected.
+- Pending: the seg-vs-gaptol size/MDE comparison remains the decisive run; this only prices the inputs.
+
+## 2026-09-04 — Mortgage LP-DiD feasibility probe (blind, no estimates)
+
+**Operations:**
+- Created `analysis/diagnostics/mortgage_lpdid_feasibility_probe.R` — outcome-swap plumbing for the clean-anchor LP-DiD design (event_clean / shift12 / PMD 6 / horizons 12–24) against `data/processed/mortgage_treatment_panel.csv`, plus a geometry report. Runs no regression.
+- Outputs: `output/mortgage_lpdid_feasibility/{horizon_geometry,switcher_survival,outcome_granularity_levels}.csv`
+- Added RUN_LEDGER.md row `mortgage_lpdid_feasibility` (EXPLORATORY).
+
+**Decisions:**
+- Outcome in **levels (pp), not logs** (Ben) — the series is published to 0.1pp and 87% of design-window state-months are ≤1.0pp, so one rounding tick is a 17%+ relative move, ≈2× the eviction design's 12.7% recentered MDE. In levels the tick is ~0.38 SD of the long difference.
+- **Feasibility probe only** (Ben) — mortgage stays blinded; no ATT produced. Granularity diagnostic is pooled across switchers and controls deliberately.
+- NV excluded via `PRE_PASPA_SPORTS_BETTING`, not a hand filter (the prior mortgage pretrends run is CONTAMINATED for exactly this).
+- ID/HI/MS kept — those eviction exclusions are basket-composition driven and mortgage has no basket.
+- Probe lead horizons start at h=13, not h=1: under shift12 the event is launch+12, so h≤12 is buildup and `event_clean` correctly refuses it.
+
+**Results:**
+- Panel: 50 states, 30 nominal switchers, 20 never-launched controls, 0 launched-but-immature. Control pool is much larger than the eviction design's (~12).
+- Contributing switchers depend almost entirely on the splice: **keep COVID 24 · eviction window (2020-03..2021-07) 13 · forbearance-extended (..2022-06) 7**. Forbearance-extended is not viable (0–4 identified cells; some horizons unidentified).
+- Switcher losses under the eviction splice: 11 baselines fall inside the dropped window, 6 outcome windows run past the 2025-03 panel end.
+- Series *falls* through COVID (CA 0.5→0.3), not spikes — forbearance loans report as current. Verified against the raw wide file.
+- Granularity in levels is stable across splices: long-difference SD ≈ 0.26pp = 2.6 ticks; 10–18% of long differences fall inside one tick.
+
+**Commits:**
+- (none — working tree)
+
+**Status:**
+- Done: plumbing, geometry, granularity, splice pricing, ledger row.
+- Pending: Ben picks the splice window; then either a blinded gate/MDE (needs `R/power/load_blinded_panel.R` extended to a rate outcome) or a real-data estimate (unblinds mortgage).
+
+## 2026-09-04 (cont.) — Mortgage blinded power: loader extended, gate smoke run
+
+**Operations:**
+- `R/power/load_blinded_panel.R`: new `level = "state_mortgage"` reading `data/processed/mortgage_treatment_panel.csv` into `y_pp` (rate, percentage points). No log transforms built. Time aggregation AVERAGES the rate instead of summing it.
+- `R/power/impose_effects.R`: `y_pp` added to the outcome whitelist, plus a hard guard — a rate outcome with any count mechanism now errors instead of drawing off an all-NA `filings_count`.
+- New configs `config/power_mortgage_lpdid_clean_{gate,mde}_ewatt_smoke.yml`; gate run complete, MDE smoke launched.
+- Ledger rows added for `mortgage_lpdid_feasibility` and `mortgage_lpdid_clean_gate_ewatt_smoke`.
+
+**Decisions:**
+- Reversed the earlier decision to pause for user input. The splice choice is a design diagnostic and can be priced blind, so it became the scenario axis rather than a question. Only the blind/unblind fork was ever a real gate, and that was already answered.
+- Forbearance-extended splice removed from the config entirely — the probe showed 0-4 identified cells, so it is not a real option.
+- `deterministic` is the only mechanism valid for a rate; delta is therefore in pp, and mortgage MDEs are not unit-comparable to eviction MDEs. Documented in both the config header and the loader docstring.
+
+**Results:**
+- REGRESSION CHECK PASSED: eviction state (1,850 x 10) and county (57,464 rows) panels are bit-for-bit identical pre/post loader edit on the same config.
+- Rate aggregation verified: quarterly median 0.83pp vs monthly 0.80pp (summing would have given ~2.4).
+- Gate smoke (100 reps, 800 rows, 0 failures): size at 5% spans 0.01-0.07 across 8 cells, all consistent with nominal at MC SE ~0.022. SE/SD 1.03-1.15. Null center at most 0.0085pp ~ 0.26 SD — the eviction placement bias does not reproduce on this panel.
+- Runtime ~6 min for 2 scenarios x 100 reps locally; 2,000 reps projects to ~2 hours. No cluster needed.
+
+**Doc bug found:**
+- CLAUDE.md "Running the Analysis" documents `run_from_config(...)`; the actual function is `run_scenario_grid(...)`. The documented command fails outright.
+
+**Status:**
+- Done: loader + mechanism extension with regression proof, gate smoke, ledger, config headers.
+- Pending: MDE smoke finishing; then 1,000-2,000-rep gate + MDE with fresh run_names before any verdict is quotable. Splice choice still open on evidence, not on permission.
+
+## 2026-09-06 22:54 — Parity check: real-data LP-DiD script vs the PAP power spec
+
+**Operations:**
+- Built `analysis/diagnostics/lpdid_statepanel_parity/` (framework side, compare, runner); outputs in `output/lpdid_statepanel_parity/`
+- Ran `analysis/main/lpdid_statepanel.R` unmodified on six framework-simulated panels (3 seeds × δ∈{0,0.10}) from a scratch working directory, plus a scratch copy with only the two balancing filters disabled
+- Wrote `quality_reports/parity_check_lpdid_statepanel_2026-09-06.md`; RUN_LEDGER diagnostics row `lpdid_statepanel_parity`
+
+**Decisions:**
+- Tested on blinded simulated panels, not real data — no real-data ATT produced; the real-data section of the memo uses dates and coverage only
+- Did not edit the repo script; the memo lists the required changes instead
+
+**Results:**
+- Estimator logic is identical: pooled ATT and SE agree with `.re_lpdid` to 1e-15 on all six panels once balancing is off; wild p differs by bootstrap draw only
+- Script as written cannot run the spec: max-coverage balancing (lines 122–126) keeps only MD+NC on the current 39-state panel; `MAX_DATE` default 2024-12-31 drops NC/DE/VT outcome windows; no exclusion knob (NV/ID/HI/MS enter the control pool); pre-trend block is empty under shift12 for any PRE ≤ 12
+- Real-data geometry under the power spec (dates only): 13 usable switchers (AR KS MD ME NC OH full; DE FL IN KY NH VT WV partial) — differs slightly from the handoff's 12-state list (FL now in, AR full, KY partial); reconcile on the frozen vintage
+- Env settings for the real run: `TREAT_DEF=shift12 ANCHOR=event_clean PMD=6 POST=12 POST_MIN=0 LPDID_WEIGHTS=ewatt MAX_DATE=2026-06-30`
+
+**Commits:**
+- (uncommitted)
+
+**Status:**
+- Done: parity verified at the estimator level; divergences documented with fix list
+- Pending: apply the five script changes in the memo §4; freeze the panel vintage; then a δ=0 placebo re-check on the fixed script before unblinding
+
+## 2026-09-06 23:20 — lpdid_statepanel.R: sample rules aligned with the PAP spec
+
+**Operations:**
+- Edited `analysis/main/lpdid_statepanel.R`: balancing filter moved behind `BALANCE_PANEL` (default FALSE); new `EXCLUDE_STATES` knob (default `NV,ID,HI,MS`) applied before the treatment table; `assert_no_pre_paspa_controls()` on the never-launched pool; `MAX_DATE` default removed (uncapped); usage header documents the PAP invocation
+- Re-ran the parity harness with the edited script (`03_compare_fixed.R`); real-data smoke run in scratch (only sample/eligibility lines read)
+
+**Decisions:**
+- Kept the old balancing rule behind a knob rather than deleting it — a robustness row may want it; the PAP spec does not
+- Enforced NV via the assertion, not only via the default exclusion, so `EXCLUDE_STATES=""` cannot silently reintroduce an always-treated control
+
+**Results:**
+- Edited script matches `.re_lpdid` ATT/SE to 1e-15 on all six simulated panels with no sample-knob overrides
+- Real panel under the spec: 35 states, 23 treated, 12 never-treated, 109 months; 16 switchers pass the baseline check (AR DE FL IN KS KY MA MD ME NC NH OH PA RI VT WV; MA/PA/RI have no outcome months and drop at cell construction); no-baseline: AZ CO CT LA NY TN VA
+- `EXCLUDE_STATES=""` stops with the pre-PASPA error naming NV, as intended
+
+**Commits:**
+- (uncommitted)
+
+**Status:**
+- Done: script changes 1–3 from the parity memo
+- Pending: pre-trend block under shift12 (memo §4 item 4), bootstrap seed (item 5), panel vintage freeze, then the real run

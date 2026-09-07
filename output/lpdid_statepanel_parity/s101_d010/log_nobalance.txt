@@ -1,0 +1,108 @@
+LP-DiD | treatment definition: shift12 | cell anchor: event_clean | PMD baseline: 6 month(s) | pooled event horizons: 0..12 
+Panel: 33 states (22 treated, 11 never-treated), 100 months 
+Dropped COVID window in calendar index: [243, 259] 
+
+=== TREATED-STATE ELIGIBILITY ===
+  Usable as switchers: 12 of 22 (AK, AZ, CT, GA, MD, MT, NC, ND, SC, TX, UT, VA) 
+  Excluded (no pre-treatment baseline in panel): FL, KS, KY, MA, MN, MO, OH, OK, VT, WV 
+  ...of which legalized INSIDE the dropped COVID window: KS, MO, OH, SC, TX, UT 
+
+Estimating event study...
+Too guarantee reproducibility, don't forget to set a global random seed
+**both** via `set.seed()` and `dqrng::dqset.seed()`.
+This message is displayed once every 8 hours.
+Warning message:
+Please note that the seeding behavior for random number generation for
+`boottest()` has changed with `fwildclusterboot` version 0.13.
+
+It will no longer be possible to exactly reproduce results produced by versions
+lower than 0.13.
+
+If your prior results were produced under sufficiently many bootstrap
+iterations, none of your conclusions will change. For more details about this
+change, please read the notes in
+[news.md](https://cran.r-project.org/web/packages/fwildclusterboot/news/news.html).
+This warning is displayed once per session. 
+Estimating pooled effect...
+Estimating window/era pooled effects...
+LP-DiD — Dube, Girardi, Jorda & Taylor (2023)Treatment: shift12 | anchor: event_clean | PMD baseline: 6 | pooled event horizons: 0..12 | drop straddling horizons: FALSEPanel: 33 states, 22 treated, 100 months, COVID window 2020-03-01..2021-07-31 dropped
+=== EVENT STUDY ===
+n_straddling counts observations whose [t-PMD, t+h] window spans the dropped
+COVID months. Those comparisons difference across the pandemic.
+
+ side event_time    att     se p_analytic p_wild n_obs n_switchers
+ post          0 0.1619 0.0454     0.0016 0.0090   121           8
+ post          1 0.1668 0.0440     0.0010 0.0240   109           7
+ post          2 0.1379 0.0368     0.0011 0.0170   105           7
+ post          3 0.0498 0.0313     0.1263 0.1702   101           7
+ post          4 0.0729 0.0306     0.0264 0.0641    99           7
+ post          5 0.1062 0.0389     0.0121 0.0200    97           7
+ post          6 0.0870 0.0425     0.0531 0.0981    98           8
+ post          7 0.1384 0.0412     0.0031 0.0160    96           8
+ post          8 0.1379 0.0547     0.0204 0.0190    93           8
+ post          9 0.1977 0.0486     0.0007 0.0040    82           7
+ post         10 0.1643 0.0547     0.0073 0.0400    78           7
+ post         11 0.2458 0.0746     0.0040 0.0030    66           6
+ post         12 0.3128 0.0854     0.0018 0.0070    63           6
+ n_clean_controls n_straddling
+              113            0
+              102            0
+               98            0
+               94            0
+               92            0
+               90            0
+               90            2
+               88            2
+               85            2
+               75            2
+               71            2
+               60            2
+               57            2
+
+=== POOLED POST-TREATMENT ATT (event horizons 0..12) ===
+    att     se p_analytic p_wild n_obs n_straddling
+ 0.1486 0.0376      6e-04  0.003  1208           14
+In filings terms: 16.02% (95% CI 7.78% to 24.9%) 
+
+=== POOLED EFFECTS BY HORIZON WINDOW AND COHORT ERA ===
+The default pool reports only h >= 12 after the event/maturity date.
+Era = event-month cohort; the two eras are disjoint experiments.
+pct = effect in filings terms, exp(att) - 1.
+
+             window  era h_lo h_hi    att     se p_analytic p_wild   pct
+        full_pooled  all    0   12 0.1486 0.0376     0.0006  0.002 16.02
+    buildup_e12plus  all   12   12 0.3128 0.0854     0.0018  0.008 36.73
+  pre_covid_cohorts  pre    0   12 0.1353 0.0397     0.0024  0.013 14.49
+ post_covid_cohorts post    0   12     NA     NA         NA     NA    NA
+        buildup_pre  pre   12   12 0.2331 0.0741     0.0056  0.027 26.24
+       buildup_post post   12   12     NA     NA         NA     NA    NA
+ n_switch_states n_control_states n_cells                               note
+               9               19      93                               <NA>
+               6               14       6                               <NA>
+               8               19      86                               <NA>
+               0               NA      NA no switch cells in this era/window
+               5               14       5                               <NA>
+               0               NA      NA no switch cells in this era/window
+=== JOINT PRE-TREND TEST (event time < -1) ===0 pre-period coefficients, NA state clustersWald (full cross-horizon covariance, state-clustered) = NAp, wild cluster bootstrap (HEADLINE) = NAp, F(0, NA)                        = NAp, chi-sq(0)                          = NA[superseded] naive sum(z^2), independence assumed = NAstacking check: max |stacked coef - per-horizon ATT| = NA  The naive statistic assumed independent horizons. Every horizon shares
+  the same baseline (build_h: base does not depend on h), so they are
+  positively correlated and the naive test over-rejects. Do not cite it.
+
+=== CLEAN-CONTROL AVAILABILITY BY HORIZON ===
+The clean-control pool shrinks as the horizon grows; this is the binding
+constraint on how far out LP-DiD can look with only 9 never-treated states.
+
+ event_time n_switchers n_clean_controls n_straddling
+          0           8              113            0
+          1           7              102            0
+          2           7               98            0
+          3           7               94            0
+          4           7               92            0
+          5           7               90            0
+          6           8               90            2
+          7           8               88            2
+          8           8               85            2
+          9           7               75            2
+         10           7               71            2
+         11           6               60            2
+         12           6               57            2
+Wrote output/lpdid_statepanel/

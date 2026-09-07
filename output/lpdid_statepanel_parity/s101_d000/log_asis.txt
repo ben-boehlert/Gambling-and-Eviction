@@ -1,0 +1,77 @@
+LP-DiD | treatment definition: shift12 | cell anchor: event_clean | PMD baseline: 6 month(s) | pooled event horizons: 0..12 
+Panel: 4 states (4 treated, 0 never-treated), 100 months 
+Dropped COVID window in calendar index: [243, 259] 
+
+=== TREATED-STATE ELIGIBILITY ===
+  Usable as switchers: 3 of 4 (AK, TX, UT) 
+  Excluded (no pre-treatment baseline in panel): OK 
+  ...of which legalized INSIDE the dropped COVID window: TX, UT 
+
+Estimating event study...
+Too guarantee reproducibility, don't forget to set a global random seed
+**both** via `set.seed()` and `dqrng::dqset.seed()`.
+This message is displayed once every 8 hours.
+Warning message:
+Please note that the seeding behavior for random number generation for
+`boottest()` has changed with `fwildclusterboot` version 0.13.
+
+It will no longer be possible to exactly reproduce results produced by versions
+lower than 0.13.
+
+If your prior results were produced under sufficiently many bootstrap
+iterations, none of your conclusions will change. For more details about this
+change, please read the notes in
+[news.md](https://cran.r-project.org/web/packages/fwildclusterboot/news/news.html).
+This warning is displayed once per session. 
+Estimating pooled effect...
+Estimating window/era pooled effects...
+LP-DiD — Dube, Girardi, Jorda & Taylor (2023)Treatment: shift12 | anchor: event_clean | PMD baseline: 6 | pooled event horizons: 0..12 | drop straddling horizons: FALSEPanel: 4 states, 4 treated, 100 months, COVID window 2020-03-01..2021-07-31 dropped
+=== EVENT STUDY ===
+n_straddling counts observations whose [t-PMD, t+h] window spans the dropped
+COVID months. Those comparisons difference across the pandemic.
+
+ side event_time    att  se p_analytic p_wild n_obs n_switchers
+ post          0 0.2376 NaN         NA     NA     2           1
+ n_clean_controls n_straddling
+                1            0
+
+=== POOLED POST-TREATMENT ATT (event horizons 0..12) ===
+    att  se p_analytic p_wild n_obs n_straddling
+ 0.2376 NaN         NA     NA     2            0
+In filings terms: 26.82% (95% CI NaN% to NaN%) 
+
+=== POOLED EFFECTS BY HORIZON WINDOW AND COHORT ERA ===
+The default pool reports only h >= 12 after the event/maturity date.
+Era = event-month cohort; the two eras are disjoint experiments.
+pct = effect in filings terms, exp(att) - 1.
+
+             window  era h_lo h_hi    att  se p_analytic p_wild   pct
+        full_pooled  all    0   12 0.2376 NaN         NA     NA 26.82
+    buildup_e12plus  all   12   12     NA  NA         NA     NA    NA
+  pre_covid_cohorts  pre    0   12 0.2376 NaN         NA     NA 26.82
+ post_covid_cohorts post    0   12     NA  NA         NA     NA    NA
+        buildup_pre  pre   12   12     NA  NA         NA     NA    NA
+       buildup_post post   12   12     NA  NA         NA     NA    NA
+ n_switch_states n_control_states n_cells                               note
+               1                1       1                               <NA>
+               0               NA      NA no switch cells in this era/window
+               1                1       1                               <NA>
+               0               NA      NA no switch cells in this era/window
+               0               NA      NA no switch cells in this era/window
+               0               NA      NA no switch cells in this era/window
+=== JOINT PRE-TREND TEST (event time < -1) ===0 pre-period coefficients, NA state clustersWald (full cross-horizon covariance, state-clustered) = NAp, wild cluster bootstrap (HEADLINE) = NAp, F(0, NA)                        = NAp, chi-sq(0)                          = NA[superseded] naive sum(z^2), independence assumed = NAstacking check: max |stacked coef - per-horizon ATT| = NA  The naive statistic assumed independent horizons. Every horizon shares
+  the same baseline (build_h: base does not depend on h), so they are
+  positively correlated and the naive test over-rejects. Do not cite it.
+
+=== CLEAN-CONTROL AVAILABILITY BY HORIZON ===
+The clean-control pool shrinks as the horizon grows; this is the binding
+constraint on how far out LP-DiD can look with only 9 never-treated states.
+
+ event_time n_switchers n_clean_controls n_straddling
+          0           1                1            0
+`geom_line()`: Each group consists of only one observation.
+ℹ Do you need to adjust the group aesthetic?
+Warning message:
+Removed 1 row containing missing values or values outside the scale range
+(`geom_ribbon()`). 
+Wrote output/lpdid_statepanel/

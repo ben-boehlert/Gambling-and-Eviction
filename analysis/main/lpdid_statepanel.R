@@ -35,6 +35,12 @@
 #   Rscript analysis/main/lpdid_statepanel.R
 #   TREAT_DEF=ramp75 PMD=4 DROP_STRADDLING=TRUE Rscript analysis/main/lpdid_statepanel.R
 #   DROP_END=2022-03-31 Rscript analysis/main/lpdid_statepanel.R   # calibration-script window
+#   # PAP headline spec (parity-checked against R/power/run_estimators.R::.re_lpdid
+#   # 2026-09-06, quality_reports/parity_check_lpdid_statepanel_2026-09-06.md):
+#   TREAT_DEF=shift12 ANCHOR=event_clean PMD=6 POST=12 POST_MIN=0 LPDID_WEIGHTS=ewatt \
+#     Rscript analysis/main/lpdid_statepanel.R
+#   # Sample knobs (defaults = the power spec): EXCLUDE_STATES="NV,ID,HI,MS",
+#   # MAX_DATE unset (no cap), BALANCE_PANEL=FALSE.
 #
 # NOTE: results in output/lpdid_statepanel/ generated before 2026-08-17 used
 # DROP_END = 2022-03-31 and are NOT comparable to the current default. Rerun
@@ -105,9 +111,34 @@ dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
 # the hole silently disqualifies states whose treatment falls inside it (NY
 # 2022-01 and AR 2022-03 among them). Override deliberately, not by drift.
 MIN_DATE   <- as.Date(getenv1("MIN_DATE",   "2016-01-01"))
-MAX_DATE   <- as.Date(getenv1("MAX_DATE",   "2024-12-31"))
+# MAX_DATE: no cap by default (2026-09-06). The old 2024-12-31 default predates
+# the per-state basket rebuild and silently removed the entire launch+12..24
+# outcome window for NC, DE and VT and truncated OH/KY/ME/WV -- the power spec
+# (R/power/load_blinded_panel.R) applies no end cap. Set MAX_DATE explicitly to
+# reproduce an older vintage; the frozen panel end is the honest default.
+MAX_DATE   <- { v <- Sys.getenv("MAX_DATE"); if (nzchar(v)) as.Date(v) else as.Date(NA) }
 DROP_START <- as.Date(getenv1("DROP_START", "2020-03-01"))
 DROP_END   <- as.Date(getenv1("DROP_END",   "2021-07-31"))
+
+# States removed from the panel BEFORE the treatment table is built, so they
+# are neither switchers nor controls. Default = the PAP power spec
+# (config/power_lpdid_shift12_clean_*_pmd6.yml exclude_states): NV is
+# always-treated (legal since 1949, absent from the schedule for that reason,
+# so a naive join would make it a never-treated control); ID/HI/MS are the
+# basket-composition exclusions (FINDINGS.md §2). Pass EXCLUDE_STATES="" to
+# keep everything; the pre-PASPA assertion below still fires for NV.
+EXCLUDE_STATES <- { v <- Sys.getenv("EXCLUDE_STATES", unset = "NV,ID,HI,MS")
+                    v <- trimws(strsplit(v, ",")[[1]]); v[nzchar(v)] }
+
+# BALANCE_PANEL (default FALSE, 2026-09-06). LP-DiD needs no balanced panel:
+# each observation is a long difference built from its own baseline months
+# and one outcome month, so a state missing a month drops from the cells that
+# touch it and nothing else. The old default kept only states at the MAXIMUM
+# month count and then common months -- a no-op on the pre-2026-08-28
+# balanced panel, but on the per-state basket panel it kept two states (MD,
+# NC) and threw away every partial-window switcher. TRUE restores it for a
+# robustness row; it is not the PAP spec.
+BALANCE_PANEL <- toupper(getenv1("BALANCE_PANEL", "FALSE")) == "TRUE"
 
 ym_index <- function(d) (as.integer(format(d, "%Y")) - 2000L) * 12L + as.integer(format(d, "%m"))
 G_DROP <- c(ym_index(DROP_START), ym_index(DROP_END))    # gap in calendar-month index
@@ -116,15 +147,22 @@ G_DROP <- c(ym_index(DROP_START), ym_index(DROP_END))    # gap in calendar-month
 p <- read_csv("data/raw/state_month_panel_with_treatment.csv", show_col_types = FALSE) %>%
   transmute(state_abb = as.character(state_abb), month_date = as.Date(month_date),
             filings_count = as.numeric(filings_count)) %>%
-  filter(month_date >= MIN_DATE, month_date <= MAX_DATE) %>%
-  filter(!(month_date >= DROP_START & month_date <= DROP_END))
+  filter(month_date >= MIN_DATE, is.na(MAX_DATE) | month_date <= MAX_DATE) %>%
+  filter(!(month_date >= DROP_START & month_date <= DROP_END)) %>%
+  filter(!is.na(filings_count), !state_abb %in% EXCLUDE_STATES)
 
-cov_tbl <- p %>% count(state_abb, name = "n")
-p <- p %>% filter(state_abb %in% cov_tbl$state_abb[cov_tbl$n >= max(cov_tbl$n)])
-k  <- n_distinct(p$state_abb)
-cm <- p %>% count(month_date, name = "j") %>% filter(j == k) %>% pull(month_date)
-p  <- p %>% filter(month_date %in% cm) %>%
-  mutate(y = log1p(pmax(filings_count, 0)), t = ym_index(month_date))
+if (BALANCE_PANEL) {
+  cov_tbl <- p %>% count(state_abb, name = "n")
+  p <- p %>% filter(state_abb %in% cov_tbl$state_abb[cov_tbl$n >= max(cov_tbl$n)])
+  k  <- n_distinct(p$state_abb)
+  cm <- p %>% count(month_date, name = "j") %>% filter(j == k) %>% pull(month_date)
+  p  <- p %>% filter(month_date %in% cm)
+}
+p <- p %>% mutate(y = log1p(pmax(filings_count, 0)), t = ym_index(month_date))
+cat(glue("Sample: {n_distinct(p$state_abb)} states, {min(p$month_date)}..{max(p$month_date)} ",
+         "(MAX_DATE {ifelse(is.na(MAX_DATE), 'uncapped', as.character(MAX_DATE))}), ",
+         "balanced = {BALANCE_PANEL}, excluded: ",
+         "{if (length(EXCLUDE_STATES)) paste(EXCLUDE_STATES, collapse = ', ') else 'none'}"), "\n")
 
 sched <- load_eviction_treatment_schedule(
   treat_file = "data/raw/sports_gambling_legalization_dates.csv",
@@ -162,6 +200,12 @@ panel <- p %>% left_join(treat_tbl %>% select(state_abb, g), by = "state_abb")
 t_max <- max(panel$t)
 # Treatment dates beyond the panel are never-treated for this sample.
 panel <- panel %>% mutate(g = ifelse(!is.na(g) & g > t_max, NA_integer_, g))
+
+# Hard stop if an always-treated pre-PASPA state (NV) is about to serve as a
+# never-launched control -- the universe helpers' rule (CLAUDE.md), enforced
+# here rather than assumed from EXCLUDE_STATES.
+assert_no_pre_paspa_controls(treat_tbl$state_abb[is.na(treat_tbl$g_launch)],
+                             context = "LP-DiD never-launched control pool")
 
 n_treat <- n_distinct(panel$state_abb[!is.na(panel$g)])
 cat(glue("LP-DiD | treatment definition: {TREAT_DEF} | cell anchor: {ANCHOR} ",
