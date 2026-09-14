@@ -21,7 +21,7 @@ cd "$(dirname "$0")/.."
 
 DEST="della_power_upload"
 rm -rf "$DEST"
-mkdir -p "$DEST"/{R/power,config,tests,utils,data/raw,docs/methodology}
+mkdir -p "$DEST"/{R/power,config,tests,utils,data/raw,data/processed,docs/methodology}
 
 # --- Framework code, configs, tests, shared utility -------------------------
 cp R/power/*.R                          "$DEST/R/power/"
@@ -31,6 +31,24 @@ cp config/power_sensitivity.yml         "$DEST/config/"
 cp config/power_cheap.yml               "$DEST/config/"
 cp config/power_smoke.yml               "$DEST/config/"
 cp config/power_addon1.yml              "$DEST/config/"
+# 2026-09-14 panel-vintage re-run: clean-anchor gate + MDE, fresh run_names.
+for f in config/power_lpdid_clean_{gate,mde}_{ewatt,vwatt}_pmd6_v20260914.yml; do
+  [ -f "$f" ] && cp "$f" "$DEST/config/"
+done
+cp config/power_lpdid_launch_h1824_gate_ewatt.yml "$DEST/config/"
+cp config/power_lpdid_launch_h1824_mde_ewatt.yml  "$DEST/config/"
+cp config/power_lpdid_shift12_gate_ewatt_noID.yml "$DEST/config/"
+cp config/power_lpdid_shift12_gate_vwatt_noID.yml "$DEST/config/"
+cp config/power_lpdid_shift12_mde_ewatt_noID.yml  "$DEST/config/"
+cp config/power_lpdid_shift12_mde_vwatt_noID.yml  "$DEST/config/"
+cp config/power_lpdid_shift12_clean_gate_ewatt.yml "$DEST/config/"
+cp config/power_lpdid_shift12_clean_gate_vwatt.yml "$DEST/config/"
+cp config/power_lpdid_shift12_clean_mde_ewatt.yml  "$DEST/config/"
+cp config/power_lpdid_shift12_clean_mde_vwatt.yml  "$DEST/config/"
+cp config/power_lpdid_shift12_clean_gate_ewatt_pmd6.yml "$DEST/config/"
+cp config/power_lpdid_shift12_clean_mde_ewatt_pmd6.yml  "$DEST/config/"
+cp config/power_lpdid_shift12_clean_gate_vwatt_pmd6.yml "$DEST/config/"
+cp config/power_lpdid_shift12_clean_mde_vwatt_pmd6.yml  "$DEST/config/"
 cp tests/run_tests.R                    "$DEST/tests/"
 cp -R tests/testthat                    "$DEST/tests/testthat"
 cp utils/eviction_treatment_schedule.R  "$DEST/utils/"
@@ -39,6 +57,7 @@ cp utils/eviction_treatment_schedule.R  "$DEST/utils/"
 cp data/raw/monthly_county_data_download.csv       "$DEST/data/raw/"
 cp data/raw/state_month_panel_with_treatment.csv   "$DEST/data/raw/"
 cp data/raw/sports_gambling_legalization_dates.csv "$DEST/data/raw/"
+cp data/processed/shift12_schedule.csv             "$DEST/data/processed/"
 
 # --- Reference docs ----------------------------------------------------------
 cp docs/methodology/POWER_SIMULATION_BLINDNESS_PROTOCOL.md "$DEST/docs/methodology/"
@@ -49,6 +68,7 @@ cp scripts/della_power/setup.sh              "$DEST/"
 cp scripts/della_power/run_validation.sh     "$DEST/"
 cp scripts/della_power/list_scenarios.sh     "$DEST/"
 cp scripts/della_power/run_primary.slurm     "$DEST/"
+cp scripts/della_power/run_clean_v20260914.slurm "$DEST/"
 cp scripts/della_power/run_sensitivity.slurm "$DEST/"
 cp scripts/della_power/run_cheap.slurm       "$DEST/"
 cp scripts/della_power/run_smoke.slurm       "$DEST/"

@@ -13,13 +13,16 @@ This file describes the repo's **structure, data, and conventions**. It does not
 - **[ESTIMATOR_MATRIX.md](ESTIMATOR_MATRIX.md)** — the cross-cut view: estimator × spec → runs, results, and coverage gaps. Update together with the ledger.
 - **[docs/findings-archive/](docs/findings-archive/INDEX.md)** — the chronological findings/corrections history that used to live in this file, split by topic, preserved verbatim.
 - **[MOVES.md](MOVES.md)** — where the 2026-08-25 cleanup relocated every deprecated artifact (old → new paths).
+- **[docs/DATA_CURRENCY.md](docs/DATA_CURRENCY.md)** — generated, never hand-edited: per-state span, staleness, interior gaps, basket share, denominator presence, clean-anchor role, and the exact refresh command for each source. Regenerate with `Rscript data_prep/make_data_currency_doc.R` after any panel rebuild. Check it before claiming a series is current.
+- **[docs/DATA_PROVENANCE.md](docs/DATA_PROVENANCE.md)** — who collected every input file, from what, and whether that is verified. Read it before describing any data source. Note: `monthly_county_data_download.csv` is **LSC CCDI**, not ETS — §1 there, and §5 lists the places (including PAP text) that still say otherwise.
+- **[docs/STATE_SOURCES.md](docs/STATE_SOURCES.md)** — one row per state: provider, and whether the series is the whole state, a county basket, or a single city. LA = New Orleans, MA = Boston, NV = Las Vegas; ID/KS/MS are one county each.
 
 **Maintenance rules (mandatory for every session):**
 1. Every completed run appends one row to the matching RUN_LEDGER.md table before the session ends. A superseded row is never deleted — its status changes and points to its replacement.
 2. When a LIVE result changes, update FINDINGS.md in the same session.
 3. Corrections and post-mortems get a dated file in `docs/findings-archive/` — do **not** accumulate findings narrative in this file.
 4. Deprecation is by move to the nearest `deprecated/` folder, recorded in MOVES.md. Nothing is deleted.
-5. Before comparing any two runs, check RUN_LEDGER.md vintages: NH/ME court-source repairs 2026-07-23, schedule repair 2026-08-10, panel rebuild 2026-08-20, NV exclusion 2026-08-21, LP-DiD weights fix 2026-08-24. Never pair across a boundary; after any panel/schedule edit use a fresh `run_name` (scenario ids hash settings, not data).
+5. Before comparing any two runs, check RUN_LEDGER.md vintages: NH/ME court-source repairs 2026-07-23, schedule repair 2026-08-10, panel rebuild 2026-08-20, NV exclusion 2026-08-21, LP-DiD weights fix 2026-08-24, per-state basket rebuild 2026-08-28 (adds CO/HI/MS/NY/SC; prior state-months unchanged), MD series extension 2026-09-03 (adds MD 2025-12..2026-06; prior rows unchanged bit-for-bit), **single-series rebuild 2026-09-14** (LA/MA/MO/NM/NV/RI rebuilt from the Eviction Lab internal county extract — RI +77 months, MO/NM +41, MA +31; RI/MO/NM change geographic scope, so prior rows are NOT unchanged for those three; switchers 13 → 15). Never pair across a boundary; after any panel/schedule edit use a fresh `run_name` (scenario ids hash settings, not data).
 
 ## Terminology Note (Data Search)
 
@@ -77,7 +80,7 @@ della_power_upload/ Cluster package for Princeton Della
 ## Data
 
 - Panel data: county-month eviction filings (2016–2025) from the Eviction Tracking System; primary file `data/raw/monthly_county_data_download.csv` (**no NV rows — county-level work is NV-immune**).
-- State-month panel: `data/raw/state_month_panel_with_treatment.csv` — **rebuilt 2026-08-20** (one consistent source per state; pre-rebuild file was a 12-state double count, preserved in `data/raw/deprecated/`). Columns include `n_counties`, `basket_share`; composition QA in `data/processed/state_panel_coverage_qa.csv` — check it before citing any state-level estimate.
+- State-month panel: `data/raw/state_month_panel_with_treatment.csv` — **rebuilt 2026-08-20** (one consistent source per state; pre-rebuild file was a 12-state double count, preserved in `data/raw/deprecated/`); **extended 2026-08-28** with per-state basket starts (adds CO/HI/MS/NY/SC — 39 states; prior state-months unchanged; global-basket vintage preserved in `data/raw/deprecated/`). Columns include `n_counties`, `basket_share`; composition QA in `data/processed/state_panel_coverage_qa.csv` — check it before citing any state-level estimate.
 - Treatment schedule: `data/raw/sports_gambling_legalization_dates.csv` — **repaired 2026-08-10** (added online dates for DE/NC/KY/ME/FL/VT/MO; ME/VT/KY/FL are no longer never-treated). Never-legalizers have NO row (absent, not NA). NV is absent because it is **always-treated** (legal since 1949) — exclude it from every state-level control pool via the universe helpers.
 - shift12 schedule: `data/processed/shift12_schedule.csv` (launch + 12 months, blind to outcomes).
 - Gambling amounts: `data/raw/lsr_sports_betting_handle_revenue_by_state_month.csv` — monthly Handle/Revenue by state (June 2018+, starts per-state at legalization; full state names, NOT per-capita).

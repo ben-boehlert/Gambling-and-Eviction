@@ -1,0 +1,15 @@
+quantity,value
+real_pearson_all24,-0.21206007152556375
+real_pearson_ci_lo,-0.5669568357294401
+real_pearson_ci_hi,0.20923555464177201
+real_p,0.3198370384280709
+real_spearman_all24,-0.14615051404335458
+real_pearson_switchers13,-0.12420498913655231
+n_real,24
+n_switchers,13
+sim_mean,-0.1935169786875015
+sim_sd,0.0942499451136344
+sim_min,-0.4628426211674383
+sim_max,0.07521165922022241
+sim_share_negative,0.98675
+real_percentile_in_sim,43.3

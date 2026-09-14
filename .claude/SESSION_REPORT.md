@@ -2013,3 +2013,52 @@ checkpoint at reduced concurrency (6 → 5 workers), no data lost.
 **Status:**
 - Done: script changes 1–3 from the parity memo
 - Pending: pre-trend block under shift12 (memo §4 item 4), bootstrap seed (item 5), panel vintage freeze, then the real run
+
+## 2026-09-06 23:50 — LP-DiD pre-trends under the PAP spec + Roth pretest power
+
+**Operations:**
+- Ran the real-data script (scratch copies with a `PRE_MIN` knob and stack export) with the PAP env and `PRE=36`; stored only pre-period artifacts in `output/lpdid_pretrends_shift12_clean/`
+- Trend-slope test with wild bootstrap on the 18 clean leads; Roth (2022)-style detectable-slope calculation
+- Ledger row `lpdid_pretrends_shift12_clean`
+
+**Decisions:**
+- Leads 1..6 months before launch overlap the baseline window and are mechanical — excluded from the headline joint test
+- Analytic joint Wald is unusable (clustered vcov ill-conditioned at 35 clusters, 18 correlated coefficients); the null-imposed wild bootstrap is the only joint p worth citing
+- Roth power computed from a one-parameter slope test (wild SE), not from V^-1, for the same reason
+
+**Results:**
+- Clean-lead joint wild p = 0.194; slope −0.0022/month (wild p 0.50); no evidence against parallel trends
+- Pretest power is weak: 80%-power slope 0.0091/month ⇒ implied 12–24 bias up to 0.196 log pts vs MDE 0.127
+- Pretest sample admits switchers (AZ CT NY TN VA…) that contribute no post cells
+
+**Status:**
+- Done: pretrends diagnostic, ledger row
+- Pending: add `PRE_MIN` to the repo script (memo item 4); decide HonestDiD/Mbar pre-registration; uncommitted
+- (23:59 addendum) HonestDiD blind width check, post coefficient set to 0: original ±0.092; relative magnitudes Mbar 0.25/0.5/1/2 → ±0.127/0.188/0.344/0.668. Smoothness class judged mis-specified for the long-difference gap. File: `output/lpdid_pretrends_shift12_clean/honestdid_blind_width.csv`; script copy `lpdid_statepanel_stk2.R`.
+- (2026-09-07 00:10 addendum) HonestDiD with 3 pooled placebo windows (7–12, 13–18, 19–24 months pre-launch; joint Wald p 0.33; max |pooled pre| 0.061): relative-magnitudes half-widths Mbar 0.25/0.5/1/2 → 0.103/0.113/0.150/0.254 vs 0.127/0.188/0.344/0.668 with 18 single leads. File `output/lpdid_pretrends_shift12_clean/honestdid_blind_width_3window.csv`. Window structure must be pre-registered before unblinding.
+
+## 2026-09-14 — Panel currency audit, single-series rebuild, and design pre-flight
+
+**Operations:**
+- Rebuilt the 6 Eviction Lab single-series states (LA MA MO NM NV RI) from `ets_county_month.csv` via new `data_prep/rebuild_single_series_from_ets_internal.R`; prior vintage → `data/raw/deprecated/state_month_panel_with_treatment_pre_single_series_rebuild_2026-09-14.csv` (MOVES.md)
+- Filled ACS renter denominators for those 574 rows (`data_prep/fetch_acs_renter_denominators.R`, B25003_003 county-level)
+- New generated doc `docs/DATA_CURRENCY.md` + its generator `data_prep/make_data_currency_doc.R`
+- New diagnostics: `spillover_cluster_feasibility.R`, `nullbias_real_schedule_check.R`, `single_series_currency_audit.R`, `panel_preflight_audit.R`, `report_basket_population_coverage.R`
+- New figures: `plot_clean_anchor_windows.R`, `plot_mo_leverage.R`
+- 8 fresh v20260914 configs (4 headline + 4 noMO) + `scripts/della_power/run_clean_v20260914.slurm`
+
+**Decisions / fixes:**
+- `rebuild_state_month_panel.R` read KEEP_OLD rows from the 2026-08-20 archive — a latent revert-bomb that would have silently reverted MD's 2026-09-03 extension. Now reads the current panel, archive as cold-build fallback.
+- `make_della_power_upload.sh` copies a hardcoded config list; added the new configs + slurm.
+- Did NOT re-download the LSC file: the live version is a strict SUBSET of the local one (120,357 vs 124,325 rows). Re-downloading would delete NC 2023-07→2026-06 and demote a full-window switcher.
+
+**Results:**
+- Switchers 13 → 15; MA now full-window. Panel 3,904 → 4,074 rows, 39 states, one source per state.
+- County spillover design is cluster-infeasible (2–11 usable state clusters vs 12 direct) — no MDE warranted.
+- Recentering premise not supported: real `cor_date_trend` = −0.212 sits at the 43rd pct of the simulated distribution; magnitude is MO-driven (jackknife −0.262..−0.055).
+- pmd=3 vs 6 is a wash on power (SD ratio CI [0.936, 1.152] spans 1.0); decide on seasonality.
+- ACS renter coverage: RI 92.5%, NM 87.9%, NV 75.6%, MO 45.5%, MA 19.8%, LA 13.2%.
+
+**Status:**
+- Done: panel rebuilt + canonical, denominators filled, currency doc generated, Della package built.
+- Pending: Della run not launched; MO-exclusion and MA-labelling decisions open; `ets_county_month.csv` still untracked (rebuild depends on it).

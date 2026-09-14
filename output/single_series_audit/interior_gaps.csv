@@ -1,0 +1,7 @@
+state_abb,source,gap_detail
+KY,county_download_fixed_basket,2025-04->2025-06
+MN,county_download_fixed_basket,2025-06->2025-08
+MO,ets_single_series_no_denominator,2016-12->2020-01
+VA,county_download_fixed_basket,2024-12->2025-02; 2025-02->2025-04
+WI,wi_court_source_repair_2026-07-23,2024-11->2025-01
+WV,county_download_fixed_basket,2025-06->2025-08

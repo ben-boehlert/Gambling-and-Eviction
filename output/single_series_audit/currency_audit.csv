@@ -1,0 +1,40 @@
+state_abb,source,n_months,span_lo,span_hi,has_denom,n_counties,n_gaps,max_gap_months,stale_months,single_series,online,n_base,n_out,role
+AK,county_download_fixed_basket,116,2016-01-01,2025-09-01,TRUE,5,0,0,12,FALSE,NA,NA,NA,control (never-legal)
+AR,county_download_fixed_basket,114,2016-01-01,2025-09-01,TRUE,12,0,0,12,FALSE,2022-03-01,6,13,switcher (full)
+AZ,county_download_fixed_basket,110,2016-01-01,2025-02-01,TRUE,2,0,0,19,FALSE,2021-09-01,1,13,not a switcher
+CO,county_download_fixed_basket,57,2019-01-01,2023-11-01,TRUE,15,0,0,34,FALSE,2020-05-01,4,10,not a switcher
+CT,county_download_fixed_basket,113,2016-01-01,2025-07-01,TRUE,6,0,0,14,FALSE,2021-10-01,2,13,not a switcher
+DE,county_download_fixed_basket,115,2016-01-01,2025-09-01,TRUE,3,0,0,12,FALSE,2024-01-01,6,9,switcher (partial 9/13)
+FL,county_download_fixed_basket,112,2016-01-01,2025-04-01,TRUE,6,0,0,17,FALSE,2023-12-01,6,5,switcher (partial 5/13)
+GA,county_download_fixed_basket,112,2016-01-01,2025-04-01,TRUE,2,0,0,17,FALSE,NA,NA,NA,control (never-legal)
+HI,county_download_fixed_basket,33,2020-01-01,2022-09-01,TRUE,4,0,0,48,FALSE,NA,NA,NA,EXCLUDED
+ID,county_download_fixed_basket,113,2016-01-01,2025-05-01,TRUE,1,0,0,16,FALSE,NA,NA,NA,EXCLUDED
+IN,county_download_fixed_basket,113,2016-01-01,2025-09-01,TRUE,59,0,0,12,FALSE,2019-10-01,6,3,switcher (partial 3/13)
+KS,county_download_fixed_basket,110,2016-01-01,2025-02-01,TRUE,1,0,0,19,FALSE,2022-09-01,6,13,switcher (full)
+KY,county_download_fixed_basket,110,2016-01-01,2025-09-01,TRUE,45,1,1,12,FALSE,2023-09-01,6,12,switcher (partial 12/13)
+LA,ets_single_series_no_denominator,68,2020-01-01,2025-08-01,FALSE,,0,0,13,TRUE,2022-01-01,5,13,not a switcher
+MA,ets_single_series_no_denominator,47,2020-01-01,2023-11-01,FALSE,,0,0,34,TRUE,2023-03-01,6,0,not a switcher
+MD,md_judiciary_lt_complaint_filings,174,2012-01-01,2026-06-01,TRUE,,0,0,3,FALSE,2022-11-01,6,13,switcher (full)
+ME,county_download_fixed_basket,119,2016-01-01,2025-11-01,TRUE,16,0,0,10,FALSE,2023-11-01,6,13,switcher (full)
+MN,county_download_fixed_basket,100,2016-01-01,2025-09-01,TRUE,22,1,1,12,FALSE,NA,NA,NA,control (never-legal)
+MO,ets_single_series_no_denominator,97,2012-01-01,2023-01-01,FALSE,,1,36,44,TRUE,2025-12-01,0,0,not a switcher
+MS,county_download_fixed_basket,99,2016-01-01,2024-03-01,TRUE,1,0,0,30,FALSE,NA,NA,NA,EXCLUDED
+MT,county_download_fixed_basket,116,2016-01-01,2025-09-01,TRUE,6,0,0,12,FALSE,NA,NA,NA,control (never-legal)
+NC,county_download_fixed_basket,126,2016-01-01,2026-06-01,TRUE,100,0,0,3,FALSE,2024-03-01,6,13,switcher (full)
+ND,county_download_fixed_basket,113,2016-01-01,2025-05-01,TRUE,6,0,0,16,FALSE,NA,NA,NA,control (never-legal)
+NH,nh_court_source_repair_2026-07-23,84,2018-12-01,2025-11-01,TRUE,,0,0,10,FALSE,2019-12-01,6,5,switcher (partial 5/13)
+NM,ets_single_series_no_denominator,73,2017-01-01,2023-01-01,FALSE,,0,0,44,TRUE,NA,NA,NA,control (never-legal)
+NV,ets_single_series_no_denominator,71,2020-01-01,2025-11-01,FALSE,,0,0,10,TRUE,NA,NA,NA,EXCLUDED
+NY,county_download_fixed_basket,68,2019-01-01,2025-09-01,TRUE,53,0,0,12,FALSE,2022-01-01,5,13,not a switcher
+OH,county_download_fixed_basket,114,2016-01-01,2025-06-01,TRUE,4,0,0,15,FALSE,2023-01-01,6,13,switcher (full)
+OK,county_download_fixed_basket,113,2016-01-01,2025-09-01,TRUE,33,0,0,12,FALSE,NA,NA,NA,control (never-legal)
+PA,county_download_fixed_basket,110,2016-01-01,2025-09-01,TRUE,58,0,0,12,FALSE,2019-05-01,6,0,not a switcher
+RI,ets_single_series_no_denominator,48,2016-01-01,2019-12-01,FALSE,,0,0,81,TRUE,2019-09-01,6,0,not a switcher
+SC,county_download_fixed_basket,85,2018-08-01,2025-09-01,TRUE,45,0,0,12,FALSE,NA,NA,NA,control (never-legal)
+TN,county_download_fixed_basket,117,2016-01-01,2025-09-01,TRUE,3,0,0,12,FALSE,2020-11-01,0,13,not a switcher
+TX,county_download_fixed_basket,117,2016-01-01,2025-09-01,TRUE,8,0,0,12,FALSE,NA,NA,NA,control (never-legal)
+UT,county_download_fixed_basket,117,2016-01-01,2025-09-01,TRUE,6,0,0,12,FALSE,NA,NA,NA,control (never-legal)
+VA,county_download_fixed_basket,102,2016-01-01,2025-09-01,TRUE,87,2,1,12,FALSE,2021-01-01,0,13,not a switcher
+VT,county_download_fixed_basket,105,2016-01-01,2025-09-01,TRUE,9,0,0,12,FALSE,2024-01-01,6,9,switcher (partial 9/13)
+WI,wi_court_source_repair_2026-07-23,81,2019-01-01,2025-10-01,TRUE,,1,1,11,FALSE,NA,NA,NA,control (never-legal)
+WV,county_download_fixed_basket,112,2016-01-01,2025-08-01,TRUE,25,1,1,13,FALSE,2018-08-01,6,7,switcher (partial 7/13)

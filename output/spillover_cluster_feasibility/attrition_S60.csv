@@ -1,0 +1,7 @@
+stage,n_counties,n_states
+candidates (spillover_only + spillover_then_direct),543,22
+  ... after documented state exclusions,520,20
+  ... with full 6mo pre-baseline,452,19
+"  ... with full [12,24] post window",423,18
+  ... with own-state legalization clear of post window,348,15
+  ... clear of the COVID splice  [= USABLE],31,2

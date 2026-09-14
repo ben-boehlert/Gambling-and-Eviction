@@ -77,6 +77,9 @@ NY_START <- as.Date("2019-01-01")
 # treatment date, TN falls 36 -> 12 -> 3 counties, TX loses Harris (-48%
 # denominator) — all pure composition, none of it eviction dynamics.
 # BASKET_MODE="as_reported" reproduces the pre-decision behaviour.
+# 2026-08-28: basket start is PER STATE (each state's own first reporting
+# month), not the global BASKET_START — see the basket block below. Restores
+# SC / NY / CO / HI, which the global 2016-01 start silently excluded.
 BASKET_MODE  <- Sys.getenv("BASKET_MODE", "fixed")
 BASKET_START <- as.Date(Sys.getenv("BASKET_START", "2016-01-01"))
 BASKET_END   <- as.Date(Sys.getenv("BASKET_END",   "2024-12-01"))
@@ -103,10 +106,30 @@ if (!file.exists(DEPR_PATH)) {
 } else {
   message("Pre-fix panel already preserved; leaving ", DEPR_PATH, " untouched.")
 }
-# KEEP-OLD rows always come from the PRE-FIX panel, so re-runs are idempotent.
-old <- read_csv(DEPR_PATH, show_col_types = FALSE) %>%
+# KEEP-OLD rows come from the CURRENT canonical panel when it exists.
+#
+# 2026-09-14 FIX. This previously read DEPR_PATH unconditionally, with the
+# comment "KEEP-OLD rows always come from the PRE-FIX panel, so re-runs are
+# idempotent." That held only while nothing else ever touched those 9 states.
+# It stopped holding on 2026-09-03, when MD was extended to 2026-06, and again
+# on 2026-09-14, when LA/MA/MO/NM/NV/RI were rebuilt from the Eviction Lab
+# internal county extract. Re-running the script in either state would have
+# SILENTLY REVERTED those repairs -- MD back to 2025-11, RI back to 2019-12 --
+# with no error and no diff in the QA tables, because the reverted values are
+# internally consistent.
+#
+# Reading the current panel keeps re-runs idempotent (the county-sourced 30 are
+# rebuilt from the download either way) AND preserves every downstream repair.
+# The 2026-08-20 archive stays the cold-build fallback.
+keepold_src <- if (file.exists(PANEL_PATH)) PANEL_PATH else DEPR_PATH
+message("KEEP-OLD rows sourced from: ", keepold_src)
+old <- read_csv(keepold_src, show_col_types = FALSE) %>%
   mutate(month_date = as.Date(month_date),
          treat_start = suppressWarnings(as.Date(treat_start)))
+# Cold-build fallback lacks the basket columns added later; add them as NA so
+# the KEEP-OLD select below is valid in both paths.
+for (cc in c("n_counties", "basket_share", "panel_source"))
+  if (!cc %in% names(old)) old[[cc]] <- NA
 
 cty <- read_csv("data/raw/monthly_county_data_download.csv",
                 show_col_types = FALSE,
@@ -117,16 +140,28 @@ cty <- read_csv("data/raw/monthly_county_data_download.csv",
   filter(!is.na(filings_count))
 
 # ---- Fixed basket: counties reporting in EVERY basket-window month --------
-basket_months <- cty %>%
+# PER-STATE BASKET START (2026-08-28). The 2026-08-20 rule counted required
+# months from the GLOBAL BASKET_START, so any state whose county series begins
+# after 2016-01 had an empty basket and vanished from the panel entirely —
+# silently excluding SC (series from 2018-08), NY and CO (2019-01), HI
+# (2020-01). The required-month set is now per state: the calendar months the
+# STATE reports at all (>=1 county), inside [BASKET_START, BASKET_END] and
+# outside BASKET_DROP. A county must report in every one of those months to
+# enter its state's basket; a statewide gap month is a missing panel row, not
+# grounds for emptying the basket. Within-state fixedness is unchanged and
+# still asserted below.
+basket_window <- cty %>%
   filter(month_date >= BASKET_START, month_date <= BASKET_END,
-         !(month_date >= BASKET_DROP[1] & month_date <= BASKET_DROP[2])) %>%
-  distinct(month_date) %>% nrow()
+         !(month_date >= BASKET_DROP[1] & month_date <= BASKET_DROP[2]))
 
-basket <- cty %>%
-  filter(month_date >= BASKET_START, month_date <= BASKET_END,
-         !(month_date >= BASKET_DROP[1] & month_date <= BASKET_DROP[2])) %>%
+state_months <- basket_window %>%
+  distinct(state_abb, month_date) %>%
+  count(state_abb, name = "n_state_months")
+
+basket <- basket_window %>%
   count(state_abb, fips, name = "n_obs") %>%
-  filter(n_obs == basket_months) %>%
+  inner_join(state_months, by = "state_abb") %>%
+  filter(n_obs == n_state_months) %>%
   select(state_abb, fips)
 
 basket_size <- basket %>% count(state_abb, name = "basket_n")
@@ -166,16 +201,28 @@ county_part <- cty_state %>%
                           "county_download_sum") %>%
   select(-modal_n, -max_n)
 
+# 2026-09-14: the 6 former "single series" states (LA MA MO NM NV RI) were
+# rebuilt from the Eviction Lab internal county extract by
+# data_prep/rebuild_single_series_from_ets_internal.R. They now carry a real
+# county basket, so their panel_source / n_counties / basket_share must be
+# CARRIED THROUGH, not re-stamped. Re-stamping them (the pre-2026-09-14
+# behavior) silently wiped the THIN-BASKET metadata that flags MO (0.34) and
+# NM (0.48) as non-statewide -- the exact safety information a reader needs
+# before quoting their levels.
 keepold_part <- old %>%
   filter(state_abb %in% KEEP_OLD) %>%
   select(state_abb, month_date, filings_count,
-         renter_occupied_housing_units) %>%
-  mutate(n_counties = NA_integer_, basket_share = NA_real_,
-         panel_source = case_when(
+         renter_occupied_housing_units, n_counties, basket_share, panel_source) %>%
+  mutate(panel_source = case_when(
            state_abb == "NH" ~ "nh_court_source_repair_2026-07-23",
            state_abb == "WI" ~ "wi_court_source_repair_2026-07-23",
            state_abb == "MD" ~ "md_judiciary_lt_complaint_filings",
-           TRUE              ~ "ets_single_series_no_denominator"))
+           # preserve whatever the rebuilt series declared
+           TRUE              ~ panel_source),
+         n_counties   = if_else(state_abb %in% c("NH","WI","MD"), NA_integer_,
+                                as.integer(n_counties)),
+         basket_share = if_else(state_abb %in% c("NH","WI","MD"), NA_real_,
+                                as.numeric(basket_share)))
 
 sched <- load_eviction_treatment_schedule(
   "data/raw/sports_gambling_legalization_dates.csv", "online_start_date")
@@ -248,7 +295,8 @@ field_changes <- fld %>% group_by(state_abb) %>%
 
 # ---- Coverage / composition QA --------------------------------------------
 coverage_qa <- county_part %>% group_by(state_abb) %>%
-  summarise(months = n(), min_n = min(n_counties), max_n = max(n_counties),
+  summarise(basket_start = min(month_date),
+            months = n(), min_n = min(n_counties), max_n = max(n_counties),
             median_n = median(n_counties),
             min_basket_share = min(basket_share),
             months_below_90pct = sum(basket_share < 0.90),
