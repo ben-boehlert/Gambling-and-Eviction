@@ -1,0 +1,40 @@
+state_abb,L,total_raw,total_live,covid_lost,pre_raw,pre_live,post_raw,post_live,base6,out1224,status
+WV,2018-08-01,112,98,14,31,31,81,67,6,7,SWITCHER partial
+PA,2019-05-01,110,100,10,40,40,70,60,6,0,no outcome
+RI,2019-09-01,130,115,15,51,51,79,64,6,2,SWITCHER partial
+IN,2019-10-01,113,100,13,45,45,68,55,6,3,SWITCHER partial
+NH,2019-12-01,84,67,17,12,12,72,55,6,5,SWITCHER partial
+CO,2020-05-01,57,42,15,15,14,42,28,4,10,no baseline
+TN,2020-11-01,117,100,17,58,50,59,50,0,13,no baseline
+VA,2021-01-01,102,98,4,53,50,49,48,0,13,no baseline
+AZ,2021-09-01,110,93,17,68,51,42,42,1,13,no baseline
+CT,2021-10-01,113,98,15,67,52,46,46,2,13,no baseline
+LA,2022-01-01,85,70,15,34,19,51,51,5,13,no baseline
+NY,2022-01-01,68,64,4,23,19,45,45,5,13,no baseline
+AR,2022-03-01,114,100,14,71,57,43,43,6,13,SWITCHER full
+KS,2022-09-01,110,93,17,80,63,30,30,6,13,SWITCHER full
+MD,2022-11-01,174,157,17,130,113,44,44,6,13,SWITCHER full
+OH,2023-01-01,114,97,17,84,67,30,30,6,13,SWITCHER full
+MA,2023-03-01,78,61,17,38,21,40,40,6,13,SWITCHER full
+KY,2023-09-01,110,99,11,86,75,24,24,6,12,SWITCHER partial
+ME,2023-11-01,119,102,17,94,77,25,25,6,13,SWITCHER full
+FL,2023-12-01,112,95,17,95,78,17,17,6,5,SWITCHER partial
+DE,2024-01-01,115,100,15,94,79,21,21,6,9,SWITCHER partial
+VT,2024-01-01,105,100,5,84,79,21,21,6,9,SWITCHER partial
+NC,2024-03-01,126,109,17,98,81,28,28,6,13,SWITCHER full
+MO,2025-12-01,78,61,17,71,54,7,7,6,0,no outcome
+AK,NA,116,100,16,NA,NA,NA,NA,NA,NA,control (no online date)
+GA,NA,112,95,17,NA,NA,NA,NA,NA,NA,control (no online date)
+HI,NA,33,16,17,NA,NA,NA,NA,NA,NA,excluded
+ID,NA,113,96,17,NA,NA,NA,NA,NA,NA,excluded
+MN,NA,100,99,1,NA,NA,NA,NA,NA,NA,control (no online date)
+MS,NA,99,82,17,NA,NA,NA,NA,NA,NA,excluded
+MT,NA,116,100,16,NA,NA,NA,NA,NA,NA,control (no online date)
+ND,NA,113,96,17,NA,NA,NA,NA,NA,NA,control (no online date)
+NM,NA,78,61,17,NA,NA,NA,NA,NA,NA,control (no online date)
+NV,NA,125,108,17,NA,NA,NA,NA,NA,NA,excluded
+OK,NA,113,100,13,NA,NA,NA,NA,NA,NA,control (no online date)
+SC,NA,85,69,16,NA,NA,NA,NA,NA,NA,control (no online date)
+TX,NA,117,100,17,NA,NA,NA,NA,NA,NA,control (no online date)
+UT,NA,117,100,17,NA,NA,NA,NA,NA,NA,control (no online date)
+WI,NA,81,64,17,NA,NA,NA,NA,NA,NA,control (no online date)

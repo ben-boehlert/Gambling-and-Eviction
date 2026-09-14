@@ -123,8 +123,25 @@ mde_boot:   200                # bootstrap CI on the interpolated MDE
 
 alpha:      [0.1, 0.05, 0.01]
 
-min_pre:    12
-min_post:   6
+min_pre:    18   # ANCHOR: min_pre/min_post are measured from the pseudo-cohort date d,
+                 # which is in treat_def units = shift12_start_date = LAUNCH + 12 MONTHS.
+                 # So min_pre=18 reaches d-18 = LAUNCH - 6 = exactly where the strict
+                 # PMD=6 baseline [launch-6, launch-1] begins. This is the whole point of
+                 # 18 over the legacy 12, which reached only the launch month and so
+                 # guaranteed NONE of the baseline.
+min_post:    0   # -> d+0 = month +12 = the FIRST outcome month [launch+12, launch+24].
+                 # 0 is correct, not lax: a state contributes at whatever horizons it has,
+                 # so >=1 is the estimator's true minimum. The legacy 6 (month +18,
+                 # 7 of 13 horizons) was a generic guard set 2026-08-03 for the CS/TWFE
+                 # arms, never revisited when the LP-DiD clean anchor arrived.
+                 #
+                 # FEASIBILITY: D1 places iff min_pre + min_post <= 18 on this panel.
+                 # (18,0) and the legacy (12,6) are both 18 wide and both place 25/25;
+                 # (18,3) and (21,0) fail 0/25. (18,0) positions the box at
+                 # [launch-6, launch+12] -- the estimator's exact minimum -- and buys
+                 # +25 live state-slots (485 -> 510, +5%) at identical feasibility.
+                 # Re-test with analysis/diagnostics/eligibility_window_feasibility.R
+                 # before changing.
 
 anticipation_months: 6
 

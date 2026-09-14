@@ -73,6 +73,27 @@ if (!exists("eviction_state_name_to_abb", mode = "function")) {
 }
 
 #' States with data covering [date - min_pre, date + min_post]
+#'
+#' ANCHOR WARNING. `d` is a pseudo-cohort date in the run's `treat_def` UNITS,
+#' not the legalization date. Under the headline configs `treat_def` is
+#' `shift12_start_date` = online launch + 12 months, so:
+#'
+#'   min_pre  = 12  ->  d - 12  =  the LAUNCH month (month 0 after legalization)
+#'   min_post =  6  ->  d +  6  =  month +18 after legalization
+#'
+#' i.e. the eligibility box spans months [0, +18] after legalization and
+#' contains NO pre-launch month. `min_pre` therefore guarantees none of the
+#' clean-anchor baseline [launch-6, launch-1]; `min_post = 6` guarantees 7 of
+#' the 13 outcome months [launch+12, launch+24].
+#'
+#' Reading these as launch-relative is a live trap: it produced an incorrect
+#' (18,12) patch on 2026-09-14 that left D1 infeasible. And note this is a SPAN
+#' check (does coverage reach far enough) while the strict PMD baseline is a
+#' PRESENCE requirement (are those months observed) -- a state can clear
+#' `min_pre` and still have its baseline punched out by the COVID drop, which
+#' is why 34% of admitted state-slots contribute nothing. No (min_pre,min_post)
+#' setting fixes that. See FINDINGS §6.
+#'
 #' @keywords internal
 .eligible_states <- function(states, d, cov, min_pre, min_post) {
   di <- .month_index(d)

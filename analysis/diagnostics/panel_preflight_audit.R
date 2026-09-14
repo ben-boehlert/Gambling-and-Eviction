@@ -88,6 +88,31 @@ ctrl <- p %>% distinct(state_abb, treat_start) %>% filter(is.na(treat_start), !s
   filter(!is.na(retail))
 n_issue <- n_issue + flag("control-pool states with LEGAL RETAIL sports betting", ctrl)
 
+cat("=== 7b. SERIES-START RAMPS (incomplete reporting at ingest) ===\n")
+# Leading months far below their OWN seasonal norm = partial coverage at series
+# start, not a real drop. Seasonality would false-positive against a flat level,
+# so each early month is compared to the same calendar month in the following
+# 3 years, with COVID excluded. Found 2026-09-14 via CT (2016-01/02 at 0.15/0.19
+# of norm, then straight to ~1.05).
+ramp <- map_dfr(sort(unique(p$state_abb)), function(s) {
+  d <- p %>% filter(state_abb == s) %>% arrange(month_date)
+  if (nrow(d) < 36) return(NULL)
+  st0 <- min(d$month_date)
+  ref <- d %>% filter(month_date >= st0 %m+% months(12), month_date <= st0 %m+% months(48),
+                      month_date < CS | month_date > CE) %>%
+    group_by(m = month(month_date)) %>%
+    summarise(norm = mean(filings_count), n_ref = n(), .groups = "drop") %>% filter(n_ref >= 2)
+  l12 <- d %>% slice_head(n = 12) %>% mutate(m = month(month_date)) %>%
+    inner_join(ref, by = "m") %>% mutate(ratio = filings_count / norm)
+  if (!nrow(l12)) return(NULL)
+  bel <- l12$ratio < 0.60
+  rl <- if (!bel[1]) 0L else which(c(!bel, TRUE))[1] - 1L
+  if (rl == 0L) return(NULL)
+  tibble(state_abb = s, series_start = st0, ramp_months = rl,
+         first_ratio = round(l12$ratio[1], 2))
+})
+n_issue <- n_issue + flag("series-start ramps", ramp)
+
 cat("=== 8. UPSTREAM STALENESS (a refresh would force ANOTHER vintage boundary) ===\n")
 st <- p %>% group_by(state_abb) %>% summarise(hi=max(month_date), src=first(panel_source), .groups="drop") %>%
   mutate(stale = interval(hi, Sys.Date()) %/% months(1)) %>% filter(stale >= 15) %>% arrange(desc(stale))

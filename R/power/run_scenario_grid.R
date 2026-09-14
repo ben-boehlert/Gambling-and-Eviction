@@ -304,6 +304,15 @@ power_rep_seed <- function(base_seed, rep, scenario_offset) {
     pmd <- suppressWarnings(as.integer(g$lpdid_pmd[i] %||% 3L))
     if (length(pmd) != 1L || is.na(pmd)) pmd <- 3L
     if (pmd != 3L) id$lpdid_pmd <- pmd
+    # `lpdid_pmd_min` (2026-08-28, gap-tolerant baseline): NA/absent = the
+    # historical strict rule (all pmd window months required, contiguous
+    # calendar window), so only a set value is hashed.
+    pmn <- suppressWarnings(as.integer(g$lpdid_pmd_min[i] %||% NA_integer_))
+    if (length(pmn) == 1L && is.finite(pmn)) id$lpdid_pmd_min <- pmn
+    # `lpdid_base_gapmax` (2026-08-28, segment/no-straddle constraint): same
+    # rule — only a set value is hashed.
+    gpx <- suppressWarnings(as.integer(g$lpdid_base_gapmax[i] %||% NA_integer_))
+    if (length(gpx) == 1L && is.finite(gpx)) id$lpdid_base_gapmax <- gpx
     # `lpdid_weights` INVERTS the rule, deliberately. Every other conditional
     # knob hashes its NON-default value because the default reproduces
     # historical behavior. Here the default itself changed: before 2026-08-24
@@ -412,6 +421,9 @@ expand_scenario_grid <- function(cfg) {
     g$n_reps   <- as.integer(blk$n_reps %||% cfg$n_reps)
     g$estimator_reps <- rep(list(blk$estimator_reps %||% cfg$estimator_reps),
                             nrow(g))
+    # min_pre/min_post are measured from the pseudo-cohort date in treat_def
+    # UNITS (shift12 = launch+12 under the headline configs), NOT from the
+    # launch. See the anchor warning on .eligible_states() before changing.
     g$min_pre  <- as.integer(blk$min_pre %||% cfg$min_pre %||% 12L)
     g$min_post <- as.integer(blk$min_post %||% cfg$min_post %||% 6L)
     # Run-level only (no per-block override): the guard is a property of the
@@ -431,6 +443,12 @@ expand_scenario_grid <- function(cfg) {
     g$lpdid_post <- as.integer(blk$lpdid_post %||% cfg$lpdid_post %||% 12L)
     # LP-DiD base-period width and cell weighting; block may override.
     g$lpdid_pmd <- as.integer(blk$lpdid_pmd %||% cfg$lpdid_pmd %||% 3L)
+    # Gap-tolerant baseline floor (NA = historical strict contiguous window).
+    g$lpdid_pmd_min <- suppressWarnings(as.integer(
+      blk$lpdid_pmd_min %||% cfg$lpdid_pmd_min %||% NA_integer_))
+    # Segment constraint / cell-level no-straddling (NA = off).
+    g$lpdid_base_gapmax <- suppressWarnings(as.integer(
+      blk$lpdid_base_gapmax %||% cfg$lpdid_base_gapmax %||% NA_integer_))
     g$lpdid_weights <- as.character(blk$lpdid_weights %||% cfg$lpdid_weights %||%
                                       "ewatt")
     # States dropped from the panel BEFORE schedule/template derivation —
@@ -1444,6 +1462,10 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
              lpdid_hmin     = as.integer(sc$lpdid_hmin %||% 0L),
              lpdid_post     = as.integer(sc$lpdid_post %||% 12L),
              lpdid_pmd      = as.integer(sc$lpdid_pmd %||% 3L),
+             lpdid_pmd_min  = suppressWarnings(as.integer(sc$lpdid_pmd_min %||%
+                                                            NA_integer_)),
+             lpdid_base_gapmax = suppressWarnings(as.integer(
+               sc$lpdid_base_gapmax %||% NA_integer_)),
              lpdid_weights  = as.character(sc$lpdid_weights %||% "ewatt"))
       }
 
@@ -1604,6 +1626,21 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
   mde <- compute_mde(oc, power_target = 0.80, alpha = 0.05,
                      results = results,
                      n_boot = as.integer(cfg$mde_boot %||% 200L))
+  # Recentered companion table (nullbias fix 2026-08-28): same interpolation
+  # on the reject_rc_005 curve — power against the placement-bias-corrected
+  # null. Never errors the run: falls back to NULL if the column is absent.
+  mde_rc <- tryCatch(
+    compute_mde(oc, power_target = 0.80, alpha = 0.05, results = results,
+                n_boot = as.integer(cfg$mde_boot %||% 200L), recenter = TRUE),
+    error = function(e) NULL)
+  # Size-adjusted companion (2026-08-29, Brewer/Crossley/Joyce-style): power
+  # at a critical value calibrated to each cell's own delta = 0 draws, on the
+  # recentered null. Additive appendix table; never errors the run.
+  mde_sa <- tryCatch(
+    compute_mde_sizeadj(results, power_target = 0.80, alpha = 0.05,
+                        recenter = TRUE,
+                        n_boot = as.integer(cfg$mde_boot %||% 200L)),
+    error = function(e) NULL)
   pre <- pretrend_summary(results)
 
   failures <- results %>% filter(!.data$converged)
@@ -1623,6 +1660,12 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
   readr::write_csv(results, .power_out_file(run_name, "results_raw.csv.gz"))
   readr::write_csv(oc,       .power_out_file(run_name, "oc_summary.csv"))
   readr::write_csv(mde,      .power_out_file(run_name, "mde_table.csv"))
+  if (!is.null(mde_rc)) {
+    readr::write_csv(mde_rc, .power_out_file(run_name, "mde_table_recentered.csv"))
+  }
+  if (!is.null(mde_sa)) {
+    readr::write_csv(mde_sa, .power_out_file(run_name, "mde_table_sizeadj.csv"))
+  }
   readr::write_csv(pre,      .power_out_file(run_name, "pretrend_summary.csv"))
   readr::write_csv(failures, .power_out_file(run_name, "failures.csv"))
   readr::write_csv(truth_meta,

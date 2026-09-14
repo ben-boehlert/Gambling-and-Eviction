@@ -141,6 +141,20 @@ From `data/processed/state_panel_rebuild_source_table.csv`, 2026-08-20 rebuild.
   basket_share **0.34** and **0.48** — their levels are NOT statewide. Still carry **no renter
   denominator** (fill via `data_prep/fetch_acs_renter_denominators.R`, ACS B25003_003); rates are NA
   until then and must never be fabricated. Currency: [DATA_CURRENCY.md](DATA_CURRENCY.md).
+- **Series-start ramp censor (2026-09-14).** Three leading months were removed as incomplete-at-ingest
+  reporting, not real drops: **CT 2016-01 / 2016-02** (0.15 / 0.19 of their own seasonal norm, then
+  straight to ~1.05) and **NH 2018-12** (0.20, then 1.18). CT now starts 2016-03 and NH 2019-01.
+  Detection: `analysis/diagnostics/series_start_ramp_check.R`; edit: `data_prep/censor_series_start_ramps.R`.
+  WI 2019-01 (0.56) was assessed and deliberately left in place.
+- **`or_ojd_plus_evictedinoregon_2026-09-14` (1) → SPLICED, two Oregon sources.** OR. Pre-period
+  2018-01..2019-12 from **Oregon Judicial Department "Cases Filed" PDFs** (statewide monthly Landlord
+  Tenant); 2020-01..2026-07 from the **Evicted in Oregon dashboard** (Lisa Bates, Portland State;
+  underlying OJD circuit-court records). Splice unavoidable — neither source spans OR's baseline and
+  outcome. Seam measured on 12 overlapping months: dashboard/OJD median **0.9905** (−0.0095 log points),
+  left unadjusted and disclosed. Circuit court only (13 counties' justice-court filings absent);
+  statewide only. **The dashboard is MUTABLE** — Datawrapper chart `l8e1N`, captured version 94;
+  the publisher revised Apr 2026 (2,308 → 2,319) between captures. Source README:
+  `data/raw/evicted_in_oregon/README.md`. Status: `VERIFIED-SESSION`.
 - **`md_judiciary_lt_complaint_filings` (1) → MD Judiciary PDFs.** MD.
 - **`nh_court_source_repair_2026-07-23` (1) → NH Judicial Branch.** NH.
 - **`wi_court_source_repair_2026-07-23` (1) → WI DOA.** WI.

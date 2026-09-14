@@ -1,0 +1,111 @@
+# =============================================================================
+# power_lpdid_clean_gate_vwatt_pmd6_v20260914_post2020.yml  (2026-09-14)
+#
+# ROBUSTNESS ARM: drop the pre-2020 adopting cohorts, aligning with Goss &
+# Mangrum ("Sports Betting Across Borders"), whose baseline specification sets
+# omega weights to zero for "treatment cohorts whose own-legalization event
+# occurs prior to the first quarter of 2020" on the grounds that "betting
+# activity at many platforms did not meaningfully ramp up until after the
+# COVID-19 pandemic" -- a substantively different treatment environment.
+#
+# Their rule applied to this project's schedule drops 8 of 31 online
+# legalizers (NJ WV PA IA RI IN OR NH). Five of those are CURRENT switchers
+# here: WV RI IN OR NH. This arm excludes exactly those five.
+#
+# WHAT IT COSTS (measured 2026-09-14):
+#   - 20 of 146 live outcome-months = 14% of identifying variation
+#   - ZERO full-window switchers: all 7 (AR KS MD OH MA ME NC) are post-2020
+#   - 9 control slots out of 146 cells -- these states legalize 2018-2019, so
+#     they precede almost every other switcher's outcome window and supply
+#     essentially no control mass
+#   - D1 placement stays feasible: 20/20 seeds at (12,6), 28 states
+#
+# WHY IT IS WORTH RUNNING: those five are the weakest switchers on two
+# independent grounds at once -- immature betting markets (G&M's argument) AND
+# COVID-damaged outcome windows (all partial, max 7/13, none full). If the
+# answer is stable without them, that is a direct response to "why do you keep
+# cohorts the most careful comparison paper drops?"
+#
+# min_pre/min_post are (12,6) here -- the ONLY feasible D1 window on this panel
+# (see FINDINGS §6; the 18/12 patch on the sibling configs was based on an
+# incorrect reading and leaves D1 infeasible).
+# =============================================================================
+run_name: lpdid_clean_gate_vwatt_pmd6_v20260914_post2020
+
+exclude_states: [NV, ID, HI, MS, WV, RI, IN, OR, NH]   # + the 5 pre-2020 cohorts (G&M rule)
+
+# ramp75 dating with HYBRID CONTROL CODING: schedule carries online + ramp75
+# dates; run_scenario_grid derives pseudo_launch from the per-cohort lag and
+# .re_lpdid gates controls on launch. Size gate only (delta = 0).
+schedule:   data/processed/shift12_schedule.csv
+
+# ---- Top-level defaults -----------------------------------------------------
+
+level:      state
+sample:     [S2]
+covid:      drop
+treat_def:  shift12_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+
+template:   panel
+
+# Dense where the spliced window's MDE is expected, extended far enough that
+# the small post-COVID design can actually cross 80% power.
+effect_grid:  [0]
+
+estimators:   [twfe, lpdid]
+lpdid_wild:   true
+lpdid_anchor: event_clean   # PRE-LAUNCH baseline (the memo estimand), outcomes launch+12..24
+lpdid_pmd:    6   # pmd probe 2026-08-28: 6 beats 3 and 12 on paired draws (SD 0.0383 vs 0.0399/0.0447); keeps AR, averages seasonality
+lpdid_weights: vwatt            # unweighted stack (comment corrected 2026-08-29; sed bug had left ewatt here)
+
+# ---- Execution --------------------------------------------------------------
+
+n_reps:     1000   # sequential gate: escalate to 2000 via resume=TRUE ONLY if size lands in [0.055, 0.09] (MC CI +-0.014 at 1000)
+base_seed:  20260723           # pairs with both size gates and smoke/cheap/primary
+mde_boot:   200                # bootstrap CI on the interpolated MDE
+
+alpha:      [0.1, 0.05, 0.01]
+
+min_pre:    18   # ANCHOR: min_pre/min_post are measured from the pseudo-cohort date d,
+                 # which is in treat_def units = shift12_start_date = LAUNCH + 12 MONTHS.
+                 # So min_pre=18 reaches d-18 = LAUNCH - 6 = exactly where the strict
+                 # PMD=6 baseline [launch-6, launch-1] begins. This is the whole point of
+                 # 18 over the legacy 12, which reached only the launch month and so
+                 # guaranteed NONE of the baseline.
+min_post:    0   # -> d+0 = month +12 = the FIRST outcome month [launch+12, launch+24].
+                 # 0 is correct, not lax: a state contributes at whatever horizons it has,
+                 # so >=1 is the estimator's true minimum. The legacy 6 (month +18,
+                 # 7 of 13 horizons) was a generic guard set 2026-08-03 for the CS/TWFE
+                 # arms, never revisited when the LP-DiD clean anchor arrived.
+                 #
+                 # FEASIBILITY: D1 places iff min_pre + min_post <= 18 on this panel.
+                 # (18,0) and the legacy (12,6) are both 18 wide and both place 25/25;
+                 # (18,3) and (21,0) fail 0/25. (18,0) positions the box at
+                 # [launch-6, launch+12] -- the estimator's exact minimum -- and buys
+                 # +25 live state-slots (485 -> 510, +5%) at identical feasibility.
+                 # Re-test with analysis/diagnostics/eligibility_window_feasibility.R
+                 # before changing.
+
+anticipation_months: 6
+
+# ---- Scenario families ------------------------------------------------------
+
+scenarios:
+
+  # A. Spliced panel (the standard framework window).
+  - name: mde_spliced
+    covid: drop
+
+  # B. Clean post-COVID window. Also the "states that only ramped post-COVID"
+  #    design — S2 truncation removes every early-ramp state automatically
+  #    (see power_lpdid_gate_postcovid.yml header for the verification).
+  - name: mde_postcovid
+    covid: post

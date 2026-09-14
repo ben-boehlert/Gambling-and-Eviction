@@ -32,7 +32,19 @@ cp config/power_cheap.yml               "$DEST/config/"
 cp config/power_smoke.yml               "$DEST/config/"
 cp config/power_addon1.yml              "$DEST/config/"
 # 2026-09-14 panel-vintage re-run: clean-anchor gate + MDE, fresh run_names.
+for f in config/power_lpdid_clean_{gate,mde}_{ewatt,vwatt}_pmd6_v20260914_post2020.yml; do
+  [ -f "$f" ] && cp "$f" "$DEST/config/"
+done
+for f in config/power_lpdid_clean_{gate,mde}_{ewatt,vwatt}_pmd6_v20260914_noMO.yml; do
+  [ -f "$f" ] && cp "$f" "$DEST/config/"
+done
 for f in config/power_lpdid_clean_{gate,mde}_{ewatt,vwatt}_pmd6_v20260914.yml; do
+  [ -f "$f" ] && cp "$f" "$DEST/config/"
+done
+# _noMO companions (session memo §5 decision 2: MO covers 45.5% of its renters and
+# is control-eligible in 134 of 143 live cells). Ship both so the choice can be
+# made on the cluster instead of forcing a re-upload.
+for f in config/power_lpdid_clean_{gate,mde}_{ewatt,vwatt}_pmd6_v20260914_noMO.yml; do
   [ -f "$f" ] && cp "$f" "$DEST/config/"
 done
 cp config/power_lpdid_launch_h1824_gate_ewatt.yml "$DEST/config/"
@@ -48,6 +60,8 @@ cp config/power_lpdid_shift12_clean_mde_vwatt.yml  "$DEST/config/"
 cp config/power_lpdid_shift12_clean_gate_ewatt_pmd6.yml "$DEST/config/"
 cp config/power_lpdid_shift12_clean_mde_ewatt_pmd6.yml  "$DEST/config/"
 cp config/power_lpdid_shift12_clean_gate_vwatt_pmd6.yml "$DEST/config/"
+# 2026-09-14 option C: county LP-DiD wild size gate (clean design, 2,000 reps).
+cp config/power_lpdid_clean_gate_county_ewatt_pmd6_wild_v20260914.yml "$DEST/config/"
 cp config/power_lpdid_shift12_clean_mde_vwatt_pmd6.yml  "$DEST/config/"
 cp tests/run_tests.R                    "$DEST/tests/"
 cp -R tests/testthat                    "$DEST/tests/testthat"
@@ -69,6 +83,7 @@ cp scripts/della_power/run_validation.sh     "$DEST/"
 cp scripts/della_power/list_scenarios.sh     "$DEST/"
 cp scripts/della_power/run_primary.slurm     "$DEST/"
 cp scripts/della_power/run_clean_v20260914.slurm "$DEST/"
+cp scripts/della_power/run_county_wild_v20260914.slurm "$DEST/"
 cp scripts/della_power/run_sensitivity.slurm "$DEST/"
 cp scripts/della_power/run_cheap.slurm       "$DEST/"
 cp scripts/della_power/run_smoke.slurm       "$DEST/"

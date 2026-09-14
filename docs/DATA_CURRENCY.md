@@ -28,6 +28,7 @@ and [STATE_SOURCES.md](STATE_SOURCES.md) (per-state scope — whole state vs cou
 | `nh_court_source_repair_2026-07-23` | 1 | 10 | 2025-11 | Request an updated extract from the NH Judicial Branch |
 | `ets_internal_county_2026-09-03` | 6 | 3.5 | 2026-06 | Obtain a newer Eviction Lab internal extract, replace `ets_county_month.csv`, then `Rscript data_prep/rebuild_single_series_from_ets_internal.R` |
 | `md_judiciary_lt_complaint_filings` | 1 | 3 | 2026-06 | Pull new monthly PDFs from the MD Judiciary statistics page into `data/raw/monthly_expansion/md_raw/`, then re-run the MD extraction |
+| `or_ojd_plus_evictedinoregon_2026-09-14` | 1 | 2 | 2026-07 | NA |
 
 ## By state — stalest first
 
@@ -43,7 +44,7 @@ and [STATE_SOURCES.md](STATE_SOURCES.md) (per-state scope — whole state vs cou
 | ID | county_download_fixed_basket | 2016-01–2025-05 | 113 | **16** | -- | 1 | 1.00 | yes | excluded | aging |
 | ND | county_download_fixed_basket | 2016-01–2025-05 | 113 | **16** | -- | 6 | 1.00 | yes | control (no online date) | aging |
 | OH | county_download_fixed_basket | 2016-01–2025-06 | 114 | **15** | -- | 4 | 1.00 | yes | **switcher (full)** | aging |
-| CT | county_download_fixed_basket | 2016-01–2025-07 | 113 | **14** | -- | 6 | 1.00 | yes | not a switcher |  |
+| CT | county_download_fixed_basket | 2016-03–2025-07 | 111 | **14** | -- | 6 | 1.00 | yes | not a switcher |  |
 | WV | county_download_fixed_basket | 2016-01–2025-08 | 112 | **13** | 1 | 25 | 1.00 | yes | switcher (partial 7/13) |  |
 | AK | county_download_fixed_basket | 2016-01–2025-09 | 116 | **12** | -- | 5 | 1.00 | yes | control (no online date) |  |
 | AR | county_download_fixed_basket | 2016-01–2025-09 | 114 | **12** | -- | 12 | 1.00 | yes | **switcher (full)** |  |
@@ -63,7 +64,7 @@ and [STATE_SOURCES.md](STATE_SOURCES.md) (per-state scope — whole state vs cou
 | VT | county_download_fixed_basket | 2016-01–2025-09 | 105 | **12** | -- | 9 | 1.00 | yes | switcher (partial 9/13) |  |
 | WI | wi_court_source_repair_2026-07-23 | 2019-01–2025-10 | 81 | **11** | 1 | -- | -- | yes | control (no online date) |  |
 | ME | county_download_fixed_basket | 2016-01–2025-11 | 119 | **10** | -- | 16 | 1.00 | yes | **switcher (full)** |  |
-| NH | nh_court_source_repair_2026-07-23 | 2018-12–2025-11 | 84 | **10** | -- | -- | -- | yes | switcher (partial 5/13) |  |
+| NH | nh_court_source_repair_2026-07-23 | 2019-01–2025-11 | 83 | **10** | -- | -- | -- | yes | switcher (partial 5/13) |  |
 | LA | ets_internal_county_2026-09-03 | 2019-01–2026-03 | 85 | **6** | -- | 1 | 1.00 | yes | not a switcher |  |
 | NV | ets_internal_county_2026-09-03 | 2016-01–2026-05 | 125 | **4** | -- | 1 | 1.00 | yes | excluded |  |
 | RI | ets_internal_county_2026-09-03 | 2015-06–2026-05 | 130 | **4** | -- | 4 | 1.00 | yes | switcher (partial 2/13) |  |
@@ -72,6 +73,7 @@ and [STATE_SOURCES.md](STATE_SOURCES.md) (per-state scope — whole state vs cou
 | MO | ets_internal_county_2026-09-03 | 2020-01–2026-06 | 78 | **3** | -- | 29 | 0.34 | yes | not a switcher | THIN-BASKET |
 | NC | county_download_fixed_basket | 2016-01–2026-06 | 126 | **3** | -- | 100 | 1.00 | yes | **switcher (full)** |  |
 | NM | ets_internal_county_2026-09-03 | 2020-01–2026-06 | 78 | **3** | -- | 14 | 0.48 | yes | control (no online date) | THIN-BASKET |
+| OR | or_ojd_plus_evictedinoregon_2026-09-14 | 2018-01–2026-07 | 103 | **2** | -- | -- | -- | yes | switcher (partial 3/13) |  |
 
 ## Known limits of this table
 

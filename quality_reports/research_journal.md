@@ -238,3 +238,10 @@ aggregation. Spliced + complete-periods = D1-infeasible.
 **Score:** N/A (diagnostic)
 **Verdict:** Estimator identical to machine precision on six simulated panels; the script's sample construction (max-coverage balancing, 2024-12 date cap, no exclusion knob) breaks the spec and must be changed before the real run. Pre-trend block is empty under shift12.
 **Report:** `quality_reports/parity_check_lpdid_statepanel_2026-09-06.md`, `output/lpdid_statepanel_parity/`
+
+### 2026-09-14 — session: panel audit + design review
+**Phase:** Execution / Strategy (PAP design)
+**Target:** state panel vintage, clean-anchor design, COVID window
+**Score:** N/A (diagnostics + data build, no estimation)
+**Verdict:** Panel rebuilt to a new 2026-09-14 vintage and Oregon added (switchers 13 -> 16, 40 states); three COVID-window alternatives tested and all rejected; eligibility window found mis-specified with 8 of 24 D1 cohort slots structurally impossible; 4 latent bugs fixed. 11 of my own intermediate conclusions were overturned and are logged — including the session's opening finding about which missing states are viable.
+**Report:** quality_reports/session_2026-09-14_panel_audit_and_design_review.md

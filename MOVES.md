@@ -6,6 +6,8 @@ Nothing was deleted. Reversal is `mv` back.
 
 | old path | new path | reason |
 |---|---|---|
+| — (Oregon added, nothing displaced) | `data/raw/state_month_panel_with_treatment.csv` | 2026-09-14: OR added from OJD PDFs (2018-01..2019-12) + Evicted in Oregon dashboard (2020-01..2026-07); 39 → 40 states |
+| `data/raw/state_month_panel_with_treatment.csv` (pre-ramp-censor vintage) | `data/raw/deprecated/state_month_panel_with_treatment_pre_ramp_censor_2026-09-14.csv` | 2026-09-14 series-start ramp censor: CT 2016-01/02 and NH 2018-12 removed as incomplete-at-ingest reporting; superseded vintage preserved |
 | `data/raw/state_month_panel_with_treatment.csv` (pre-single-series-rebuild vintage) | `data/raw/deprecated/state_month_panel_with_treatment_pre_single_series_rebuild_2026-09-14.csv` | 2026-09-14 single-series rebuild: LA MA MO NM NV RI rebuilt from `ets_county_month.csv`; superseded vintage preserved, not deleted |
 | `output/_audit_tmp_fasterFALSE` | `output/deprecated/_audit_tmp_fasterFALSE` | per inventory_output.md |
 | `output/cs_calibration_unified` | `output/deprecated/cs_calibration_unified` | per inventory_output.md |
@@ -161,3 +163,10 @@ Nothing was deleted. Reversal is `mv` back.
 | `data/raw/state_month_panel_with_treatment.csv` (2026-08-20 global-basket vintage) | `data/raw/deprecated/state_month_panel_with_treatment_globalbasket_2026-08-20.csv` (copy; canonical replaced by the 2026-08-28 per-state-basket rebuild) | vintage boundary: per-state basket starts add CO/HI/MS/NY/SC (34→39 states); prior state-months unchanged bit-for-bit |
 | `output_blinded_power/lpdid_launch_h1824_gate_ewatt/` (+ `_run.log`) | `output_blinded_power/deprecated/lpdid_launch_h1824_gate_ewatt_prebasket_partial/` | DEAD partial: 2,000-rep gate started locally on the pre-basket panel, killed after ~1 min (Della redirect); must not be resumed on the 39-state panel — configs now use `_p39` run_names |
 | `output_blinded_power/lpdid_shift12_sdprobe_clean_noID_vwatt_pmd6/` | `output_blinded_power/deprecated/lpdid_shift12_sdprobe_clean_noID_vwatt_pmd6_ACTUALLY_EWATT/` | MISLABELED: a sed pattern anchored `ewatt$` missed the trailing-comment line, so this "vwatt" probe (and the first cut of the clean_{gate,mde}_vwatt_pmd6 configs, fixed in place 2026-08-29) ran EWATT; results are duplicates of the ewatt pmd6 probe, never ledgered. Della's `lpdid_shift12_clean_{gate,mde}_vwatt_pmd6` dirs from the 2026-08-29 run carry the same ewatt-spec partials and must be rm'd before rerunning the corrected configs |
+
+## 2026-09-14 — county-arm timing probe (option C)
+
+| Old path | New path | Why |
+|---|---|---|
+| `config/power_lpdid_shift12_clean_gate_county_ewatt_pmd6_timing.yml` | `config/deprecated/power_lpdid_shift12_clean_gate_county_ewatt_pmd6_timing.yml` | 5-rep timing probe used only to size the real run; superseded by `config/power_lpdid_shift12_clean_gate_county_ewatt_pmd6.yml` |
+| `output_blinded_power/lpdid_shift12_clean_county_ewatt_pmd6_timing/` | `output_blinded_power/deprecated/lpdid_shift12_clean_county_ewatt_pmd6_timing/` | its output; 5 reps, never citable |

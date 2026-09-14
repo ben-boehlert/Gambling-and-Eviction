@@ -2037,28 +2037,39 @@ checkpoint at reduced concurrency (6 → 5 workers), no data lost.
 - (23:59 addendum) HonestDiD blind width check, post coefficient set to 0: original ±0.092; relative magnitudes Mbar 0.25/0.5/1/2 → ±0.127/0.188/0.344/0.668. Smoothness class judged mis-specified for the long-difference gap. File: `output/lpdid_pretrends_shift12_clean/honestdid_blind_width.csv`; script copy `lpdid_statepanel_stk2.R`.
 - (2026-09-07 00:10 addendum) HonestDiD with 3 pooled placebo windows (7–12, 13–18, 19–24 months pre-launch; joint Wald p 0.33; max |pooled pre| 0.061): relative-magnitudes half-widths Mbar 0.25/0.5/1/2 → 0.103/0.113/0.150/0.254 vs 0.127/0.188/0.344/0.668 with 18 single leads. File `output/lpdid_pretrends_shift12_clean/honestdid_blind_width_3window.csv`. Window structure must be pre-registered before unblinding.
 
-## 2026-09-14 — Panel currency audit, single-series rebuild, and design pre-flight
+## 2026-09-14 — Panel currency audit, single-series rebuild, and design review
+
+Full memo: `quality_reports/session_2026-09-14_panel_audit_and_design_review.md`
 
 **Operations:**
-- Rebuilt the 6 Eviction Lab single-series states (LA MA MO NM NV RI) from `ets_county_month.csv` via new `data_prep/rebuild_single_series_from_ets_internal.R`; prior vintage → `data/raw/deprecated/state_month_panel_with_treatment_pre_single_series_rebuild_2026-09-14.csv` (MOVES.md)
-- Filled ACS renter denominators for those 574 rows (`data_prep/fetch_acs_renter_denominators.R`, B25003_003 county-level)
-- New generated doc `docs/DATA_CURRENCY.md` + its generator `data_prep/make_data_currency_doc.R`
-- New diagnostics: `spillover_cluster_feasibility.R`, `nullbias_real_schedule_check.R`, `single_series_currency_audit.R`, `panel_preflight_audit.R`, `report_basket_population_coverage.R`
-- New figures: `plot_clean_anchor_windows.R`, `plot_mo_leverage.R`
-- 8 fresh v20260914 configs (4 headline + 4 noMO) + `scripts/della_power/run_clean_v20260914.slurm`
+- Rebuilt 6 single-series states from `ets_county_month.csv` (`data_prep/rebuild_single_series_from_ets_internal.R`); RI +77 mo, MO/NM +41, MA +31, LA +7, NV +6
+- Filled ACS renter denominators, 574 rows (`data_prep/fetch_acs_renter_denominators.R`)
+- Censored series-start ramps CT 2016-01/02, NH 2018-12 (`data_prep/censor_series_start_ramps.R`)
+- Generated `docs/DATA_CURRENCY.md` + generator; regenerated `output/eviction_stabilization/`
+- 11 new diagnostics + 3 figures; 8 v20260914 configs (4 headline + 4 noMO) + slurm + interactive runbook
+- Added **Oregon** (new state, never in the panel): OJD PDFs 2018-01..2019-12 + Evicted in Oregon dashboard 2020-01..2026-07, seam 0.9905 (-0.0095 log pts) disclosed not adjusted (`data_prep/add_oregon_to_state_panel.R`). Panel 4,071 -> 4,174 rows, 39 -> 40 states
+- **Correction #11 (the session's opening finding was inverted):** "only WY has clean online timing among the missing legalizers" is wrong. WY's baseline is 1/6 -> NOT viable; NJ (6/6, 7/13), OR (6/6, 3/13) and IA (6/6, 1/13) ARE. I had judged missing states on outcome-window survival without checking the baseline. **NJ is the highest-value remaining target** — monthly Tenancy recoverable from NJ Courts `cman` PDFs by differencing YTD values, but 220 of 252 PDFs still need downloading
+- Prior vintages in `data/raw/deprecated/` (MOVES.md)
 
-**Decisions / fixes:**
-- `rebuild_state_month_panel.R` read KEEP_OLD rows from the 2026-08-20 archive — a latent revert-bomb that would have silently reverted MD's 2026-09-03 extension. Now reads the current panel, archive as cold-build fallback.
-- `make_della_power_upload.sh` copies a hardcoded config list; added the new configs + slurm.
-- Did NOT re-download the LSC file: the live version is a strict SUBSET of the local one (120,357 vs 124,325 rows). Re-downloading would delete NC 2023-07→2026-06 and demote a full-window switcher.
+**Bugs fixed:**
+- `rebuild_state_month_panel.R` read KEEP_OLD from the 2026-08-20 archive -> would have silently reverted MD's 2026-09-03 extension. Latent since 2026-09-03
+- `make_della_power_upload.sh` hardcoded config list -> would have shipped a package missing the new runs
+- DATA_PROVENANCE §1 corrected: the LSC file is a HYBRID; the live download is a strict subset (NC/ME from court substitutes). Re-downloading is destructive
+- `docs/DATA_PROVENANCE.md` was untracked in git
 
 **Results:**
-- Switchers 13 → 15; MA now full-window. Panel 3,904 → 4,074 rows, 39 states, one source per state.
-- County spillover design is cluster-infeasible (2–11 usable state clusters vs 12 direct) — no MDE warranted.
-- Recentering premise not supported: real `cor_date_trend` = −0.212 sits at the 43rd pct of the simulated distribution; magnitude is MO-driven (jackknife −0.262..−0.055).
-- pmd=3 vs 6 is a wash on power (SD ratio CI [0.936, 1.152] spans 1.0); decide on seasonality.
-- ACS renter coverage: RI 92.5%, NM 87.9%, NV 75.6%, MO 45.5%, MA 19.8%, LA 13.2%.
+- Switchers 13 -> 16, full-window 6 -> 7 (RI 2/13 and OR 3/13 join; MA becomes full)
+- County spillover design cluster-infeasible (2-11 clusters) -> no MDE run warranted
+- Three COVID routes tried and closed (gap-tolerant / shorter window / pre-COVID straddle); the 2021-07 boundary is correct
+- COVID resets: mean cancels treated-vs-control (t = -1.24), variance does not (0.204 = 1.6x MDE, 41% after pooling)
+- Eligibility window mis-specified: 34% of admitted state-slots contribute nothing; 8 of 24 D1 cohort slots are structurally impossible
+- Ramp censor: CT pre-COVID log SD 0.376 -> 0.133, NH 0.482 -> 0.138 (Ohio benchmark 0.114)
+
+**Corrections (11 logged in memo §4):** no-network (zsh globbing), site double-count, NM basket quality, `min_post`=6, the (18,12) patch, "breaks the design", gap-tolerant rescue, the 2020-09 COVID boundary, LSC-refresh-first, stale stabilization artifact.
+
+**Commits:**
+- `fad95a6` Rebuild single-series states, add data-currency tooling, pre-flight the panel (56 files)
 
 **Status:**
-- Done: panel rebuilt + canonical, denominators filled, currency doc generated, Della package built.
-- Pending: Della run not launched; MO-exclusion and MA-labelling decisions open; `ets_county_month.csv` still untracked (rebuild depends on it).
+- Done: panel rebuilt + canonical, denominators filled, currency doc generated, Della package built and matching
+- Pending: **configs carry (18,12) and will NOT run under D1 — revert or change design before launching**; MO-exclusion, MA-labelling, recentering, maturity disclosure all open; `ets_county_month.csv` untracked
