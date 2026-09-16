@@ -2073,3 +2073,150 @@ Full memo: `quality_reports/session_2026-09-14_panel_audit_and_design_review.md`
 **Status:**
 - Done: panel rebuilt + canonical, denominators filled, currency doc generated, Della package built and matching
 - Pending: **configs carry (18,12) and will NOT run under D1 — revert or change design before launching**; MO-exclusion, MA-labelling, recentering, maturity disclosure all open; `ets_county_month.csv` untracked
+
+## 2026-09-14 — WA + MI added to the state panel; trailing partial months censored
+
+**Operations:**
+- New: `data_prep/add_wa_to_state_panel.R`, `data_prep/add_mi_to_state_panel.R`, `data_prep/censor_trailing_partial_months.R`
+- New: `docs/findings-archive/2026-09-14_wa-mi-panel-addition.md` (+ INDEX row)
+- Extended: `data_prep/fetch_acs_renter_denominators.R` (registry now covers the WA and MI tags), `data_prep/make_data_currency_doc.R` (REFRESH entries for WA, MI, OR)
+- Rebuilt: `data/raw/state_month_panel_with_treatment.csv` +113 WA rows, +68 MI rows, −4 trailing partials, 40 → **42 states**; prior vintage preserved at `data/raw/deprecated/state_month_panel_with_treatment_pre_wa_mi_2026-09-14.csv`
+- Regenerated: `docs/DATA_CURRENCY.md`, `data/processed/county_vs_state_arm_{summary,by_state}.csv`, `data/processed/single_series_acs_denominator_qa.csv`
+- Updated: `RUN_LEDGER.md` (boundary 8 + 5 rows), `FINDINGS.md` (§2 framing, §5 bullets), `ESTIMATOR_MATRIX.md`, `docs/STATE_SOURCES.md` (39 → 42 rows, derived columns refreshed), `docs/DATA_PROVENANCE.md`, `CLAUDE.md`, `MOVES.md`
+
+**Decisions:**
+- WA enters with `treat_start` NA — retail-only Sep 2021, no online date — so it is a **never-treated control**, not a switcher. Pierce County only, so `basket_share` 1 on one county and levels are not statewide.
+- MI ships with its 21 interior gaps as **omitted rows**, not NA or zero — the panel forbids NA filings. Full series kept rather than truncating at 2023-01, since balance rules already handle gaps.
+- All five trailing partial months censored (WA's plus the four already live in LA/MA/MO/NM), rather than only the new one — one vintage boundary instead of two.
+- County and state panels declared **two co-equal main specs**, kept separate, never pooled. County feed untouched; neither new state can enter it (both non-LSC).
+
+**Results:**
+- WA: 113 contiguous months 2017-01..2026-05, zero gaps. Pierce Co. denominator 124k.
+- MI: 68 of 89 months, gaps all from 2023-02, longest run 8. Footprint QA 2019 = **0.940** of the county dashboard, so the statewide denominator understates the rate ~6%.
+- **MI is not a clean-anchor switcher under either headline treat_def** — online 2021-01 has 0 eligible baseline months (all COVID-dropped); shift12 2022-01 has 5/5 baseline but 2/13 outcomes. Full only on `first_start` 2020-03.
+- Trailing-partial censor removed exactly the three non-COVID level breaks it was meant to (LA −1.361, MO −1.389, NM −1.816); MA's −0.63 had been passing under the threshold.
+- Pre-flight audit on the 42-state panel: structure clean, no NA/negative/duplicate rows; §7 retail-legal control pool now 5 states (MT ND NM WI + WA).
+- Arm accounting: state 35 / county 26 (covid=drop).
+
+**Commits:**
+- none yet — working tree holds the change
+
+**Status:**
+- Done: both states in the panel, denominators filled, all docs and the ledger reconciled, pre-flight passed
+- Pending: **new vintage boundary — every power/pretrends run needs a fresh `run_name` (`p39` → `p42`)**; the QUEUED `_v20260914` configs have stale "40 states / switchers 13 → 16" header comments and will now execute against the 42-state panel
+
+## 2026-09-14 16:05 — COVID-drop sensitivity, DDD wild arm, clean-design window audit
+
+**Operations:**
+- Built `R/power/ddd_h_rules.R` (5 selectable H rules + `ddd_h_balance()`), `R/power/ddd_wild.R` (restricted WCR by FWL demeaning + wild CI by test inversion), `analysis/power/run_ddd_power_wild.R`, `tests/testthat/test-ddd-wild.R` (10/10 pass).
+- Built `analysis/diagnostics/clean_design_window_audit.R` — canonical switcher classification + COVID-end sweep, window convention derived from config and asserted.
+- Deprecated `analysis/diagnostics/covid_end_monthly_sweep.R` → `analysis/diagnostics/deprecated/` (MOVES.md recorded).
+- Ran: `ddd_h_rule_balance.R`; DDD wild 500 reps (`wild_resid_v20260914`); DDD wild 2,000 reps (`wild_resid_n2000_v20260914`) — PAUSED mid-keep-arm at user request, drop arm checkpointed.
+
+**Decisions:**
+- DDD `h_rule` default changed `within_state` → `poverty_resid`. The legacy split put 36% of renters in H=1 with 15% lower filing rates (within-state cor(poverty, log eviction rate) = −0.202); `poverty_resid` gives renter share 0.495, poverty gap 6.5pts, size ratio 1.16, evrate ratio 1.06. Legacy name still accepted as an alias.
+- WCR implemented by demeaning once with `fixest::demean()` then bootstrapping the one-regressor FWL model — `boottest` absorbs only one FE and the DDD has three (~4,800 state×month dummies).
+- Kept the LIVE 2021-07 COVID boundary. It is the point at which no state has a ramp month in either window under the strict 6/6 rule.
+
+**Results:**
+- H rebalancing removed the uniform-DGP drift (legacy −0.0036 → −0.0189 across δ; now +0.0088 → +0.0075, rejection flat).
+- DDD 500-rep gate: wild 0.070 (drop) / 0.064 (keep) vs analytic 0.096 / 0.126; SE/SD 0.86 / 0.84; null bias +0.0126 / +0.0088. Recentering added afterwards; the 500-rep raw file predates the CI columns and cannot be recentered retroactively.
+- **Three corrections to earlier work in this session**: (1) `event_clean` baseline is anchored at launch, not shift12 — both windows were being placed 12 months too late; (2) MI is baseline-blocked with a complete 13/13 outcome window, not outcome-blocked; (3) moving the boundary to 2021-06 worsens SD/√n by 80% once LA/NH/NY are scored, reversing the earlier "no measurable cost" reading.
+- FINDINGS §5: attribution corrected to 8 baseline-short / 5 missing / MO edge / PA outcome-empty (totals unchanged 15 dropped, 16 kept); two standing traps recorded.
+
+**Commits:** none yet — working tree.
+
+**Status:**
+- Done: DDD wild engine + validation; H rules + balance; window audit; ledger/MOVES/FINDINGS updated.
+- Pending: finish the 2,000-rep DDD keep arm; blinded SD probe at 2021-07 vs 2022-03; `v20260914` LP-DiD gate/MDE pair (no post-rebuild state power output exists yet).
+
+## 2026-09-16 11:05 — LP-DiD simulation implementation review (month restrictions + estimator)
+
+**Operations:**
+- Ran tests/testthat/test-estimators.R: 17 tests / 83 expectations, 0 failures
+- Sonnet code map + Opus methodological review of .re_lpdid(), placement, loader, impose_effects; Fable re-verified load-bearing lines
+- New: quality_reports/lpdid_sim_implementation_review_2026-09-16.md; research_journal entries appended
+- No code changed
+
+**Decisions:**
+- Assessment only, no fixes applied — user asked for a review
+
+**Results:**
+- Windows, clean-control gating, ewatt/vwatt FWL weights, COVID row-drop + calendar indexing, √w wild engine: CORRECT
+- Concerns: recentering only at α=0.05 (0.10/0.01 gate columns raw); analytic df = all panel states (run_estimators.R:336); cross-COVID long differences allowed with lpdid_base_gapmax off; DGP onset = estimator onset flatters MDE and TWFE comparator; anticipation floor (6) vs baseline [launch−6, launch−1] is an open estimand decision
+- Stale docs: docx says VWATT primary vs FINDINGS ewatt; county config header (12,6) vs body (18,0); MDE config header "delta=0 only"; this report's 2026-09-14 "(18,12)" note (configs carry (18,0) since cefff09)
+
+**Commits:**
+- none
+
+**Status:**
+- Done: review delivered
+- Pending: user decides on df fix, α-coverage of recentering, gapmax arm, anticipation knob; count_nb realised-δ spot check unverified
+
+## 2026-09-16 11:54 — LP-DiD analytic df fixed to contributing clusters
+
+**Operations:**
+- Edited R/power/run_estimators.R .re_lpdid(): df_lp = unique states in the stack − 1, used for analytic z and .re_tp; wild row untouched
+- Added test "lpdid analytic CI uses stack-contributing clusters, not panel-wide states" to tests/testthat/test-estimators.R (fails pre-fix, passes post-fix)
+- Ran test-estimators.R (18 tests, 0 failures), test-oc.R (pass), test-grid.R (1 pre-existing failure: "exclude_states drops the states from the simulated panel", NA cluster counts, reproduces with run_estimators.R at HEAD)
+- New: docs/findings-archive/2026-09-16_lpdid-analytic-df-correction.md (+ INDEX row); FINDINGS.md §5 trap bullet; review file item G marked fixed
+
+**Decisions:**
+- Only .re_lpdid changed — other estimators use the whole panel as their estimation sample, so df_cluster is correct there
+- n_treated/n_control_clusters reporting left as placed counts (out of scope)
+
+**Results:**
+- Pre-2026-09-16 LP-DiD analytic size/MDE numbers slightly anti-conservative (~1–2% on t-critical); wild headline unaffected
+
+**Commits:**
+- none
+
+**Status:**
+- Done: fix + test + docs
+- Pending: fresh run_name for any post-fix analytic LP-DiD run; test-grid exclude_states failure to diagnose
+
+## 2026-09-16 12:06 — Diagnosed test-grid exclude_states failure (no fix applied)
+
+**Operations:**
+- Reproduced the failing test with error rows printed; ran it at 6 commits since introduction in throwaway worktrees (pruned); measured D1 placement failure rates over 100 seeds by panel vintage, template, and TX exclusion
+- New: docs/findings-archive/2026-09-16_test-grid-exclude-states-failure.md (+ INDEX row); no code or test changed
+- Debug run dirs output_blinded_power/_dbg_ex_* moved to output_blinded_power/deprecated/
+
+**Decisions:**
+- Diagnosis only, per request; fix options recorded in the note (template: panel + converged-only assertions, or test make_pseudo_schedule directly with a shared seed)
+
+**Results:**
+- Bisect: PASS 691d6e5, cb6d961, c3471e5, 51417a9; FAIL fad95a6, cefff09 — placement/loader code changed comments only between them, so the flip is data-driven (panel rebuild re-rolled the placement draw)
+- Mechanism: randomized greedy placement + unpaired seeds (exclude_states changes the scenario hash) + test reads row 1 without checking converged; national template needs 31 slots on 39 usable states under (12,6)/keep — base fails 3/100 seeds, exclude-TX 43/100; test seed 131532 is a failing draw
+- Production impact: none — headline configs use template: panel (0/100 failures with or without TX)
+
+**Commits:**
+- none
+
+**Status:**
+- Done: diagnosis
+- Pending: user chooses a test fix; consider noting national-template saturation in FINDINGS §5
+
+## 2026-09-16 12:40 — Idaho statewide swap documented and committed; CT ramp censor re-applied
+
+**Operations:**
+- Answered "how many states have full county coverage": 10 statewide of 42 (DE ME NC clean; MD NH WI ID short/truncated; RI OR MI with scope holes) — from docs/STATE_SOURCES.md
+- Found the working-tree panel (4,306 rows) differed from the documented 2026-09-14 vintage (4,351): Idaho swap (−47) plus CT 2016-01/02 restored by a 15:17 re-run of data_prep/rebuild_state_month_panel.R
+- Re-ran data_prep/censor_series_start_ramps.R → 4,304 rows; regenerated docs/DATA_CURRENCY.md; re-ran analysis/diagnostics/panel_preflight_audit.R (7b now flags WI only; other flags unchanged)
+- Edited data_prep/rebuild_state_month_panel.R: ramp-censor list re-applied inside the rebuild
+- Docs: CLAUDE.md (boundary note + data section → 4,304 rows, ID swap), RUN_LEDGER.md (boundary 8 + `id_panel_swap` row), FINDINGS.md (WA/MI bullet), docs/DATA_PROVENANCE.md (LSC 30 → 29 states, new ID bullet), new docs/findings-archive/2026-09-14_idaho-statewide-swap.md + INDEX row
+
+**Decisions:**
+- Committed the WA/MI/trailing-censor scripts and MI data in the same commit — the panel file already carried their rows, so a narrower commit would not be reproducible
+- ets_county_month.csv (Eviction Lab internal extract at repo root) left uncommitted — Ben decides
+- data/processed/state_panel_coverage_qa.csv still shows CT at 113 months (written by the rebuild before the censor); documented rather than patched
+
+**Results:**
+- Panel: 42 states, 4,304 rows; CT 2016-03 start; ID 2021-01..2026-06, 44 counties
+
+**Commits:**
+- `d7d3dbc` Swap Idaho to the statewide Idaho Judicial Branch series; re-apply the CT ramp censor
+
+**Status:**
+- Done: swap documented, panel fixed and committed
+- Pending: Ben to review the uncommitted remainder (R/power, configs, ESTIMATOR_MATRIX.md, ets_county_month.csv); v20260914 configs still carry stale 40-state headers
