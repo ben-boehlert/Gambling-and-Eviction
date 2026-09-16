@@ -353,6 +353,40 @@ test_that("event_clean compares mature outcomes with a shared pre-launch baselin
   expect_gt(abs(clean - legacy), 0.40)
 })
 
+test_that("lpdid analytic CI uses stack-contributing clusters, not panel-wide states", {
+  toy <- build_toy_est(seed = 909L, n_states = 8L, units_per_state = 1L,
+                       n_months = 40L, treat = c(S02 = 20L), noise_sd = 0.01)
+  inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",
+                       shape = "step", delta = TRUTH, outcome = "y_log1p",
+                       seed = 9L)
+
+  # S08 is present in the simulated panel -- so it counts toward the
+  # panel-wide state total -- but its series ends before month 20, the only
+  # cohort's mature outcome month, so every one of its rows is NA at the one
+  # (t, h) cell this spec identifies and it contributes zero rows to the
+  # stacked LP-DiD regression.
+  inj <- inj[!(inj$state_abb == "S08" & inj$t > 10L), ]
+
+  r <- run_estimator(inj, estimator = "lpdid",
+                     spec = list(lpdid_hmin = 0L, lpdid_post = 0L,
+                                 lpdid_pmd = 3L, lpdid_weights = "ewatt"))
+  row <- r[r$inference == "analytic" & r$estimand == "simple", ]
+  expect_true(row$converged)
+
+  # 7 of the 8 panel states reach feols(): the S02 switcher plus the 6
+  # full-length controls (S01, S03, S04, S05, S06, S07); S08 is excluded.
+  # The analytic CI half-width must use df = 7 - 1 = 6, not the panel-wide
+  # df = 8 - 1 = 7 that cl$n_total would imply.
+  n_contributing <- 7L
+  half_width <- row$ci_hi - row$att
+  expected_half_width <- stats::qt(1 - 0.05 / 2, df = n_contributing - 1L) *
+    row$se
+  wrong_half_width <- stats::qt(1 - 0.05 / 2, df = 8L - 1L) * row$se
+
+  expect_equal(half_width, expected_half_width, tolerance = 1e-8)
+  expect_false(isTRUE(all.equal(half_width, wrong_half_width)))
+})
+
 # ---- LP-DiD <-> Callaway & Sant'Anna numerical equivalence -------------------
 # Dube, Girardi, Jorda & Taylor (2023) footnote 23: in a baseline setting
 # without covariates, with binary absorbing treatment, and using only

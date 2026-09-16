@@ -1116,7 +1116,6 @@ run_estimator <- function(panel_sim,
   wscheme <- match.arg(as.character(sp$lpdid_weights %||% "ewatt"),
                        c("ewatt", "cellsize", "vwatt"))
   wild <- isTRUE(sp$lpdid_wild)
-  z <- stats::qt(1 - sp$alpha / 2, df = max(1L, df_cluster))
 
   # Fail loudly rather than silently pooling nothing: an empty horizon window
   # would otherwise reach feols() as a zero-row stack and surface as the
@@ -1165,11 +1164,66 @@ run_estimator <- function(panel_sim,
     # outcome is indexed from gm while its shared baseline is indexed from lm.
     am <- if (identical(anchor, "launch")) lm else gm
 
-    # Baseline per base period: mean of the PMD months ending at t-1; NA if
-    # any of them is absent (no na.rm — that is the gap guard).
+    # Baseline per base period. Two regimes, selected by spec$lpdid_pmd_min:
+    #   strict (pmd_min ABSENT, historical): mean of the PMD calendar months
+    #     ending at t-1; NA if any is absent (no na.rm — the gap guard). On a
+    #     covid-drop panel this silently zeroes out every switcher whose
+    #     baseline window touches the gap (TN/VA/AZ/CT/CO, 2026-08-28 audit).
+    #   gap-tolerant (pmd_min SET): mean of the LAST pmd OBSERVED months
+    #     strictly before t — absent months (covid gap, coverage holes) are
+    #     skipped, not fatal — requiring at least pmd_min of them. On a
+    #     complete series this reproduces the strict rule exactly. For a
+    #     launch just after the gap the baseline reaches back across it, so
+    #     those cells inherit a straddle-flavored counterfactual: label them.
+    pmdmin <- suppressWarnings(as.integer(sp$lpdid_pmd_min %||% NA_integer_))
+    if (is.finite(pmdmin)) pmdmin <- max(1L, min(pmdmin, pmd))
+    # Optional segment constraint (lpdid_base_gapmax, gap-tolerant mode +
+    # event_clean anchor only). A "segment" is a maximal run of observed
+    # months with no interior gap longer than gapmax. When set:
+    #   (i)  the baseline window may not span segments (no averaging across
+    #        the covid gap), and
+    #   (ii) a unit contributes to a cell only if its baseline ends in the
+    #        SAME segment as the outcome month — the cell-level no-straddling
+    #        rule. Cross-gap cells (pre-covid baseline, post-covid outcome)
+    #        are exactly what the 2026-08-28 gaptol probe showed to be bias-
+    #        and noise-amplifying (SD 0.129, delta=0 mean +0.081).
+    gapmax <- suppressWarnings(as.integer(sp$lpdid_base_gapmax %||% NA_integer_))
+    SEG <- NULL; BEND <- NULL
     B <- matrix(NA_real_, length(units), M)
-    for (tt in (pmd + 1L):M) {
-      B[, tt] <- rowMeans(Y[, (tt - pmd):(tt - 1L), drop = FALSE])
+    if (!is.finite(pmdmin)) {
+      for (tt in (pmd + 1L):M) {
+        B[, tt] <- rowMeans(Y[, (tt - pmd):(tt - 1L), drop = FALSE])
+      }
+    } else {
+      if (is.finite(gapmax)) {
+        SEG  <- matrix(NA_integer_, length(units), M)
+        BEND <- matrix(NA_integer_, length(units), M)
+      }
+      for (u in seq_along(units)) {
+        obs <- which(!is.na(Y[u, ]))
+        if (length(obs) < pmdmin) next
+        cs  <- cumsum(Y[u, obs])
+        # pos[tt] = how many observed months lie strictly before month tt
+        pos <- findInterval(seq_len(M) - 1L, obs)
+        seg <- cumsum(c(1L, diff(obs) > (if (is.finite(gapmax)) gapmax + 1L
+                                         else .Machine$integer.max)))
+        segfirst <- match(seg, seg)   # obs-position of each segment's start
+        ok  <- which(pos >= pmdmin)
+        if (!length(ok)) next
+        p   <- pos[ok]
+        l   <- pmax(p - pmd + 1L, if (is.finite(gapmax)) segfirst[p] else 1L, 1L)
+        good <- (p - l + 1L) >= pmdmin
+        ok <- ok[good]; p <- p[good]; l <- l[good]
+        if (!length(ok)) next
+        lo0 <- rep(0, length(l))
+        nz  <- l > 1L
+        lo0[nz] <- cs[l[nz] - 1L]
+        B[u, ok] <- (cs[p] - lo0) / (p - l + 1L)
+        if (is.finite(gapmax)) {
+          SEG[u, obs] <- seg
+          BEND[u, ok] <- obs[p]
+        }
+      }
     }
 
     out <- vector("list", (hmax - hmin + 1L) * M)
@@ -1185,6 +1239,16 @@ run_estimator <- function(panel_sim,
           far <- tt + h
           if (bb < pmd + 1L || bb > M || far < 1L || far > M) next
           dy <- Y[, far] - B[, bb]
+          if (!is.null(SEG)) {
+            # Cell-level no-straddling: baseline must end in the same observed
+            # segment as the outcome month, per unit.
+            be   <- BEND[, bb]
+            fin  <- is.finite(be)
+            segb <- rep(NA_integer_, length(be))
+            segb[fin] <- SEG[cbind(which(fin), be[fin])]
+            dy[!(fin & !is.na(segb) & !is.na(SEG[, far]) &
+                   segb == SEG[, far])] <- NA
+          }
           sw <- !is.na(gm) & !is.na(lm) & gm == tt & lm == bb
           # Launch is absorbing: a state is clean only if it has not launched
           # by the mature outcome. Buildup observations never become controls.
@@ -1235,12 +1299,21 @@ run_estimator <- function(panel_sim,
     stack$cell <- factor(stack$cell)
     stack$rw <- .re_lpdid_weights(stack$D_treat, stack$cell, wscheme)
     stack <- stack[is.finite(stack$rw), , drop = FALSE]
+    # Cluster-robust t inference should use the clusters that actually reach
+    # feols(), not the panel-wide count in df_cluster. States can be placed
+    # in panel_sim but contribute zero rows to the stack -- dropped by the
+    # COVID gap sitting inside every one of their baseline windows, or by a
+    # series ending before their cohort's launch+12 outcome month. df_cluster
+    # (cl$n_total - 1) would then overstate the estimation-sample clusters
+    # and understate the analytic CI. 2026-09-16.
+    df_lp <- max(1L, length(unique(stack$state_abb)) - 1L)
     fit <- fixest::feols(dy ~ D_treat | cell, data = stack, weights = ~rw,
                          cluster = ~state_abb, warn = FALSE, notes = FALSE)
     list(fit = fit,
          att = as.numeric(stats::coef(fit)["D_treat"]),
          se  = as.numeric(fixest::se(fit)["D_treat"]),
-         n_sw = sum(stack$D_treat))
+         n_sw = sum(stack$D_treat),
+         df_lp = df_lp)
   })), error = function(e) structure(NA, err = conditionMessage(e)))
   rt <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
 
@@ -1251,11 +1324,12 @@ run_estimator <- function(panel_sim,
                    error_msg = attr(res, "err"), runtime_s = rt))
   }
 
-  att <- res$att; se <- res$se
+  att <- res$att; se <- res$se; df_lp <- res$df_lp
+  z <- stats::qt(1 - sp$alpha / 2, df = max(1L, df_lp))
   ok <- is.finite(att) && is.finite(se) && se > 0
   rows <- list(.re_row(
     "lpdid", "analytic", "simple", att = att, se = se,
-    p = .re_tp(att, se, df_cluster),
+    p = .re_tp(att, se, df_lp),
     ci_lo = if (ok) att - z * se else NA_real_,
     ci_hi = if (ok) att + z * se else NA_real_,
     n_treated_clusters = cl$n_treated, n_control_clusters = cl$n_control,
