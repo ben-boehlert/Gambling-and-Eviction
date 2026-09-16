@@ -1,0 +1,17 @@
+# Post-mortem: `test-grid.R` "exclude_states drops the states from the simulated panel" (2026-09-16)
+
+**Symptom.** Two assertion failures with `NA` cluster counts: `n1 == n0 - 1L` → `3 - NA`, and `n_treated_clusters` `23` vs `NA`. Reproduces on the working-tree panel and on the HEAD (40-state) panel, so the uncommitted WA/MI panel is not the cause.
+
+**Bisect (own code + own data per commit, throwaway worktrees).** PASS at 691d6e5 (introduced 2026-08-19), cb6d961, c3471e5, 51417a9. FAIL at fad95a6 (2026-09-14 single-series rebuild) and cefff09. Between 51417a9 and cefff09, `make_pseudo_schedules.R` changed by comments only and `load_blinded_panel.R` not at all; `run_scenario_grid.R` gained LP-DiD knob plumbing that is conditionally hashed and unset here, so the scenario hash and `seed_rep` are unchanged. The flip is data-driven: the rebuilt panel (new per-state spans, panel end 2025-11 → 2026-05) re-rolled the placement draw.
+
+**Root cause — the test asserts something the code does not guarantee.**
+1. **Placement is randomized and greedy.** `make_pseudo_schedule()` tries anchors in `sample(0:slack)` order and, per anchor, one scarcest-first pass with `sample(elig, need)` inside each cohort (`make_pseudo_schedules.R:132-192, 283-299`). A random early pick can consume a state a later cohort needed, so success and the identity of treated/control states are seed-dependent.
+2. **Base and exclude runs are not rep-paired.** `seed_rep = base_seed + 10007·rep + 101·scenario_offset` with the offset hashed from settings; `exclude_states` changes the hash (the previous test asserts exactly that), so the two runs draw different placements (seeds 131532/141539 vs 67700/77707).
+3. **The default `national` template saturates the panel under the test's window.** 31 slots across 24 cohorts on 39 usable states with `min_pre 12 / min_post 6`, `covid keep`, `online_start_date`. Measured with `make_pseudo_schedule()` over 100 seeds on the working-tree panel: base fails 3/100; excluding TX (a full-span never-treated host) fails 43/100. Test seed 131532 (base rep 1) is one of the failing draws → the failure row carries `NA` counts.
+4. **The test reads row 1 without checking `converged`.** A per-rep infeasibility row (`error_msg = "D1 infeasible: no template placement …"`) is a designed outcome (c61cdcc, 2026-08-10), and the test treats it as data. Even at the introducing commit one of the two reps already failed placement; the test passed on the luck of row 1.
+
+**Production impact.** None on the headline configs: they set `template: panel` (24 slots), which fails 0/100 seeds with or without TX. The saturation is specific to the `national` template default on the rebuilt state panel under (12,6)/keep — any config still relying on that default will now emit a few percent of per-rep infeasibility rows.
+
+**Fix options (not applied).** (a) Give the test `template: panel` and assert the contract directly — TX absent from every simulated panel/schedule, treated set unchanged — on `converged` rows only; or (b) test `make_pseudo_schedule()` / `get_panel()` directly with an identical seed with and without TX, which is what the assertion actually presumes. Either removes the dependence on an unpaired random placement.
+
+**Discarded evidence.** Running the *current* loader on the 51417a9-vintage CSV fails 100/100; that cross-vintage run is confounded by CSV schema changes and is not evidence about the code.

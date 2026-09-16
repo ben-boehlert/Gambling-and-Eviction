@@ -22,9 +22,25 @@
 # The fallback year is recorded per row in acs_year_used so no rate is ever
 # quoted without its vintage.
 #
-# This script only TOUCHES THE 6 REBUILT STATES. The other 33 carry
-# denominators that ship inside the LSC CCDI county download; it never
-# overwrites those.
+# EXTENDED 2026-09-14 to cover the two states added the same day, which also
+# arrive without denominators:
+#   WA (tag ets_internal_county_wa_2026-09-14) -- PIERCE COUNTY only (53053),
+#      because the WA series is Tacoma alone. A statewide denominator would
+#      overstate it roughly 9x.
+#   MI (tag mi_jdw_statewide_2026-09-03) -- all 83 MI counties, i.e. statewide.
+#      The JDW numerator covers ~94% of the state's court footprint (six
+#      excluded jurisdictions), so MI's rate is understated by ~6%. That is a
+#      constant absorbed by state fixed effects; MI LEVELS ARE NOT COMPARABLE.
+# The union of years is unchanged (2015-2026), so the six original states pull
+# exactly the same ACS vintages they did before.
+#
+# Extended again the same day for ID (tag id_courts_a12_2026-09-14), which another
+# session moved from the Twin Falls LSC basket to a statewide 44-county series --
+# its old 10,312 denominator was Twin Falls' and is wrong for a statewide
+# numerator by ~19x, so ID is statewide here too.
+#
+# This script only TOUCHES THOSE 9 STATES. The other 33 carry denominators that
+# ship inside the LSC CCDI county download; it never overwrites those.
 # =============================================================================
 
 suppressPackageStartupMessages({library(tidyverse); library(tidycensus); library(glue)})
@@ -32,6 +48,17 @@ suppressPackageStartupMessages({library(tidyverse); library(tidycensus); library
 PANEL   <- "data/raw/state_month_panel_with_treatment.csv"
 BASKET  <- "data/processed/single_series_rebuild_basket.csv"
 SRC_TAG <- "ets_internal_county_2026-09-03"
+
+# Geography for the tags whose denominators are NOT read from BASKET. Each entry
+# is the set of county FIPS whose renters form that state's denominator.
+EXTRA_GEO <- list(
+  `ets_internal_county_wa_2026-09-14` = tibble(state_abb = "WA", fips = "53053")
+)
+
+# Tags whose numerator is the WHOLE state: denominator = every county in it.
+# Resolved from the ACS pull itself so no county list is hardcoded or kept in sync.
+STATEWIDE <- c(`mi_jdw_statewide_2026-09-03` = "26",   # Michigan, 83 counties
+               `id_courts_a12_2026-09-14`    = "16")   # Idaho, 44 counties
 
 if (!nzchar(Sys.getenv("CENSUS_API_KEY")))
   stop("CENSUS_API_KEY not set. census_api_key('...', install = TRUE)", call. = FALSE)
@@ -42,12 +69,13 @@ if (!file.exists(BASKET))
 panel  <- read_csv(PANEL,  show_col_types = FALSE) %>% mutate(month_date = as.Date(month_date))
 basket <- read_csv(BASKET, show_col_types = FALSE) %>% mutate(fips = sprintf("%05d", as.integer(fips)))
 
-target <- panel %>% filter(panel_source == SRC_TAG)
+TAGS <- c(SRC_TAG, names(EXTRA_GEO), names(STATEWIDE))
+target <- panel %>% filter(panel_source %in% TAGS)
 if (!nrow(target)) stop("No rebuilt rows found; nothing to do.", call. = FALSE)
 years <- sort(unique(year(target$month_date)))
 
-message(glue("Pulling ACS 5-year B25003_003 for {length(unique(basket$state_abb))} states, ",
-             "{n_distinct(basket$fips)} counties, years {min(years)}-{max(years)}"))
+message(glue("Pulling ACS 5-year B25003_003 for {n_distinct(target$state_abb)} states, ",
+             "years {min(years)}-{max(years)}"))
 
 pull_year <- function(yr) {
   tryCatch({
@@ -64,7 +92,19 @@ message(glue("  ACS years returned: {paste(avail, collapse = ', ')}"))
 # Nearest-available-year fallback, recorded per row.
 map_year <- function(y) avail[which.min(abs(avail - y))]
 
-den <- basket %>% inner_join(acs, by = "fips", relationship = "many-to-many") %>%
+sw_geo <- imap_dfr(STATEWIDE, function(prefix, tag) {
+  st <- unique(target$state_abb[target$panel_source == tag])
+  if (!length(st)) return(tibble(state_abb = character(), fips = character()))
+  g <- acs %>% distinct(fips) %>% filter(str_starts(fips, prefix)) %>% mutate(state_abb = st)
+  stopifnot(nrow(g) >= 10)      # a real state, not an empty prefix match
+  g
+})
+geo <- bind_rows(basket %>% select(state_abb, fips),
+                 bind_rows(EXTRA_GEO) %>% select(state_abb, fips),
+                 sw_geo %>% select(state_abb, fips)) %>%
+  distinct(state_abb, fips)
+
+den <- geo %>% inner_join(acs, by = "fips", relationship = "many-to-many") %>%
   group_by(state_abb, acs_year) %>%
   summarise(renters = sum(renters, na.rm = TRUE), n_cty = n(), .groups = "drop")
 
@@ -77,14 +117,14 @@ out <- target %>%
                                           filings_count / renters * 1000))
 
 qa <- out %>% group_by(state_abb) %>%
-  summarise(months = n(), basket_counties = first(n_cty),
+  summarise(months = n(), geo_counties = first(n_cty),
             renters = first(renter_occupied_housing_units),
             acs_years = paste(range(acs_year_used), collapse = "-"),
             median_rate = median(filings_per_1k_renters, na.rm = TRUE), .groups = "drop")
 cat("\n=== ACS DENOMINATOR QA ===\n"); print(as.data.frame(qa), row.names = FALSE)
 write_csv(qa, "data/processed/single_series_acs_denominator_qa.csv")
 
-panel_out <- bind_rows(panel %>% filter(panel_source != SRC_TAG),
+panel_out <- bind_rows(panel %>% filter(!panel_source %in% TAGS),
                        out %>% select(all_of(names(panel)))) %>%
   arrange(state_abb, month_date)
 stopifnot(nrow(panel_out) == nrow(panel),

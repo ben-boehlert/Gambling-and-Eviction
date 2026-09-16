@@ -1,6 +1,6 @@
 # Data Currency
 
-**Generated 2026-09-14 by `data_prep/make_data_currency_doc.R` — do not hand-edit.**
+**Generated 2026-09-16 by `data_prep/make_data_currency_doc.R` — do not hand-edit.**
 Regenerate after any panel rebuild or source refresh. Source of truth: `data/raw/state_month_panel_with_treatment.csv`.
 
 Companion docs: [DATA_PROVENANCE.md](DATA_PROVENANCE.md) (who collected what, and whether that is verified)
@@ -23,12 +23,15 @@ and [STATE_SOURCES.md](STATE_SOURCES.md) (per-state scope — whole state vs cou
 
 | Source | States | Median stale (mo) | Latest month | How to refresh |
 |---|---:|---:|---|---|
-| `county_download_fixed_basket` | 30 | 12 | 2026-06 | Download a fresh `monthly_county_data_download.csv` from civilcourtdata.lsc.gov, then `Rscript data_prep/rebuild_state_month_panel.R` |
+| `county_download_fixed_basket` | 29 | 12 | 2026-06 | Download a fresh `monthly_county_data_download.csv` from civilcourtdata.lsc.gov, then `Rscript data_prep/rebuild_state_month_panel.R` |
 | `wi_court_source_repair_2026-07-23` | 1 | 11 | 2025-10 | Re-download the WI Dept. of Administration series |
 | `nh_court_source_repair_2026-07-23` | 1 | 10 | 2025-11 | Request an updated extract from the NH Judicial Branch |
-| `ets_internal_county_2026-09-03` | 6 | 3.5 | 2026-06 | Obtain a newer Eviction Lab internal extract, replace `ets_county_month.csv`, then `Rscript data_prep/rebuild_single_series_from_ets_internal.R` |
+| `ets_internal_county_2026-09-03` | 6 | 4 | 2026-05 | Obtain a newer Eviction Lab internal extract, replace `ets_county_month.csv`, then `Rscript data_prep/rebuild_single_series_from_ets_internal.R` |
+| `ets_internal_county_wa_2026-09-14` | 1 | 4 | 2026-05 | Obtain a newer Eviction Lab internal extract, replace `ets_county_month.csv`, then `Rscript data_prep/add_wa_to_state_panel.R` |
+| `mi_jdw_statewide_2026-09-03` | 1 | 4 | 2026-05 | Re-download `conditional-dismissals.pdf` from courts.michigan.gov, run `python3 data_prep/parse_mi_jdw_lt_filings_pdf.py`, then `Rscript data_prep/add_mi_to_state_panel.R` |
+| `id_courts_a12_2026-09-14` | 1 | 3 | 2026-06 | `Rscript data_prep/pull_id_powerbi_eviction_filings.R`, then `Rscript data_prep/add_id_to_state_panel.R` (the ID dashboard is a rolling five-year window) |
 | `md_judiciary_lt_complaint_filings` | 1 | 3 | 2026-06 | Pull new monthly PDFs from the MD Judiciary statistics page into `data/raw/monthly_expansion/md_raw/`, then re-run the MD extraction |
-| `or_ojd_plus_evictedinoregon_2026-09-14` | 1 | 2 | 2026-07 | NA |
+| `or_ojd_plus_evictedinoregon_2026-09-14` | 1 | 2 | 2026-07 | Re-export the Evicted in Oregon dashboard (mutable -- the publisher revises it), then `Rscript data_prep/add_oregon_to_state_panel.R` |
 
 ## By state — stalest first
 
@@ -41,7 +44,6 @@ and [STATE_SOURCES.md](STATE_SOURCES.md) (per-state scope — whole state vs cou
 | KS | county_download_fixed_basket | 2016-01–2025-02 | 110 | **19** | -- | 1 | 1.00 | yes | **switcher (full)** | aging |
 | FL | county_download_fixed_basket | 2016-01–2025-04 | 112 | **17** | -- | 6 | 1.00 | yes | switcher (partial 5/13) | aging |
 | GA | county_download_fixed_basket | 2016-01–2025-04 | 112 | **17** | -- | 2 | 1.00 | yes | control (no online date) | aging |
-| ID | county_download_fixed_basket | 2016-01–2025-05 | 113 | **16** | -- | 1 | 1.00 | yes | excluded | aging |
 | ND | county_download_fixed_basket | 2016-01–2025-05 | 113 | **16** | -- | 6 | 1.00 | yes | control (no online date) | aging |
 | OH | county_download_fixed_basket | 2016-01–2025-06 | 114 | **15** | -- | 4 | 1.00 | yes | **switcher (full)** | aging |
 | CT | county_download_fixed_basket | 2016-03–2025-07 | 111 | **14** | -- | 6 | 1.00 | yes | not a switcher |  |
@@ -65,14 +67,17 @@ and [STATE_SOURCES.md](STATE_SOURCES.md) (per-state scope — whole state vs cou
 | WI | wi_court_source_repair_2026-07-23 | 2019-01–2025-10 | 81 | **11** | 1 | -- | -- | yes | control (no online date) |  |
 | ME | county_download_fixed_basket | 2016-01–2025-11 | 119 | **10** | -- | 16 | 1.00 | yes | **switcher (full)** |  |
 | NH | nh_court_source_repair_2026-07-23 | 2019-01–2025-11 | 83 | **10** | -- | -- | -- | yes | switcher (partial 5/13) |  |
-| LA | ets_internal_county_2026-09-03 | 2019-01–2026-03 | 85 | **6** | -- | 1 | 1.00 | yes | not a switcher |  |
+| LA | ets_internal_county_2026-09-03 | 2019-01–2026-02 | 84 | **7** | -- | 1 | 1.00 | yes | not a switcher |  |
+| MA | ets_internal_county_2026-09-03 | 2020-01–2026-05 | 77 | **4** | -- | 1 | 1.00 | yes | **switcher (full)** |  |
+| MI | mi_jdw_statewide_2026-09-03 | 2019-01–2026-05 | 68 | **4** | 8 | -- | -- | yes | not a switcher |  |
+| MO | ets_internal_county_2026-09-03 | 2020-01–2026-05 | 77 | **4** | -- | 29 | 0.34 | yes | not a switcher | THIN-BASKET |
+| NM | ets_internal_county_2026-09-03 | 2020-01–2026-05 | 77 | **4** | -- | 14 | 0.48 | yes | control (no online date) | THIN-BASKET |
 | NV | ets_internal_county_2026-09-03 | 2016-01–2026-05 | 125 | **4** | -- | 1 | 1.00 | yes | excluded |  |
 | RI | ets_internal_county_2026-09-03 | 2015-06–2026-05 | 130 | **4** | -- | 4 | 1.00 | yes | switcher (partial 2/13) |  |
-| MA | ets_internal_county_2026-09-03 | 2020-01–2026-06 | 78 | **3** | -- | 1 | 1.00 | yes | **switcher (full)** |  |
+| WA | ets_internal_county_wa_2026-09-14 | 2017-01–2026-05 | 113 | **4** | -- | 1 | 1.00 | yes | control (no online date) |  |
+| ID | id_courts_a12_2026-09-14 | 2021-01–2026-06 | 66 | **3** | -- | 44 | 1.00 | yes | excluded |  |
 | MD | md_judiciary_lt_complaint_filings | 2012-01–2026-06 | 174 | **3** | -- | -- | -- | yes | **switcher (full)** |  |
-| MO | ets_internal_county_2026-09-03 | 2020-01–2026-06 | 78 | **3** | -- | 29 | 0.34 | yes | not a switcher | THIN-BASKET |
 | NC | county_download_fixed_basket | 2016-01–2026-06 | 126 | **3** | -- | 100 | 1.00 | yes | **switcher (full)** |  |
-| NM | ets_internal_county_2026-09-03 | 2020-01–2026-06 | 78 | **3** | -- | 14 | 0.48 | yes | control (no online date) | THIN-BASKET |
 | OR | or_ojd_plus_evictedinoregon_2026-09-14 | 2018-01–2026-07 | 103 | **2** | -- | -- | -- | yes | switcher (partial 3/13) |  |
 
 ## Known limits of this table

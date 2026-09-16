@@ -26,7 +26,11 @@ REFRESH <- c(
   `ets_internal_county_2026-09-03`  = "Obtain a newer Eviction Lab internal extract, replace `ets_county_month.csv`, then `Rscript data_prep/rebuild_single_series_from_ets_internal.R`",
   md_judiciary_lt_complaint_filings = "Pull new monthly PDFs from the MD Judiciary statistics page into `data/raw/monthly_expansion/md_raw/`, then re-run the MD extraction",
   `nh_court_source_repair_2026-07-23` = "Request an updated extract from the NH Judicial Branch",
-  `wi_court_source_repair_2026-07-23` = "Re-download the WI Dept. of Administration series")
+  `wi_court_source_repair_2026-07-23` = "Re-download the WI Dept. of Administration series",
+  `or_ojd_plus_evictedinoregon_2026-09-14` = "Re-export the Evicted in Oregon dashboard (mutable -- the publisher revises it), then `Rscript data_prep/add_oregon_to_state_panel.R`",
+  `ets_internal_county_wa_2026-09-14` = "Obtain a newer Eviction Lab internal extract, replace `ets_county_month.csv`, then `Rscript data_prep/add_wa_to_state_panel.R`",
+  `mi_jdw_statewide_2026-09-03` = "Re-download `conditional-dismissals.pdf` from courts.michigan.gov, run `python3 data_prep/parse_mi_jdw_lt_filings_pdf.py`, then `Rscript data_prep/add_mi_to_state_panel.R`",
+  `id_courts_a12_2026-09-14` = "`Rscript data_prep/pull_id_powerbi_eviction_filings.R`, then `Rscript data_prep/add_id_to_state_panel.R` (the ID dashboard is a rolling five-year window)")
 
 pan <- read_csv(PANEL, show_col_types = FALSE) %>% mutate(month_date = as.Date(month_date))
 sched <- read_csv("data/raw/sports_gambling_legalization_dates.csv", show_col_types = FALSE)

@@ -42,11 +42,12 @@ county-month file, downloaded from
 > entire outcome window (2025-03→2026-03) lives in the locally-added range. (2) Panel rows for
 > NC and ME carry `panel_source = county_download_fixed_basket`, which §3 maps to "LSC CCDI" —
 > **that label is wrong for NC (NC AOC) and for ME's tail (ME FED)**. (3) The staleness of
-> HI (2022-09), CO (2023-11), MS (2024-03), KS (2025-02) and ID (2025-05) is **upstream in LSC
-> itself** and cannot be fixed by re-downloading.
+> HI (2022-09), CO (2023-11), MS (2024-03) and KS (2025-02) is **upstream in LSC
+> itself** and cannot be fixed by re-downloading. (ID was on this list at 2025-05 until its
+> 2026-09-14 swap to the Idaho Judicial Branch series, current to 2026-06.)
 
 
-This file supplies the outcome for **30 of the 39 states** in the state panel. Every
+This file supplies the outcome for **29 of the 42 states** in the state panel. Every
 description of it as "Eviction Tracking System" data is wrong — see §5 for the four places
 that need fixing, one of which is PAP-facing.
 
@@ -103,6 +104,7 @@ Filings: Added", counties assigned via a 15-courthouse crosswalk, fiscal year Ju
 | `evicted_in_oregon/` | evictedinoregon.com (Lisa Bates, PSU) via Datawrapper CDN; underlying data Oregon Judicial Department circuit courts | `VERIFIED-REPO` |
 | `massachusetts/` | MA Trial Court DRAP "Summary Process" Tableau dashboard | `VERIFIED-REPO` |
 | `maryland/`, `ny_oca/` | MD Socrata; NY OCA index | `UNDOCUMENTED` (partial) |
+| `ne_raw/` (via `data_prep/monthly_panel_expansion/10a`/`10b`) | Nebraska AOC, LB320/Neb. Rev. Stat. § 24-232 mandated "Eviction Proceedings Bi-Annual Data Report" (`nebraskajudicial.gov/administration/publications-reports`, category "Eviction Proceedings"). Statewide, **county-half-year** (not month), Jul 2021–Dec 2025, 9 periods. Five series per period: cases filed; tenants/landlords represented by counsel (closed cases; split into limited-scope "LRA" + full "Represented by Counsel" from **2023-H2** on — see the script header for why the old single column matches "Represented by Counsel," not the post-split Total); default restitution-of-premises orders; all restitution-of-premises orders entered. Not yet part of `state_month_panel_with_treatment.csv` (frequency mismatch; NE has no row in `sports_gambling_legalization_dates.csv` and reads as never-treated/control-eligible via `EVICTION_STATE_UNIVERSE`) — a candidate control state for the annual-panel TODO, not merged. **Verification:** every (period, table) cell's per-county sum reconciles exactly against the report's own printed Total row (45/45 cells; `ne_raw/ne_validation_report.csv`). 2 of 9 PDFs (Jul-Dec-2023, Jul-Dec-2025) are fully rasterized (no text layer); Jan-June-2024's text layer is independently corrupted (OCR-garbled footer, ~1/3 of several tables' values unreadable to `pdftools`) — those cells were hand-transcribed from the rendered page instead of parsed, each still checked against its printed Total. One documented source inconsistency, not an extraction artifact: 2024H1's addendum-corrected table (d) exceeds table (e) by 1 case for Buffalo and Webster, matching the addendum's own disclosed caveat ("this version will include a few more cases in other counties due to late entry"). **`restitution_orders_entered_default_closed` (table d) is not cross-county comparable** — Lancaster County (the state's 2nd largest) is nonzero in only 2 of 9 periods, which the 2024-H1 addendum text ties to clerk data-entry practice rather than case outcomes; prefer `cases_filed` (a) or `restitution_orders_entered_closed` (e) for cross-county work. Reports state a 3% margin of error. | `VERIFIED-SESSION` |
 
 ### Treatment and covariates
 
@@ -123,24 +125,52 @@ Filings: Added", counties assigned via a 15-courthouse crosswalk, fiscal year Ju
 
 ---
 
-## 3. State panel — source per state (39 states)
+## 3. State panel — source per state (42 states)
 
 > Per-state detail, including whether a series is the whole state or one city, is in
 > **[STATE_SOURCES.md](STATE_SOURCES.md)**. Summary below.
 
 From `data/processed/state_panel_rebuild_source_table.csv`, 2026-08-20 rebuild.
 
-- **`county_download_fixed_basket` (30 states) → LSC CCDI.** AK AR AZ CO CT DE FL GA HI ID IN
+- **`county_download_fixed_basket` (29 states) → LSC CCDI.** AK AR AZ CO CT DE FL GA HI IN
   KS KY ME MN MS MT NC ND NY OH OK PA SC TN TX UT VA VT WV + GA/CO/HI/MS/NY/SC per-state
-  baskets added 2026-08-28.
+  baskets added 2026-08-28. ID left this group on 2026-09-14 (next bullet).
+- **`id_courts_a12_2026-09-14` (1 state) → Idaho Judicial Branch.** ID, swapped 2026-09-14 by
+  `data_prep/add_id_to_state_panel.R` from `data/raw/idaho/id_state_month_a12.csv`, pulled by
+  `data_prep/pull_id_powerbi_eviction_filings.R` from the public Case and Charge Data Power BI
+  dashboard (`courtdata.idaho.gov/Charge`; case type A12 Unlawful Detainer/Eviction, event Filed,
+  juveniles excluded). **All 44 counties**, 66 months 2021-01..2026-06, no gaps. Replaces the Twin
+  Falls-only LSC basket (1 of 44 counties, 113 months), preserved verbatim at
+  `data/raw/deprecated/id_twin_falls_lsc_series_pre_2026-09-14.csv`; the two are **not spliced**, so
+  ID has no pre-2021 months. The dashboard is a rolling five-year window — archive every pull.
+  Denominator: statewide ACS B25003_003 via `fetch_acs_renter_denominators.R`.
 - **`ets_internal_county_2026-09-03` (6 states) → Eviction Lab internal county extract.** LA MA MO NM
   NV RI. **Replaced `ets_single_series_no_denominator` on 2026-09-14** (`data_prep/rebuild_single_series_from_ets_internal.R`); the prior vintage is in `data/raw/deprecated/`.
   Built by summing sites within a county-month — verified complementary, not nested: NEWORLEANS-FCC vs
   -SCC and the three LASVEGAS-* jurisdictions are never equal in any shared month. RI/MA/LA/NV report a
   constant county set (basket_share 1.00); **MO and NM do not** and use fixed baskets from 2020-01 at
-  basket_share **0.34** and **0.48** — their levels are NOT statewide. Still carry **no renter
-  denominator** (fill via `data_prep/fetch_acs_renter_denominators.R`, ACS B25003_003); rates are NA
-  until then and must never be fabricated. Currency: [DATA_CURRENCY.md](DATA_CURRENCY.md).
+  basket_share **0.34** and **0.48** — their levels are NOT statewide. **Denominators filled
+  2026-09-14** by `data_prep/fetch_acs_renter_denominators.R` (ACS B25003_003, at the geography the
+  numerator covers, with the ACS vintage recorded per row); the earlier "no renter denominator" note
+  no longer holds. Currency: [DATA_CURRENCY.md](DATA_CURRENCY.md).
+- **`ets_internal_county_wa_2026-09-14` (1 state) → Eviction Lab internal county extract.** WA, added
+  2026-09-14 by `data_prep/add_wa_to_state_panel.R` from the same `ets_county_month.csv`. Its **only**
+  WA site is `TACOMA` = **Pierce County (53053)**, so WA is one county wearing a state label —
+  `n_counties` 1, `basket_share` 1, denominator = Pierce County renters (124k). 113 contiguous months
+  2017-01..2026-05. No `online_start_date` (retail-only, Sep 2021), so WA is a never-treated control.
+- **`mi_jdw_statewide_2026-09-03` (1 state) → Michigan Courts Judicial Data Warehouse.** MI, added
+  2026-09-14 by `data_prep/add_mi_to_state_panel.R` from `conditional-dismissals.pdf`, parsed by
+  `data_prep/parse_mi_jdw_lt_filings_pdf.py`. Statewide monthly Landlord/Tenant new filings **minus six
+  jurisdictions the report excludes** (Berrien Co., Grand Rapids, Dearborn Hts, Center Line & Warren,
+  N. Macomb Co., Grandville & Walker) — measured at **0.940** of the county dashboard's 2019 footprint,
+  so the statewide ACS denominator understates the rate ~6%. No county values published →
+  `n_counties`/`basket_share` NA. **68 of 89 months**: 21 are `unlabelled_in_source` and are omitted
+  rows, never zero-filled; 3 are `derived_from_annual_total` (exact arithmetic). Complete 2019-01..2023-01.
+- **Trailing partial-month censor (2026-09-14).** The Eviction Lab extract cuts each site at its own
+  collection date, leaving a partial final month that the single-series rebuild carried into the panel.
+  Removed: **NM 2026-06** (0.16 of its prior-6 median), **MO 2026-06** (0.26), **LA 2026-03** (0.31),
+  **WA 2026-06** (0.38, dropped in its add script), **MA 2026-06** (0.53). NV and RI end a month earlier
+  and are clean. Edit: `data_prep/censor_trailing_partial_months.R`. **Re-check after every extract refresh.**
 - **Series-start ramp censor (2026-09-14).** Three leading months were removed as incomplete-at-ingest
   reporting, not real drops: **CT 2016-01 / 2016-02** (0.15 / 0.19 of their own seasonal norm, then
   straight to ~1.05) and **NH 2018-12** (0.20, then 1.18). CT now starts 2016-03 and NH 2019-01.
@@ -219,7 +249,7 @@ Four files describe the LSC CCDI county file as Eviction Tracking System data:
 - [`.claude/references/domain-profile.md:27`](../.claude/references/domain-profile.md)
 - [`docs/methodology/PRE_ANALYSIS_PLAN_POWER_LANGUAGE.md:76`](methodology/PRE_ANALYSIS_PLAN_POWER_LANGUAGE.md) — **PAP-facing**: the
   pre-analysis plan currently names the wrong data provider for the primary outcome in 30 of
-  39 states.
+  42 states.
 
 Also open: the mortgage delinquency source placeholder in
 `docs/methodology/README_MORTGAGE_PRETRENDS.md` (two `[Add data source]` markers), and the

@@ -65,7 +65,30 @@ dir.create(DEPR_DIR, showWarnings = FALSE, recursive = TRUE)
 
 source("utils/eviction_treatment_schedule.R")
 
-KEEP_OLD <- c("NH", "WI", "MD", "LA", "MA", "MO", "NM", "NV", "RI")
+# ID added 2026-09-14. Idaho is no longer sourced from the county download: it
+# now carries the statewide 44-county Idaho Judicial Branch A12 series
+# (data_prep/add_id_to_state_panel.R). Leaving ID out of KEEP_OLD would rebuild
+# it from the download's fixed basket -- silently reverting Idaho to Twin Falls
+# County alone, with no error and no diff in the QA tables, exactly the failure
+# mode documented for MD and the single-series six below.
+#
+# MI, WA, OR added 2026-09-14 -- BUG FIX, not a new feature. All three were
+# added to the panel earlier the same day (add_mi_to_state_panel.R,
+# add_wa_to_state_panel.R, add_oregon_to_state_panel.R) but never entered this
+# list. None of the three has a single row in monthly_county_data_download.csv
+# (verified: 0 rows for fips prefixes 26 / 53 / 41), so they could not arrive
+# via county_part either -- `new <- bind_rows(county_part, keepold_part)` simply
+# DROPPED them. Any run of this script deleted MI (68 rows),
+# WA (113) and OR (103) from the panel silently: exit status 0, no invariant
+# tripped, and the field-change QA reports rows_dropped only for states it still
+# knows about. Confirmed empirically on 2026-09-14 (4,304 rows -> 4,020, three
+# states gone); the panel was restored from backup and this list fixed.
+#
+# THE INVARIANT: every state whose series does not come from
+# monthly_county_data_download.csv must appear here. Add the state to KEEP_OLD
+# in the SAME commit as its add_*_to_state_panel.R script.
+KEEP_OLD <- c("NH", "WI", "MD", "LA", "MA", "MO", "NM", "NV", "RI", "ID",
+              "MI", "WA", "OR")
 NY_START <- as.Date("2019-01-01")
 
 # ---- Basket policy (decision 2026-08-20: FIXED BASKET) ---------------------
@@ -245,6 +268,21 @@ new <- bind_rows(county_part, keepold_part) %>%
          renter_occupied_housing_units, filings_per_1k_renters,
          treat_start, treated, panel_source, n_counties, basket_share) %>%
   arrange(state_abb, month_date)
+
+# Series-start ramp censor, re-applied on every rebuild. county_part is rebuilt
+# from the raw download, so the months that data_prep/censor_series_start_ramps.R
+# removed come straight back unless they are dropped here too. Confirmed
+# 2026-09-14 15:17: a re-run of this script after the Idaho swap restored
+# CT 2016-01 and 2016-02 (4,304 -> 4,306 rows) with exit status 0 and no QA
+# flag; caught and re-censored 2026-09-16. Keep this list identical to CENSOR
+# in censor_series_start_ramps.R. NH 2018-12 is listed for symmetry -- NH is in
+# KEEP_OLD, so it never re-enters via county_part.
+RAMP_CENSOR <- tibble(
+  state_abb  = c("CT", "CT", "NH"),
+  month_date = as.Date(c("2016-01-01", "2016-02-01", "2018-12-01")))
+n_ramp <- nrow(semi_join(new, RAMP_CENSOR, by = c("state_abb", "month_date")))
+new <- anti_join(new, RAMP_CENSOR, by = c("state_abb", "month_date"))
+message(glue("Series-start ramp censor re-applied: {n_ramp} row(s) removed."))
 
 if (identical(BASKET_MODE, "fixed")) {
   # The point of the mode: within a state the basket must never move.
