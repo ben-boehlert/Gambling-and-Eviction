@@ -592,6 +592,55 @@ test_that("a unit with no renter count drops only itself, not its cells (2026-09
   expect_equal(a_na$se,  a_dr$se,  tolerance = 1e-10)
 })
 
+test_that("twfe_unit_weights = renters: constant renters reproduce unweighted TWFE", {
+  toy <- build_toy_est(seed = 555L, n_states = 8L)
+  inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",
+                       shape = "step", delta = 0, outcome = "y_log1p", seed = 3L)
+  base <- run_estimator(inj, "twfe")
+  rw   <- run_estimator(inj, "twfe", spec = list(twfe_unit_weights = "renters"))
+  ba <- base[base$inference == "analytic", ]; ra <- rw[rw$inference == "analytic", ]
+  bw <- base[base$inference == "wild", ];     rww <- rw[rw$inference == "wild", ]
+  expect_true(ra$converged); expect_true(rww$converged)
+  expect_equal(ra$att, ba$att, tolerance = 1e-10)
+  expect_equal(ra$se,  ba$se,  tolerance = 1e-8)
+  # 8 clusters = full enumeration, so the dummy-FE weighted bootstrap and the
+  # absorbed-FE unweighted one must give the same p.
+  expect_equal(rww$p, bw$p, tolerance = 1e-8)
+})
+
+test_that("twfe_unit_weights = renters matches a hand-fitted weighted TWFE", {
+  toy <- build_toy_est(seed = 909L, n_states = 8L, units_per_state = 4L)
+  set.seed(5)
+  ru <- setNames(round(exp(stats::rnorm(length(unique(toy$panel$unit_id)), 8, 1))),
+                 unique(toy$panel$unit_id))
+  toy$panel$renters <- as.numeric(ru[toy$panel$unit_id])
+  inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",
+                       shape = "step", delta = TRUTH, outcome = "y_log1p", seed = 3L)
+  rw <- run_estimator(inj, "twfe", spec = list(twfe_unit_weights = "renters"))
+  ra <- rw[rw$inference == "analytic", ]; rww <- rw[rw$inference == "wild", ]
+  est <- .re_prep(inj); est$w <- as.numeric(ru[est$unit_id])
+  ref <- fixest::feols(y_sim ~ post | id + t, data = est, weights = ~w,
+                       cluster = ~state_abb, warn = FALSE, notes = FALSE)
+  expect_true(ra$converged); expect_true(rww$converged)
+  # weights are scale-free in WLS, so the mean-1 scaling cannot matter
+  expect_equal(ra$att, as.numeric(coef(ref)["post"]), tolerance = 1e-10)
+  expect_equal(ra$se,  as.numeric(fixest::se(ref)["post"]), tolerance = 1e-8)
+  unw <- run_estimator(inj, "twfe")
+  expect_false(isTRUE(all.equal(ra$att, unw$att[unw$inference == "analytic"],
+                                tolerance = 1e-6)))
+  expect_true(is.finite(rww$p) && rww$p >= 0 && rww$p <= 1)
+})
+
+test_that("twfe_unit_weights = renters fails loudly without a renters column", {
+  toy <- build_toy_est(seed = 555L, n_states = 8L)
+  inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",
+                       shape = "step", delta = 0, outcome = "y_log1p", seed = 3L)
+  inj$renters <- NULL
+  r <- run_estimator(inj, "twfe", spec = list(twfe_unit_weights = "renters"))
+  expect_false(any(r$converged))
+  expect_match(r$error_msg[1], "renters")
+})
+
 test_that("lpdid_unit_weights = renters fails loudly without a renters column", {
   toy <- build_toy_est(seed = 555L, n_states = 8L)
   inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",

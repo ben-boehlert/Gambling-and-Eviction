@@ -372,7 +372,14 @@ power_rep_seed <- function(base_seed, rep, scenario_offset) {
     id$placement_hmin <- as.integer(g$lpdid_hmin[i] %||% 0L)
     id$placement_post <- as.integer(g$lpdid_post[i] %||% 12L)
   }
-  ts <-sort(as.character(unlist(g$template_states[[i]] %||% character(0))))
+  # `twfe_unit_weights` (2026-09-23): usual rule -- "none" reproduces every
+  # existing id; a set value changes the TWFE estimand, so it gets its own id.
+  # Gated on twfe running.
+  tuw <- as.character(g$twfe_unit_weights[i] %||% "none")
+  if (length(tuw) == 1L && !is.na(tuw) && !identical(tuw, "none") &&
+      "twfe" %in% as.character(unlist(g$estimators[[i]])))
+    id$twfe_unit_weights <- tuw
+  ts <- sort(as.character(unlist(g$template_states[[i]] %||% character(0))))
   if (length(ts) > 0L) id$template_states <- ts
   # `shift_mode` is hashed CONDITIONALLY, same principle as `template` /
   # `cs_safe_patches` above: FALSE reproduces pre-flag behavior bit-for-bit,
@@ -581,6 +588,9 @@ expand_scenario_grid <- function(cfg) {
     # override. See .re_lpdid_weights() in run_estimators.R.
     g$lpdid_unit_weights <- as.character(blk$lpdid_unit_weights %||%
                                            cfg$lpdid_unit_weights %||% "none")
+    # Same for TWFE (2026-09-23): "none" / "renters". See .re_twfe().
+    g$twfe_unit_weights <- as.character(blk$twfe_unit_weights %||%
+                                          cfg$twfe_unit_weights %||% "none")
     # States dropped from the panel BEFORE schedule/template derivation —
     # neither treated-template members nor controls (dose-tercile
     # subdesigns, 2026-08-19). Block may override the run level.
@@ -1622,6 +1632,7 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
              lpdid_weights  = as.character(sc$lpdid_weights %||% "ewatt"),
              lpdid_unit_weights = as.character(sc$lpdid_unit_weights %||%
                                                  "none"),
+             twfe_unit_weights = as.character(sc$twfe_unit_weights %||% "none"),
              lpdid_min_horizons = sc$min_horizons %||% NA_integer_,
              lpdid_baseline_clean = !identical(sc$baseline_clean %||% TRUE, FALSE),
              lpdid_excluded_months = as.character(sc$excluded_months %||%

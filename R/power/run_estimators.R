@@ -346,7 +346,11 @@ run_estimator <- function(panel_sim,
   switch(
     estimator,
     cs    = .re_cs(est, sp, cl, df_cluster),
-    twfe  = .re_twfe(est, sp, cl, df_cluster),
+    # renters go to TWFE alone (rows of est match panel_sim one-to-one), so
+    # no other estimator sees an extra, possibly-NA column.
+    twfe  = .re_twfe(est, sp, cl, df_cluster,
+                     renters = if ("renters" %in% names(panel_sim))
+                                 as.numeric(panel_sim$renters) else NULL),
     did2s = .re_did2s(est, sp, cl, df_cluster),
     bjs   = .re_bjs(est, sp, cl, df_cluster),
     sunab = .re_sunab(est, sp, cl, df_cluster),
@@ -762,10 +766,44 @@ run_estimator <- function(panel_sim,
 
 # ------------------------------ TWFE (E2) -------------------------------------
 
-.re_twfe <- function(est, sp, cl, df_cluster) {
+.re_twfe <- function(est, sp, cl, df_cluster, renters = NULL) {
   dat <- as.data.frame(est)
   z <- stats::qt(1 - sp$alpha / 2, df = max(1L, df_cluster))
   rows <- list()
+
+  # UNIT WEIGHTS (twfe_unit_weights = "renters", 2026-09-23). One
+  # time-invariant weight per unit, built as for LP-DiD: the unit's mean
+  # renter count, scaled to mean 1 across units; a unit with no finite
+  # positive renter count is dropped (only that unit). "none" leaves the fit
+  # and bootstrap exactly as before, so unweighted runs are bit-identical.
+  uws <- as.character(sp$twfe_unit_weights %||% "none")
+  weighted <- identical(uws, "renters")
+  if (weighted) {
+    if (is.null(renters) || length(renters) != nrow(dat))
+      return(.re_row("twfe", "analytic", "simple",
+                     n_treated_clusters = cl$n_treated,
+                     n_control_clusters = cl$n_control, converged = FALSE,
+                     error_msg = "twfe_unit_weights = renters but panel_sim has no `renters` column"))
+    r <- renters
+    r[!is.finite(r) | r <= 0] <- NA_real_
+    mu <- tapply(r, dat$id, mean, na.rm = TRUE)
+    dat$uw <- as.numeric(mu[as.character(dat$id)])
+    dat <- dat[is.finite(dat$uw) & dat$uw > 0, , drop = FALSE]
+    if (nrow(dat) == 0L)
+      return(.re_row("twfe", "analytic", "simple",
+                     n_treated_clusters = cl$n_treated,
+                     n_control_clusters = cl$n_control, converged = FALSE,
+                     error_msg = "twfe_unit_weights = renters but no unit has a renter count"))
+    dat$uw <- dat$uw / mean(tapply(dat$uw, dat$id, `[`, 1L))
+  }
+  twfe_fit <- function(d) {
+    if (weighted)
+      fixest::feols(y_sim ~ post | id + t, data = d, weights = ~uw,
+                    cluster = ~state_abb, warn = FALSE, notes = FALSE)
+    else
+      fixest::feols(y_sim ~ post | id + t, data = d,
+                    cluster = ~state_abb, warn = FALSE, notes = FALSE)
+  }
 
   # NOTE: the unit fixed effect uses the integer `id` column, not the
   # character `unit_id`. fwildclusterboot::boottest.fixest() internally
@@ -775,9 +813,7 @@ run_estimator <- function(panel_sim,
   # and gives an identical point estimate; only boottest requires numeric FEs.
   t0 <- Sys.time()
   fit <- tryCatch(
-    suppressMessages(suppressWarnings(
-      fixest::feols(y_sim ~ post | id + t, data = dat,
-                    cluster = ~state_abb, warn = FALSE, notes = FALSE))),
+    suppressMessages(suppressWarnings(twfe_fit(dat))),
     error = function(e) structure(NA, err = conditionMessage(e)))
   rt <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
 
@@ -817,9 +853,7 @@ run_estimator <- function(panel_sim,
       }
     }
     fit_wb <- tryCatch(
-      suppressMessages(suppressWarnings(
-        fixest::feols(y_sim ~ post | id + t, data = dat_wb,
-                      cluster = ~state_abb, warn = FALSE, notes = FALSE))),
+      suppressMessages(suppressWarnings(twfe_fit(dat_wb))),
       error = function(e) fit)
   }
   t1 <- Sys.time()
@@ -828,10 +862,17 @@ run_estimator <- function(panel_sim,
   # ~1.8 GB peak per county-panel call, which OOM-killed 8-worker/16G array
   # tasks (Della job 12223288, 2026-08-10). With absorption: ~0.6 GB peak,
   # 5x faster, numerically identical p-value.
+  # Weighted fits: boottest() does not support WLS with an absorbed fixed
+  # effect, so the unit FE is dummy-expanded (no `fe`). Cheap at state level
+  # (~40 units); at county level it is the dense-matrix path noted above.
   wb <- tryCatch(
     suppressMessages(suppressWarnings(
-      fwildclusterboot::boottest(fit_wb, param = "post", clustid = ~state_abb,
-                                 B = 999L, type = "rademacher", fe = "id"))),
+      if (weighted)
+        fwildclusterboot::boottest(fit_wb, param = "post", clustid = ~state_abb,
+                                   B = 999L, type = "rademacher")
+      else
+        fwildclusterboot::boottest(fit_wb, param = "post", clustid = ~state_abb,
+                                   B = 999L, type = "rademacher", fe = "id"))),
     error = function(e) structure(NA, err = conditionMessage(e)))
   rt1 <- as.numeric(difftime(Sys.time(), t1, units = "secs"))
 
