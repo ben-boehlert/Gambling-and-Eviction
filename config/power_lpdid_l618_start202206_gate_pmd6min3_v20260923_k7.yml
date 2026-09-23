@@ -1,0 +1,52 @@
+# Power-lever probe (2026-09-23): one change against the reference gate
+# config/power_lpdid_l618_pmd3_start202206_noMNWA_gate_v20260921_k7.yml
+# (6-18 horizons, K 7, 2022-06 start, ex NV HI MS MN WA, precovid template,
+# 2,000 reps at delta = 0). Only LP-DiD runs: TWFE does not see these knobs.
+# Read SD(att0), SE/SD and size against the reference. Seeds are NOT paired
+# with the reference (the seed offset comes from the scenario hash), so
+# compare SDs with their Monte Carlo error (~1.6% relative at 2,000 reps).
+# BLIND: effect_grid [0], no real outcome is estimated.
+# CHANGE: lpdid_pmd 6 with lpdid_pmd_min 3 and lpdid_base_gapmax 2 --
+# average the last 6 observed pre-launch months, accept 3, never across the
+# COVID gap. Keeps all 10 real switchers (MD, KS use 3). NB placement uses
+# the strict pmd-6 rule, and on the precovid template baselines are complete,
+# so this arm measures a 6-month baseline at 10 switchers.
+run_name: lpdid_l618_start202206_gate_pmd6min3_v20260923_k7
+exclude_states: [NV, HI, MS, MN, WA]   # MN, WA = DATA_QUALITY_EXCLUDED_STATES (utils/eviction_treatment_schedule.R), adopted 2026-09-21
+schedule:   data/raw/sports_gambling_legalization_dates.csv
+level:      state
+sample:     [S2]
+covid:      drop
+treat_def:  online_start_date   # launch-indexed: outcomes are horizons 6..18 after online launch
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+est_anticipation: 0
+template:   panel
+effect_grid:  [0]
+estimators: [lpdid]
+lpdid_wild:   true
+lpdid_anchor: event_clean   # pre-launch baseline; with treat_def = online launch the event IS the launch
+lpdid_pmd: 6
+lpdid_hmin:   6
+lpdid_post:   18
+eligibility:          presence   # placement uses the rule itself, not the min_pre/min_post box
+min_horizons:         7          # K: >= 7 usable outcome months in [launch+6, launch+18]
+splice_buffer_months: 0          # the sample start itself (2022-06) replaces the buffer
+template_states: [KS, MA, MD, ME, NC, OH, KY, DE, VT, FL]   # real switchers at 6-18 / pmd 3 / start 2022-06 (blind probe g_618_p3_jun)
+lpdid_weights: ewatt            # 1/(1 - Dbar_cell) -- see header
+n_reps:     2000   # size-gate escalation: the 300-rep MDE run landed LP-DiD wild at 0.067, inside [0.055, 0.09]
+base_seed:  20260723           # pairs with both size gates and smoke/cheap/primary
+mde_boot:   200                # bootstrap CI on the interpolated MDE
+alpha:      [0.1, 0.05, 0.01]
+min_pre:    3    # anchor bound only (presence rule decides eligibility): 3-month baseline before launch
+min_post:   12   # anchor bound only: launch+12 = the 7th outcome month of [launch+6, launch+18]
+anticipation_months: 6
+covid_drop: ['2020-03-01', '2022-05-31']   # sample start 2022-06
+lpdid_pmd_min: 3
+lpdid_base_gapmax: 2
+scenarios:
+  - name: l618_precovid
+    covid: pre
