@@ -49,6 +49,11 @@
 #     Optional Date window (YYYY-MM-DD) to *exclude from residual pool* only.
 #     Example: EXCLUDE_START=2020-03-01 EXCLUDE_END=2021-07-01
 #
+#   UNIT_WEIGHTS   none (default, the application setup) or renters (2026-09-23):
+#     weight each state by its mean renter_occupied_housing_units, scaled to
+#     mean 1, in the TWFE fit. NB the error process here is homoskedastic
+#     ACROSS states (month-pooled residuals, month-level sd), so weighting
+#     cannot buy precision the way it does on real untreated data.
 #   DROP_START / DROP_END
 #     Optional Date window (YYYY-MM-DD) to *drop months from the analysis panel*
 #     (FE fit, simulation, and TWFE estimation). Use this if you want “no COVID
@@ -156,6 +161,8 @@ DROP_END   <- as.Date(getenv1("DROP_END", ""))
 
 # state/date filtering
 EXCLUDE_STATES <- getenv1("EXCLUDE_STATES", "")  # Comma-separated, e.g. "ME,AK"
+UNIT_WEIGHTS   <- tolower(getenv1("UNIT_WEIGHTS", "none"))
+if (!UNIT_WEIGHTS %in% c("none", "renters")) stop("UNIT_WEIGHTS must be none or renters", call. = FALSE)
 MAX_DATE <- as.Date(getenv1("MAX_DATE", ""))  # e.g. "2024-12-31"
 
 parse_state_list <- function(x) {
@@ -552,6 +559,19 @@ draw_errors_ar1 <- function(panel_t, idx_by_id, std_pool_by_t, std_global_pool,
 
 # ----------------------------- simulation core --------------------------------
 
+# Unit weights (UNIT_WEIGHTS=renters). One constant per state; a state with no
+# renter count stops the run rather than silently leaving the sample.
+panel$uw <- 1
+if (UNIT_WEIGHTS == "renters") {
+  r <- as.numeric(panel$renter_occupied_housing_units)
+  r[!is.finite(r) | r <= 0] <- NA_real_
+  a <- tapply(r, panel$state_abb, mean, na.rm = TRUE)
+  if (any(!is.finite(a))) stop(glue("UNIT_WEIGHTS=renters: no renter count for {paste(names(a)[!is.finite(a)], collapse=', ')}"), call. = FALSE)
+  a <- a / mean(a)
+  panel$uw <- as.numeric(a[panel$state_abb])
+  log_line(RUN_LOG, glue("UNIT_WEIGHTS=renters: {length(a)} states, weight range {round(min(a),3)}-{round(max(a),3)}"))
+}
+
 effect_tbl <- tibble(
   effect_pct = EFFECT_PCTS,
   effect_log = log(1 + EFFECT_PCTS)
@@ -580,8 +600,14 @@ one_sim_twfe <- function(seed, effect_log) {
   )
 
   out <- tryCatch({
-    est <- fixest::feols(y ~ post_treat | id + t, data = dat,
-                         cluster = ~id, warn = FALSE, notes = FALSE)
+    est <- if (UNIT_WEIGHTS == "renters") {
+      dat$uw <- panel$uw
+      fixest::feols(y ~ post_treat | id + t, data = dat, weights = ~uw,
+                    cluster = ~id, warn = FALSE, notes = FALSE)
+    } else {
+      fixest::feols(y ~ post_treat | id + t, data = dat,
+                    cluster = ~id, warn = FALSE, notes = FALSE)
+    }
 
     ct <- fixest::coeftable(est)
 
@@ -634,7 +660,7 @@ if (use_parallel) {
     cl,
     varlist = c(
       "panel","resid_pool_by_t","global_pool","MIN_STATES_PER_MONTH",
-      "ERR_MODE","idx_by_id","std_pool_by_t","std_global_pool","sd_row","rho_used","sigma_u",
+      "ERR_MODE","UNIT_WEIGHTS","idx_by_id","std_pool_by_t","std_global_pool","sd_row","rho_used","sigma_u",
       "draw_errors_iid_month","draw_errors_ar1","one_sim_twfe","one_sim_twfe_worker"
     ),
     envir = environment()
