@@ -1598,6 +1598,13 @@ run_estimator <- function(panel_sim,
   }
 
   res <- tryCatch(suppressMessages(suppressWarnings({
+    # Drop weightless units BEFORE the cell weights are built (2026-09-23
+    # review, C3). .re_lpdid_weights() sums w within each cell with no na.rm,
+    # so one NA renter count made the whole cell's weight NA and the
+    # is.finite(rw) filter then removed every unit in that cell -- not just
+    # the unit without a renter count, as the unit-weights note above intends.
+    if (identical(uwscheme, "renters"))
+      stack <- stack[is.finite(stack$a), , drop = FALSE]
     stack$cell <- factor(stack$cell)
     stack$rw <- .re_lpdid_weights(
       stack$D_treat, stack$cell, wscheme,

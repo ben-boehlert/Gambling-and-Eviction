@@ -617,3 +617,50 @@ test_that("inclusion-rule knobs: defaults keep ids, presence/min_horizons/buffer
   expect_identical(g0$eligibility[1], "span"); expect_true(is.na(g0$min_horizons[1]))
   expect_equal(g0$splice_buffer_months[1], 0L)
 })
+
+# ---- 2026-09-23 review fixes: placement-window hash + run fingerprint -------
+
+test_that("presence placement window is hashed for scenarios without lpdid", {
+  base <- c("level: state", "sample: [S2]", "covid: keep",
+            "treat_def: online_start_date", "designs: [D1]",
+            "mechanisms: [deterministic]", "shapes: [step]",
+            "effect_grid: [0]", "n_reps: 2", "base_seed: 123",
+            "min_pre: 12", "min_post: 6", "eligibility: presence",
+            "min_horizons: 7")
+  ids <- function(extra) expand_scenario_grid(read_power_config(
+    .write_yaml(c(base, extra))))$scenario_id
+  # TWFE-only: the 6-18 and 12-24 placement windows must not share an id.
+  expect_false(identical(
+    ids(c("estimators: [twfe]", "lpdid_hmin: 6", "lpdid_post: 18")),
+    ids(c("estimators: [twfe]", "lpdid_hmin: 12", "lpdid_post: 24"))))
+  # With lpdid present the lpdid block already hashes them; the new
+  # placement_* keys must NOT appear, or every existing k7 id would move.
+  cfg <- read_power_config(.write_yaml(c(base, "estimators: [lpdid]",
+                                         "lpdid_hmin: 6", "lpdid_post: 18")))
+  g <- expand_scenario_grid(cfg)
+  expect_false(grepl("placement_", .scenario_identity_string(g, 1L, cfg$base_seed)))
+})
+
+test_that("resume refuses a run folder built on different run-level settings", {
+  mk <- function(drop_end) .write_yaml(c(
+    "level: state", "sample: [S2]", "covid: drop",
+    sprintf("covid_drop: [2020-03-01, %s]", drop_end),
+    "treat_def: online_start_date", "designs: [D1]",
+    "mechanisms: [deterministic]", "shapes: [step]",
+    "estimators: [twfe]", "effect_grid: [0]",
+    "n_reps: 2", "base_seed: 123", "min_pre: 12", "min_post: 6"))
+  rn <- "_test_run_fingerprint"
+  on.exit(unlink(.power_out_dir(rn), recursive = TRUE), add = TRUE)
+  run <- function(path, resume) run_scenario_grid(
+    path, resume = resume, workers = 1, run_name = rn,
+    impose_fn = mock_impose_effect, estimator_fn = mock_run_estimator)
+  run(mk("2021-07-31"), resume = FALSE)
+  expect_true(file.exists(file.path(.power_out_dir(rn), "run_fingerprint.json")))
+  # Same settings: resume goes through.
+  expect_no_error(run(mk("2021-07-31"), resume = TRUE))
+  # covid_drop moved (the 2022-06 design): scenario ids do not see it, so the
+  # fingerprint must stop the resume instead of reusing the old partials.
+  expect_error(run(mk("2022-05-31"), resume = TRUE), "covid_drop")
+  # resume = FALSE is the explicit overwrite and is allowed.
+  expect_no_error(run(mk("2022-05-31"), resume = FALSE))
+})

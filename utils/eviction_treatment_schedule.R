@@ -160,6 +160,17 @@ PRE_PASPA_SPORTS_BETTING <- c("NV")
 #         obtained from the Minnesota Judicial Branch before the analysis lock.
 DATA_QUALITY_EXCLUDED_STATES <- c("MN", "WA")
 
+# States whose monthly series is too short or stale for the state design (LSC
+# stops early for both; FINDINGS.md section 6, "The 5 LSC-stale states").
+SERIES_EXCLUDED_STATES <- c("HI", "MS")
+
+# The state-level design's full exclusion list, in one place (2026-09-23). The
+# real-data LP-DiD script, the TWFE donor-path sim and the RI driver all read
+# this, so their state sets cannot drift apart again (they did: the TWFE sim
+# kept HI and MS while LP-DiD dropped them).
+DESIGN_EXCLUDED_STATES <- c(PRE_PASPA_SPORTS_BETTING, SERIES_EXCLUDED_STATES,
+                            DATA_QUALITY_EXCLUDED_STATES)
+
 #' Adoption outcomes over the full 51-state universe
 #'
 #' Returns exactly one row per state in EVICTION_STATE_UNIVERSE, so a join can

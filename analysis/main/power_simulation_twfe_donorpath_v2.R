@@ -96,11 +96,15 @@ DF_CORRECT <- parse_bool(getenv1("DF_CORRECT", "FALSE"), FALSE)  # Pass-3 fix 3
 
 # Pass-3 fix 5: states removed from the panel before anything else -- neither
 # controls, switchers, nor noise donors. Comma list, e.g. "WA,MN".
-# Default (2026-09-21): DATA_QUALITY_EXCLUDED_STATES (MN, WA) from
-# utils/eviction_treatment_schedule.R. Pass EXCLUDE_STATES=none to keep every state.
-EXCLUDE_STATES_RAW <- getenv1("EXCLUDE_STATES", paste(DATA_QUALITY_EXCLUDED_STATES, collapse = ","))
+# Default (2026-09-23): DESIGN_EXCLUDED_STATES from utils/eviction_treatment_schedule.R
+# (HI, MS, MN, WA; NV is dropped separately below as pre-PASPA) -- the same state set
+# as analysis/main/lpdid_statepanel.R. Until 2026-09-21 the default was MN, WA only, so
+# HI and MS stayed in as never-treated controls and the TWFE MDE was not on LP-DiD's
+# state set. Pass EXCLUDE_STATES=none to keep every state.
+EXCLUDE_STATES_RAW <- getenv1("EXCLUDE_STATES",
+  paste(setdiff(DESIGN_EXCLUDED_STATES, PRE_PASPA_SPORTS_BETTING), collapse = ","))
 EXCLUDE_STATES <- if (tolower(EXCLUDE_STATES_RAW) == "none") character(0) else toupper(trimws(strsplit(EXCLUDE_STATES_RAW, ",")[[1]]))
-EXCLUDE_REASON <- getenv1("EXCLUDE_REASON", "DATA_QUALITY_EXCLUDED_STATES default: WA pre-filing program 2021-11..2023-06; MN expungement (see utils/eviction_treatment_schedule.R)")
+EXCLUDE_REASON <- getenv1("EXCLUDE_REASON", "DESIGN_EXCLUDED_STATES default: HI/MS short LSC series; WA pre-filing program 2021-11..2023-06; MN expungement (see utils/eviction_treatment_schedule.R)")
 
 N_SIMS       <- parse_int(getenv1("N_SIMS", "2000"), 2000L)
 RUN_WILD     <- parse_bool(getenv1("RUN_WILD", "TRUE"), TRUE) && wild_available
@@ -109,7 +113,7 @@ WILD_B       <- parse_int(getenv1("WILD_B", "999"), 999L)
 SEED         <- parse_int(getenv1("SEED", "20260921"), 20260921L)
 ALPHA        <- parse_num(getenv1("ALPHA", "0.05"), 0.05)
 N_WORKERS    <- min(6L, parse_int(getenv1("N_WORKERS", "6"), 6L))
-OUT_DIR      <- getenv1("OUT_DIR", "output/twfe_power_donorpath_default/start202206_no_mn_wa")
+OUT_DIR      <- getenv1("OUT_DIR", "output/twfe_power_donorpath_default/start202206_design_excl")
 LOO_N_SIMS   <- parse_int(getenv1("LOO_N_SIMS", "400"), 400L)
 
 MDE_GRID_MAX <- 0.40; MDE_GRID_STEP <- 0.001; grid <- seq(0, MDE_GRID_MAX, by = MDE_GRID_STEP)

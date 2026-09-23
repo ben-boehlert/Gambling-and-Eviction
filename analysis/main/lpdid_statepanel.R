@@ -90,6 +90,15 @@ MIN_HORIZONS    <- suppressWarnings(as.integer(getenv1("MIN_HORIZONS", "")))
 SPLICE_BUFFER   <- as.integer(getenv1("SPLICE_BUFFER", "0"))
 BOOT_REPS       <- as.integer(getenv1("BOOT_REPS", "9999"))
 JOINT_SEED      <- as.integer(getenv1("JOINT_SEED", "20260820"))  # joint pre-trend bootstrap
+# Wild-bootstrap seed (2026-09-23). boottest() draws from dqrng, which base R's
+# set.seed() does not touch, so before 2026-09-23 every wild p-value and CI here
+# was unseeded (wild SE 0.0359 in one run, 0.0371 in the next). seed_boot()
+# resets BOTH streams immediately before each boottest() call.
+BOOT_SEED       <- as.integer(getenv1("BOOT_SEED", "20260923"))
+seed_boot <- function() {
+  set.seed(BOOT_SEED)
+  if (requireNamespace("dqrng", quietly = TRUE)) dqrng::dqset.seed(BOOT_SEED)
+}
 REWEIGHT        <- TRUE                                  # weight cells (see below)
 # Cell weighting scheme. CORRECTED 2026-08-24 -- this script previously used
 # 1/Var_cell(D) and called it EWATT; that weights each cell by its TOTAL size
@@ -139,11 +148,17 @@ DROP_END   <- as.Date(getenv1("DROP_END",   "2021-07-31"))
 # basket-composition exclusions (FINDINGS.md §2). Pass EXCLUDE_STATES="" to
 # keep everything; the pre-PASPA assertion below still fires for NV.
 # Default (2026-09-21): NV (pre-PASPA, always-treated), HI and MS (LSC-stale, short
-# series), MN and WA (DATA_QUALITY_EXCLUDED_STATES, utils/eviction_treatment_schedule.R).
+# series; SERIES_EXCLUDED_STATES), MN and WA (DATA_QUALITY_EXCLUDED_STATES) -- together
+# DESIGN_EXCLUDED_STATES in utils/eviction_treatment_schedule.R. (The ID/HI/MS text
+# above is the pre-2026-09-21 history.)
 # Idaho is INCLUDED: the Twin Falls basket behind the old exclusion was replaced by the
 # statewide Idaho Judicial Branch series on 2026-09-14 and verified 2026-09-17.
-EXCLUDE_STATES <- { v <- Sys.getenv("EXCLUDE_STATES", unset = "NV,HI,MS,MN,WA")
-                    v <- trimws(strsplit(v, ",")[[1]]); v[nzchar(v)] }
+# The default is DESIGN_EXCLUDED_STATES (utils/eviction_treatment_schedule.R), shared
+# with the TWFE donor-path sim and the RI driver (2026-09-23). "" or "none" = keep all.
+EXCLUDE_STATES <- { v <- Sys.getenv("EXCLUDE_STATES",
+                                    unset = paste(DESIGN_EXCLUDED_STATES, collapse = ","))
+                    if (tolower(trimws(v)) == "none") v <- ""
+                    v <- toupper(trimws(strsplit(v, ",")[[1]])); v[nzchar(v)] }
 
 # BALANCE_PANEL (default FALSE, 2026-09-06). LP-DiD needs no balanced panel:
 # each observation is a long difference built from its own baseline months
@@ -434,6 +449,7 @@ estimate_h <- function(d, h, side) {
     # fe = NULL is REQUIRED: boottest does not support WLS with absorbed fixed
     # effects. Dummy-expanding ~83 time effects is cheap (unlike the 1,200
     # county FEs that motivated fe = "id" in the power framework).
+    seed_boot()
     bt <- boottest(fit, param = "D_treat", clustid = "state_abb", B = BOOT_REPS,
                    type = "rademacher")
     bt$p_val
@@ -499,9 +515,10 @@ pooled <- if (nrow(pooled_use) > 0) {
   d <- d %>% filter(is.finite(rw))
   fit <- feols(dy ~ D_treat | time, data = d, weights = ~rw, vcov = ~state_abb,
                warn = FALSE, notes = FALSE)
-  pw <- if (HAS_BOOT) tryCatch(
+  pw <- if (HAS_BOOT) tryCatch({
+    seed_boot()
     boottest(fit, param = "D_treat", clustid = "state_abb", B = BOOT_REPS,
-             type = "rademacher")$p_val, error = function(e) NA_real_) else NA_real_
+             type = "rademacher")$p_val }, error = function(e) NA_real_) else NA_real_
   tibble(att = as.numeric(coef(fit)["D_treat"]), se = as.numeric(se(fit)["D_treat"]),
          p_analytic = as.numeric(pvalue(fit)["D_treat"]), p_wild = pw,
          n_obs = nobs(fit), n_straddling = sum(d$straddles))
@@ -549,9 +566,10 @@ pool_window <- function(dat, h_lo, h_hi, era, label) {
   # -- not se(fit) -- is what any power or precision statement should rest on.
   # WILD_CI=0 skips the inversion, which is the slow part.
   wild_ci <- !identical(getenv1("WILD_CI", "1"), "0")
-  bt <- if (HAS_BOOT) tryCatch(
+  bt <- if (HAS_BOOT) tryCatch({
+    seed_boot()
     boottest(fit, param = "D_treat", clustid = "state_abb", B = BOOT_REPS,
-             type = "rademacher", conf_int = wild_ci), error = function(e) NULL) else NULL
+             type = "rademacher", conf_int = wild_ci) }, error = function(e) NULL) else NULL
   pw <- if (is.null(bt)) NA_real_ else as.numeric(bt$p_val)
   wlo <- if (is.null(bt) || is.null(bt$conf_int)) NA_real_ else as.numeric(bt$conf_int)[1]
   whi <- if (is.null(bt) || is.null(bt$conf_int)) NA_real_ else as.numeric(bt$conf_int)[2]

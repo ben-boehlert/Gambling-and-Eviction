@@ -567,6 +567,31 @@ test_that("lpdid_unit_weights = renters is live under heterogeneous renters and 
   expect_true(is.finite(rww$p) && rww$p >= 0 && rww$p <= 1)
 })
 
+test_that("a unit with no renter count drops only itself, not its cells (2026-09-23)", {
+  # Before the fix one NA renter count made every cell containing that unit
+  # weightless, so a never-treated control -- present in nearly every cell --
+  # silently removed almost the whole stack. The right answer is the fit on
+  # the panel with that one unit deleted.
+  toy <- build_toy_est(seed = 909L, n_states = 8L, units_per_state = 4L)
+  set.seed(5)
+  ru <- setNames(round(exp(stats::rnorm(length(unique(toy$panel$unit_id)), 8, 1))),
+                 unique(toy$panel$unit_id))
+  toy$panel$renters <- as.numeric(ru[toy$panel$unit_id])
+  inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",
+                       shape = "step", delta = TRUTH, outcome = "y_log1p", seed = 3L)
+  treated <- toy$sched$state_abb[is.finite(toy$sched$pseudo_g) & toy$sched$pseudo_g > 0]
+  ctl_unit <- inj$unit_id[!inj$state_abb %in% treated][1]
+  expect_false(is.na(ctl_unit))
+  spec <- list(lpdid_unit_weights = "renters")
+  with_na <- inj; with_na$renters[with_na$unit_id == ctl_unit] <- NA_real_
+  r_na   <- run_estimator(with_na, "lpdid", spec = spec)
+  r_drop <- run_estimator(inj[inj$unit_id != ctl_unit, ], "lpdid", spec = spec)
+  a_na <- r_na[r_na$inference == "analytic", ]; a_dr <- r_drop[r_drop$inference == "analytic", ]
+  expect_true(a_na$converged)
+  expect_equal(a_na$att, a_dr$att, tolerance = 1e-10)
+  expect_equal(a_na$se,  a_dr$se,  tolerance = 1e-10)
+})
+
 test_that("lpdid_unit_weights = renters fails loudly without a renters column", {
   toy <- build_toy_est(seed = 555L, n_states = 8L)
   inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",

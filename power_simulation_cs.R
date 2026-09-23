@@ -676,25 +676,15 @@ residualize_outcome <- function(df_untreated) {
   # You can add covariates here if your final spec includes them.
   m <- fixest::feols(outcome ~ 1 | unit_id + time_id, data = df_untreated)
 
-  # Handle singletons: fixest removes them, so residuals are shorter than df
-  # Get indices of observations that were kept (not removed as singletons)
-  obs_removed <- m$obs_selection$obsRemoved
-
-  # If obs_removed is NULL or all FALSE (no singletons), use simple approach
-  if (is.null(obs_removed) || all(!obs_removed)) {
-    outcome_mean <- mean(df_untreated$outcome, na.rm = TRUE)
-    return(
-      df_untreated %>%
-        mutate(outcome = resid(m) + outcome_mean)
-    )
-  }
-
-  # Otherwise, handle singletons carefully
+  # Rows fixest dropped (NA outcome, singleton FE) keep their raw outcome;
+  # every kept row gets its residual. FIXED 2026-09-23: this used to test
+  # m$obs_selection$obsRemoved as if it were logical, but fixest stores
+  # NEGATIVE row indices there (e.g. c(-3, -20)), so `outcome_new[!obs_removed]`
+  # selected nothing and residualization was silently skipped whenever even
+  # one row was dropped. fixest::obs() returns the kept row indices directly.
   outcome_mean <- mean(df_untreated$outcome, na.rm = TRUE)
-
-  # Create a vector of residualized outcomes
-  outcome_new <- df_untreated$outcome  # Start with original
-  outcome_new[!obs_removed] <- resid(m) + outcome_mean  # Replace non-singletons with residuals
+  outcome_new <- df_untreated$outcome
+  outcome_new[fixest::obs(m)] <- resid(m) + outcome_mean
 
   df_untreated %>%
     mutate(outcome = outcome_new)

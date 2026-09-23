@@ -360,7 +360,19 @@ power_rep_seed <- function(base_seed, rep, scenario_offset) {
   # exactly there -- no other scenario id moves.
   if (identical(as.character(g$eligibility[i] %||% "span"), "presence"))
     id$anchor_rule <- as.character(g$anchor_rule[i] %||% "random_feasible")
-  ts <- sort(as.character(unlist(g$template_states[[i]] %||% character(0))))
+  # Placement window (2026-09-23 review, C2). Under presence, lpdid_pmd /
+  # lpdid_hmin / lpdid_post set the placement rule for EVERY estimator, but the
+  # lpdid block above hashes them only when lpdid runs -- so a TWFE-only
+  # presence config at 6-18 and one at 12-24 shared an id. Hash them here for
+  # exactly that case. Scenarios that run lpdid already carry them, so no
+  # existing id moves.
+  if (identical(as.character(g$eligibility[i] %||% "span"), "presence") &&
+      !("lpdid" %in% as.character(unlist(g$estimators[[i]])))) {
+    id$placement_pmd  <- as.integer(g$lpdid_pmd[i]  %||% 3L)
+    id$placement_hmin <- as.integer(g$lpdid_hmin[i] %||% 0L)
+    id$placement_post <- as.integer(g$lpdid_post[i] %||% 12L)
+  }
+  ts <-sort(as.character(unlist(g$template_states[[i]] %||% character(0))))
   if (length(ts) > 0L) id$template_states <- ts
   # `shift_mode` is hashed CONDITIONALLY, same principle as `template` /
   # `cs_safe_patches` above: FALSE reproduces pre-flag behavior bit-for-bit,
@@ -377,6 +389,60 @@ power_rep_seed <- function(base_seed, rep, scenario_offset) {
   }
   paste(paste0(names(id), ":", vapply(id, .canon_atom, character(1))),
         collapse = "|")
+}
+
+# RUN FINGERPRINT (2026-09-23 review, C1). Scenario ids hash each scenario's
+# own settings, not run-level settings or data: covid_drop (which now sets the
+# 2022-06 sample start), universal_cutoff, panel_floor, and the panel/schedule
+# files never entered the id. So editing covid_drop -- or rebuilding the panel
+# -- and re-running under the same run_name made resume report "partial
+# complete -- skipping" and hand back the old design's results. The fingerprint
+# stores those settings plus the CONTENT hashes of the files each run reads in
+# <out>/run_fingerprint.json; a resume that disagrees stops. A run folder with
+# no fingerprint (every run before 2026-09-23) adopts the current one, since
+# nothing recorded says what it was built on. Scenario ids are unchanged.
+.run_fingerprint <- function(cfg, grid) {
+  levels <- unique(as.character(grid$level))
+  files <- c(schedule = cfg$schedule,
+             if ("state"  %in% levels) c(state_panel  = cfg$state_panel),
+             if ("county" %in% levels) c(county_panel = cfg$county_panel))
+  list(
+    covid_drop       = format(as.Date(cfg$covid_drop)),
+    universal_cutoff = format(as.Date(cfg$universal_cutoff)),
+    panel_floor      = format(as.Date(cfg$panel_floor)),
+    files = lapply(files, function(f)
+      if (file.exists(f)) unname(tools::md5sum(f)) else "missing")
+  )
+}
+
+.check_run_fingerprint <- function(cfg, grid, out_dir, resume) {
+  fp_new  <- .run_fingerprint(cfg, grid)
+  fp_path <- file.path(out_dir, "run_fingerprint.json")
+  if (isTRUE(resume) && file.exists(fp_path)) {
+    fp_old <- jsonlite::read_json(fp_path, simplifyVector = TRUE)
+    keys <- union(names(fp_old), names(fp_new))
+    same <- vapply(keys, function(k)
+      identical(unlist(fp_old[[k]]), unlist(fp_new[[k]])), logical(1))
+    # A county-level file added later is new information, not a mismatch.
+    if ("files" %in% keys && !same[["files"]]) {
+      shared <- intersect(names(fp_old$files), names(fp_new$files))
+      same[["files"]] <- identical(unlist(fp_old$files[shared]),
+                                   unlist(fp_new$files[shared]))
+    }
+    if (!all(same)) {
+      stop(sprintf(paste0(
+        "run_fingerprint.json in %s disagrees with this config on: %s. ",
+        "The partials there were built on different run-level settings or ",
+        "data, and scenario ids do not hash these, so resuming would mix ",
+        "designs. Use a fresh run_name (or resume = FALSE to overwrite)."),
+        out_dir, paste(keys[!same], collapse = ", ")), call. = FALSE)
+    }
+    return(invisible(TRUE))
+  }
+  tmp <- tempfile(tmpdir = out_dir, fileext = ".json")
+  jsonlite::write_json(fp_new, tmp, auto_unbox = TRUE, pretty = TRUE)
+  file.rename(tmp, fp_path)   # atomic: concurrent SLURM array tasks agree
+  invisible(TRUE)
 }
 
 # sha1 of the raw identity string (serialize = FALSE hashes the bytes, so the
@@ -1142,6 +1208,7 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
     paste0("run_", format(Sys.time(), "%Y%m%d_%H%M%S"))
   out_dir      <- .power_out_dir(run_name)
   partials_dir <- .power_out_dir(run_name, "partials")
+  .check_run_fingerprint(cfg, grid, out_dir, resume)
 
   # Default workers: availableCores() returns 2 under `Rscript --vanilla`
   # (its environment hints are stripped), which silently collapsed the shell
