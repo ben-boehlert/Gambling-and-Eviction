@@ -49,6 +49,12 @@
 #     Optional Date window (YYYY-MM-DD) to *exclude from residual pool* only.
 #     Example: EXCLUDE_START=2020-03-01 EXCLUDE_END=2021-07-01
 #
+#   ERR_SCALE      month (default, the application setup) or state_month
+#     (2026-09-23, ar1 only): scale each state's noise by its OWN residual sd
+#     (times a month factor) instead of one month-level sd shared by every
+#     state. Real untreated residual sds span 0.034-0.285 across states.
+#   ERR_STATE_MIN_N  default 12: pool months a state needs for its own sd;
+#     fewer -> the median state sd (logged).
 #   UNIT_WEIGHTS   none (default, the application setup) or renters (2026-09-23):
 #     weight each state by its mean renter_occupied_housing_units, scaled to
 #     mean 1, in the TWFE fit. NB the error process here is homoskedastic
@@ -162,6 +168,9 @@ DROP_END   <- as.Date(getenv1("DROP_END", ""))
 # state/date filtering
 EXCLUDE_STATES <- getenv1("EXCLUDE_STATES", "")  # Comma-separated, e.g. "ME,AK"
 UNIT_WEIGHTS   <- tolower(getenv1("UNIT_WEIGHTS", "none"))
+ERR_SCALE      <- tolower(getenv1("ERR_SCALE", "month"))
+if (!ERR_SCALE %in% c("month", "state_month")) stop("ERR_SCALE must be month or state_month", call. = FALSE)
+ERR_STATE_MIN_N <- as.integer(getenv1("ERR_STATE_MIN_N", "12"))
 if (!UNIT_WEIGHTS %in% c("none", "renters")) stop("UNIT_WEIGHTS must be none or renters", call. = FALSE)
 MAX_DATE <- as.Date(getenv1("MAX_DATE", ""))  # e.g. "2024-12-31"
 
@@ -192,6 +201,7 @@ log_line(RUN_LOG, glue("OUTCOME: {OUTCOME}  RATE_EPS={RATE_EPS}"))
 log_line(RUN_LOG, glue("N_SIMS: {N_SIMS}  BATCH_SIZE={BATCH_SIZE}  ALPHA={ALPHA}  SEED={SEED}"))
 log_line(RUN_LOG, glue("EFFECT_PCTS: {paste(EFFECT_PCTS, collapse=', ')}"))
 log_line(RUN_LOG, glue("N_WORKERS: {N_WORKERS}  SLURM_CPUS_PER_TASK={getenv1('SLURM_CPUS_PER_TASK','')}"))
+log_line(RUN_LOG, glue("ERR_SCALE: {ERR_SCALE}  UNIT_WEIGHTS: {UNIT_WEIGHTS}"))
 log_line(RUN_LOG, glue("ERR_MODE: {ERR_MODE} (rho={ifelse(is.finite(ERR_AR1_RHO), ERR_AR1_RHO, 'estimate')}, clip={ERR_AR1_CLIP}) MIN_STATES_PER_MONTH={MIN_STATES_PER_MONTH}"))
 exclude_str <- if (!is.na(EXCLUDE_START) && !is.na(EXCLUDE_END)) glue('[{EXCLUDE_START},{EXCLUDE_END})') else 'none'
 log_line(RUN_LOG, glue("EXCLUDE (resid pool only): {exclude_str}"))
@@ -479,6 +489,27 @@ std_global_pool <- NULL
 if (ERR_MODE == "ar1") {
   log_line(RUN_LOG, "Calibrating AR(1) on standardized untreated residuals (post-exclusion).")
 
+  # ERR_SCALE=state_month: take each state's own residual sd out first, so the
+  # month pools below hold state-standardized residuals; it goes back in via
+  # sd_row. The month factor is then the month sd of those standardized
+  # residuals, so month-level volatility is kept as well.
+  sd_state_map <- NULL
+  if (ERR_SCALE == "state_month") {
+    ss <- pool_dat %>% group_by(state_abb) %>%
+      summarise(n = dplyr::n(), s = sd(ehat, na.rm = TRUE), .groups = "drop")
+    ok_s <- ss$n >= ERR_STATE_MIN_N & is.finite(ss$s) & ss$s > 0
+    s_fallback <- stats::median(ss$s[ok_s])
+    ss$s[!ok_s] <- s_fallback
+    sd_state_map <- setNames(ss$s, ss$state_abb)
+    miss <- setdiff(unique(panel$state_abb), names(sd_state_map))
+    if (length(miss) > 0) sd_state_map <- c(sd_state_map, setNames(rep(s_fallback, length(miss)), miss))
+    pool_dat$ehat <- pool_dat$ehat / unname(sd_state_map[pool_dat$state_abb])
+    global_pool <- pool_dat$ehat[is.finite(pool_dat$ehat)]
+    fb <- c(ss$state_abb[!ok_s], miss)
+    log_line(RUN_LOG, glue("ERR_SCALE=state_month: state sd range {round(min(sd_state_map),4)}-{round(max(sd_state_map),4)}; ",
+                           "median fallback {round(s_fallback,4)} for {length(fb)} state(s): {ifelse(length(fb) > 0, paste(fb, collapse=','), 'none')}"))
+  }
+
   sd_by_t <- pool_dat %>%
     group_by(t) %>%
     summarise(n = dplyr::n(), sd_e = sd(ehat, na.rm = TRUE), .groups = "drop")
@@ -518,6 +549,7 @@ if (ERR_MODE == "ar1") {
 
   sd_row <- unname(sd_map[as.character(panel$t)])
   sd_row[!is.finite(sd_row) | sd_row <= 0] <- sd_global
+  if (!is.null(sd_state_map)) sd_row <- sd_row * unname(sd_state_map[panel$state_abb])
 
   idx_by_id <- split(seq_len(nrow(panel)), panel$id)
   idx_by_id <- lapply(idx_by_id, function(idx) idx[order(panel$t[idx])])
