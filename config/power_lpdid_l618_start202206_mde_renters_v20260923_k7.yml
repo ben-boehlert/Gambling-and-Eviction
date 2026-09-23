@@ -1,0 +1,47 @@
+# MDE grid for the renter-weighted June-2022 LP-DiD design (2026-09-23).
+# = config/power_lpdid_l618_pmd3_start202206_noMNWA_v20260921_k7.yml (300 reps,
+# 14-point effect grid, precovid + postcovid templates) with
+# lpdid_unit_weights: renters and LP-DiD only. Its size gate is
+# lpdid_l618_start202206_gate_renters_v20260923_k7 (null SD 0.0266 vs 0.0329
+# equally weighted; analytic size 0.0865 FAILS, wild 0.0475 passes -> read the
+# wild MDE). Estimand: renter-weighted ATT. BLIND: simulated effects only.
+run_name: lpdid_l618_start202206_mde_renters_v20260923_k7
+exclude_states: [NV, HI, MS, MN, WA]   # MN, WA = DATA_QUALITY_EXCLUDED_STATES (utils/eviction_treatment_schedule.R), adopted 2026-09-21
+schedule:   data/raw/sports_gambling_legalization_dates.csv
+level:      state
+sample:     [S2]
+covid:      drop
+treat_def:  online_start_date   # launch-indexed: outcomes are horizons 6..18 after online launch
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+est_anticipation: 0
+template:   panel
+effect_grid:  [0, 0.02, 0.05, 0.08, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.60]
+estimators: [lpdid]
+lpdid_wild:   true
+lpdid_anchor: event_clean   # pre-launch baseline; with treat_def = online launch the event IS the launch
+lpdid_pmd:    3
+lpdid_hmin:   6
+lpdid_post:   18
+eligibility:          presence   # placement uses the rule itself, not the min_pre/min_post box
+min_horizons:         7          # K: >= 7 usable outcome months in [launch+6, launch+18]
+splice_buffer_months: 0          # the sample start itself (2022-06) replaces the buffer
+template_states: [KS, MA, MD, ME, NC, OH, KY, DE, VT, FL]   # real switchers at 6-18 / pmd 3 / start 2022-06 (blind probe g_618_p3_jun)
+lpdid_weights: ewatt            # 1/(1 - Dbar_cell) -- see header
+n_reps:     300   # sequential gate: escalate to 2000 via resume=TRUE ONLY if size lands in [0.055, 0.09] (MC CI +-0.014 at 1000)
+base_seed:  20260723           # pairs with both size gates and smoke/cheap/primary
+mde_boot:   200                # bootstrap CI on the interpolated MDE
+alpha:      [0.1, 0.05, 0.01]
+min_pre:    3    # anchor bound only (presence rule decides eligibility): 3-month baseline before launch
+min_post:   12   # anchor bound only: launch+12 = the 7th outcome month of [launch+6, launch+18]
+anticipation_months: 6
+covid_drop: ['2020-03-01', '2022-05-31']   # sample start 2022-06
+lpdid_unit_weights: renters
+scenarios:
+  - name: l618_precovid
+    covid: pre
+  - name: l618_postcovid
+    covid: post

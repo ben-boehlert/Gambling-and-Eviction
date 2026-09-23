@@ -109,6 +109,17 @@ REWEIGHT        <- TRUE                                  # weight cells (see bel
 #   vwatt              unweighted OLS = the paper's variance-weighted LP-DiD
 LPDID_WEIGHTS   <- match.arg(getenv1("LPDID_WEIGHTS", "ewatt"),
                              c("ewatt", "cellsize", "vwatt"))
+# Unit weights (2026-09-23), mirroring the power framework's
+# lpdid_unit_weights (.re_lpdid_weights in R/power/run_estimators.R):
+#   none     every state weight 1 -- the default, bit-identical to before
+#   renters  each state weighted by its mean renter_occupied_housing_units over
+#            its in-sample months, scaled to mean 1. The treated share in each
+#            cell becomes renter-weighted and the observation weight is the
+#            scheme factor times the state's weight, so ewatt targets the
+#            RENTER-weighted ATT. Blinded gate (lpdid_l618_start202206_gate_
+#            renters_v20260923_k7): null SD -19% vs equal weights, but analytic
+#            size 0.0865 -- read the WILD inference under this option.
+UNIT_WEIGHTS    <- match.arg(getenv1("UNIT_WEIGHTS", "none"), c("none", "renters"))
 stopifnot(POST_MIN >= 0L, POST_MIN <= POST)
 
 # Historical event-anchored filenames keep their old tag. Every other anchor
@@ -179,10 +190,26 @@ G_DROP <- c(ym_index(DROP_START), ym_index(DROP_END))    # gap in calendar-month
 PANEL_FILE <- getenv1("PANEL_FILE", "data/raw/state_month_panel_with_treatment.csv")
 p <- read_csv(PANEL_FILE, show_col_types = FALSE) %>%
   transmute(state_abb = as.character(state_abb), month_date = as.Date(month_date),
-            filings_count = as.numeric(filings_count)) %>%
+            filings_count = as.numeric(filings_count),
+            renters = as.numeric(renter_occupied_housing_units)) %>%
   filter(month_date >= MIN_DATE, is.na(MAX_DATE) | month_date <= MAX_DATE) %>%
   filter(!(month_date >= DROP_START & month_date <= DROP_END)) %>%
   filter(!is.na(filings_count), !state_abb %in% EXCLUDE_STATES)
+
+# One time-invariant weight per state (see UNIT_WEIGHTS). A state without a
+# renter count stops the run: at state level, silently dropping one would
+# change the sample.
+UNIT_W <- if (identical(UNIT_WEIGHTS, "renters")) {
+  a <- tapply(ifelse(is.finite(p$renters) & p$renters > 0, p$renters, NA_real_),
+              p$state_abb, mean, na.rm = TRUE)
+  if (any(!is.finite(a)))
+    stop("UNIT_WEIGHTS=renters: no renter count for ",
+         paste(names(a)[!is.finite(a)], collapse = ", "), call. = FALSE)
+  a / mean(a)
+} else {
+  setNames(rep(1, n_distinct(p$state_abb)), sort(unique(p$state_abb)))
+}
+unit_w <- function(st) as.numeric(UNIT_W[as.character(st)])
 
 if (BALANCE_PANEL) {
   cov_tbl <- p %>% count(state_abb, name = "n")
@@ -195,7 +222,8 @@ p <- p %>% mutate(y = log1p(pmax(filings_count, 0)), t = ym_index(month_date))
 cat(glue("Sample: {n_distinct(p$state_abb)} states, {min(p$month_date)}..{max(p$month_date)} ",
          "(MAX_DATE {ifelse(is.na(MAX_DATE), 'uncapped', as.character(MAX_DATE))}), ",
          "balanced = {BALANCE_PANEL}, excluded: ",
-         "{if (length(EXCLUDE_STATES)) paste(EXCLUDE_STATES, collapse = ', ') else 'none'}"), "\n")
+         "{if (length(EXCLUDE_STATES)) paste(EXCLUDE_STATES, collapse = ', ') else 'none'}",
+         " | unit weights: {UNIT_WEIGHTS}"), "\n")
 
 # TREAT_FILE override (2026-09-17) for RANDOMIZATION INFERENCE. The RI driver
 # writes permuted schedules -- the observed launch dates reassigned across
@@ -411,9 +439,11 @@ build_h <- function(h, side = c("post", "pre")) {
 # under parallel trends; they differ in which cohorts and horizons get weight.
 # The old scheme over-weights early cohorts and short horizons, where the
 # clean-control pool is largest.
-lpdid_cell_weights <- function(D, cell, scheme = LPDID_WEIGHTS) {
-  dbar <- as.numeric(tapply(D, cell, mean)[as.character(cell)])
-  switch(scheme,
+lpdid_cell_weights <- function(D, cell, scheme = LPDID_WEIGHTS, a = rep(1, length(D))) {
+  # a = per-observation unit weights (UNIT_WEIGHTS); all 1 reproduces the
+  # unweighted scheme bit-for-bit.
+  dbar <- as.numeric((tapply(a * D, cell, sum) / tapply(a, cell, sum))[as.character(cell)])
+  a * switch(scheme,
          ewatt    = as.numeric(ifelse(is.finite(dbar) & dbar < 1,
                                       1 / (1 - dbar), NA_real_)),
          cellsize = {
@@ -432,7 +462,7 @@ estimate_h <- function(d, h, side) {
   d <- d %>% mutate(time = factor(cell_id))
 
   if (REWEIGHT) {
-    d$rw <- lpdid_cell_weights(d$D_treat, d$cell_id)
+    d$rw <- lpdid_cell_weights(d$D_treat, d$cell_id, a = unit_w(d$state_abb))
     d <- d %>% filter(is.finite(rw))
   } else d$rw <- 1
 
@@ -511,7 +541,7 @@ pooled_dat <- map_dfr(0:POST, function(h) build_h(h, "post") %>% mutate(h = h))
 pooled_use <- pooled_dat %>% filter(h >= POST_MIN)
 pooled <- if (nrow(pooled_use) > 0) {
   d <- pooled_use %>% mutate(time = factor(paste(cell_id, h, sep = "_")))
-  d$rw <- lpdid_cell_weights(d$D_treat, d$time)
+  d$rw <- lpdid_cell_weights(d$D_treat, d$time, a = unit_w(d$state_abb))
   d <- d %>% filter(is.finite(rw))
   fit <- feols(dy ~ D_treat | time, data = d, weights = ~rw, vcov = ~state_abb,
                warn = FALSE, notes = FALSE)
@@ -551,7 +581,7 @@ pool_window <- function(dat, h_lo, h_hi, era, label) {
   if (nrow(d) == 0 || sum(d$D_treat) == 0)
     return(base_row %>% mutate(note = "no switch cells in this era/window"))
   d <- d %>% mutate(time = factor(paste(cell_id, h, sep = "_")))
-  d$rw <- lpdid_cell_weights(d$D_treat, d$time)
+  d$rw <- lpdid_cell_weights(d$D_treat, d$time, a = unit_w(d$state_abb))
   d <- d %>% filter(is.finite(rw))
   if (nrow(d) == 0 || sum(d$D_treat) == 0 || n_distinct(d$D_treat) < 2)
     return(base_row %>% mutate(note = "not identified after reweighting"))
@@ -628,7 +658,7 @@ build_pre_stack <- function(hs) {
     if (nrow(d) == 0 || sum(d$D_treat) == 0) return(NULL)
     d <- d %>% mutate(time = factor(cell_id))
     if (REWEIGHT) {
-      d$rw <- lpdid_cell_weights(d$D_treat, d$cell_id)
+      d$rw <- lpdid_cell_weights(d$D_treat, d$cell_id, a = unit_w(d$state_abb))
       d <- d %>% filter(is.finite(rw))
     } else d$rw <- 1
     if (nrow(d) == 0 || sum(d$D_treat) == 0) return(NULL)
