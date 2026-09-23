@@ -13,10 +13,20 @@
 # the analytic SE is calibrated WHERE THE DESIGN ACTUALLY RUNS. RI does: it
 # holds the real post-2022 data fixed and permutes WHICH states switch.
 #
-# WHAT IS PERMUTED. The observed set of launch dates is held fixed and shuffled
-# across states eligible to receive one (panel states minus pre-PASPA
-# always-treated). Cohort structure -- how many switch and when -- is preserved;
-# only the identity of the switchers is randomized. Real outcomes are untouched,
+# WHAT IS PERMUTED. The launch dates of the real launchers INSIDE the design's
+# state set are held fixed and shuffled across that state set (panel states
+# minus EXCLUDE_STATES, default DESIGN_EXCLUDED_STATES = NV HI MS MN WA).
+# Cohort structure -- how many switch and when -- is preserved; only the
+# identity of the switchers is randomized.
+#
+# CORRECTED 2026-09-23 (quality_reports/reviews/2026-09-23_simulation_code_review.md
+# A1-A3). The 2026-09-22 version shuffled all 31 real dates -- including NJ IA IL
+# DC WY, which are not in the panel -- over 41 states including HI MS MN WA, which
+# lpdid_statepanel.R then drops. Every permuted world therefore had ~5 extra
+# launchers and fewer controls than the real design (medians 8 switchers / 15
+# controls / 101 cells vs the design's 10 / 18 / 115), and its "never the truth"
+# guard compared a 31-state set with a panel-only draw, so it could never fire.
+# Its output is kept, superseded, in output/lpdid_ri_post2022/. Real outcomes are untouched,
 # so the COVID splice, moratoria and rental assistance enter every draw exactly
 # as they do in the data.
 #
@@ -26,8 +36,8 @@
 # unbalanced panel. Comparing its spread with the analytic SEs the same fits
 # report gives SE/SD for the design itself, with no transfer assumption.
 #
-# BLINDNESS. The true assignment is never estimated. Draws reproducing it are
-# rejected and redrawn. No observed ATT is loaded, computed, printed or stored;
+# BLINDNESS. The true assignment is never estimated. A draw that reproduces the
+# real state->date map on the design's state set is rejected and redrawn. No observed ATT is loaded, computed, printed or stored;
 # every `att_null` in the output belongs to a permuted world. Each permutation
 # writes to its own scratch OUT_DIR, so the real output/lpdid_statepanel/ files
 # are never touched.
@@ -40,7 +50,9 @@
 #   N_PERM=500 N_WORKERS=6 Rscript analysis/diagnostics/lpdid_ri_post2022.R
 # Env knobs: N_PERM (200), N_WORKERS (6), RI_SEED (20260922), and the design
 #   knobs POST_MIN/POST/PMD/DROP_END/MIN_HORIZONS/SPLICE_BUFFER/EXCLUDE_STATES.
-# Output: output/lpdid_ri_post2022/  (null draws + summary; NO observed estimate)
+# Output: output/lpdid_ri_post2022_v20260923/  (null draws, summary, run
+# metadata; NO observed estimate). The summary's studentised columns give the
+# design-based MDE as mde_multiplier_studentised x the design's own SE.
 # ─────────────────────────────────────────────────────────────────────────────
 suppressMessages({ library(tidyverse); library(lubridate); library(glue); library(parallel) })
 source("utils/eviction_treatment_schedule.R")
@@ -49,7 +61,7 @@ getenv1 <- function(k, d) { v <- Sys.getenv(k); if (nzchar(v)) v else d }
 N_PERM    <- as.integer(getenv1("N_PERM", "200"))
 N_WORKERS <- as.integer(getenv1("N_WORKERS", "6"))
 SEED      <- as.integer(getenv1("RI_SEED", "20260922"))
-OUT       <- getenv1("OUT_DIR", "output/lpdid_ri_post2022")
+OUT       <- getenv1("OUT_DIR", "output/lpdid_ri_post2022_v20260923")
 SCRATCH   <- getenv1("RI_SCRATCH", file.path(tempdir(), "ri_post2022"))
 REAL      <- "data/raw/sports_gambling_legalization_dates.csv"
 dir.create(OUT, recursive = TRUE, showWarnings = FALSE)
@@ -66,29 +78,39 @@ DESIGN_ENV <- c("TREAT_DEF=raw", "ANCHOR=event_clean",
                 sprintf("SPLICE_BUFFER=%s", getenv1("SPLICE_BUFFER", "0")),
                 "BASELINE_CLEAN=1", "LPDID_WEIGHTS=ewatt",
                 "WILD_CI=0", "BOOT_REPS=1")
-if (nzchar(Sys.getenv("EXCLUDE_STATES")))
-  DESIGN_ENV <- c(DESIGN_ENV, sprintf("EXCLUDE_STATES=%s", Sys.getenv("EXCLUDE_STATES")))
+# The design's state set. Parsed exactly as lpdid_statepanel.R parses it and
+# passed through explicitly, so the pool and the estimator cannot disagree.
+EXCL_RAW <- Sys.getenv("EXCLUDE_STATES", unset = paste(DESIGN_EXCLUDED_STATES, collapse = ","))
+EXCLUDE  <- if (tolower(trimws(EXCL_RAW)) == "none") character(0) else
+  toupper(trimws(strsplit(EXCL_RAW, ",")[[1]]))
+EXCLUDE  <- union(EXCLUDE[nzchar(EXCLUDE)], PRE_PASPA_SPORTS_BETTING)
+DESIGN_ENV <- c(DESIGN_ENV, sprintf("EXCLUDE_STATES=%s", paste(EXCLUDE, collapse = ",")))
 
 real <- read_csv(REAL, show_col_types = FALSE)
-has_date <- !is.na(real$online_start_date)
 panel_states <- read_csv("data/raw/state_month_panel_with_treatment.csv",
                          show_col_types = FALSE) %>% distinct(state_abb) %>% pull()
-pool <- setdiff(panel_states, PRE_PASPA_SPORTS_BETTING)
+pool <- setdiff(panel_states, EXCLUDE)
 abb  <- tibble(state_abb = c(state.abb, "DC"), State = c(state.name, "District of Columbia"))
 pool_names <- abb$State[match(pool, abb$state_abb)]
-pool_names <- sort(pool_names[!is.na(pool_names)])
-TRUTH <- paste(sort(real$state[has_date]), collapse = "|")
+stopifnot(!anyNA(pool_names))
+pool_names <- sort(pool_names)
+# Only launchers inside the design's state set contribute dates: a launch in a
+# state the design never sees (NJ, IA, IL, DC, WY) is not part of its cohorts.
+launch <- real %>% filter(!is.na(online_start_date), state %in% pool_names)
+dates  <- launch$online_start_date
+key    <- function(st, dt) paste(sort(paste(st, format(dt))), collapse = "|")
+TRUTH  <- key(launch$state, dates)
 
-cat(glue("RI post-2022 | {sum(has_date)} launch dates reassigned over {length(pool_names)} ",
-         "eligible states | {N_PERM} permutations x {N_WORKERS} workers\n"))
+cat(glue("RI post-2022 | {length(dates)} launch dates reassigned over {length(pool_names)} ",
+         "states ({length(pool_names) - length(dates)} never launch) | excluded: ",
+         "{paste(EXCLUDE, collapse = ',')} | {N_PERM} permutations x {N_WORKERS} workers\n"))
 cat(glue("design: {paste(DESIGN_ENV, collapse = ' ')}\n\n"))
 
 one_perm <- function(i) {
   set.seed(SEED + 1009L * i)
-  dates <- real$online_start_date[has_date]
-  for (attempt in 1:20) {
+  repeat {                                    # never the truth (P ~ 0, but checked)
     recip <- sample(pool_names, length(dates))
-    if (!identical(paste(sort(recip), collapse = "|"), TRUTH)) break  # never the truth
+    if (!identical(key(recip, dates), TRUTH)) break
   }
   perm_file <- file.path(SCRATCH, sprintf("sched_%04d.csv", i))
   out_dir   <- file.path(SCRATCH, sprintf("run_%04d", i))
@@ -124,8 +146,13 @@ cat(glue("{nrow(d)}/{N_PERM} permutations usable in {round(as.numeric(difftime(S
 write_csv(d, file.path(OUT, "ri_null_draws.csv"))
 
 mad_sd <- function(x) 1.4826 * median(abs(x - median(x)))
+# Studentised columns (added 2026-09-23; the 09-22 ledger figures were computed
+# off-script): t_crit95_studentised is the permutation 95th percentile of
+# |att/se|, and mde_multiplier_studentised = t_crit95 + z_0.80, so the
+# design-based MDE is that multiplier times the design's OWN analytic SE.
 summarise_set <- function(dd, label) {
   s <- sd(dd$att_null); ms <- mad_sd(dd$att_null); cstar <- as.numeric(quantile(abs(dd$att_null), 0.95))
+  tcrit <- as.numeric(quantile(abs(dd$att_null / dd$se), 0.95))
   tibble(set = label, n_perm = nrow(dd),
          median_switchers = median(dd$n_switch), median_controls = median(dd$n_ctl),
          null_mean = mean(dd$att_null), null_sd = s, null_mad_sd = ms,
@@ -133,14 +160,26 @@ summarise_set <- function(dd, label) {
          reject_005_analytic = mean(abs(dd$att_null / dd$se) >
                                       qt(0.975, pmax(1, dd$n_switch + dd$n_ctl - 1))),
          crit_2sided_05 = cstar, mde80_ri = cstar + qnorm(0.80) * s,
-         mde80_analytic = 2.8 * mean(dd$se))
+         mde80_analytic = 2.8 * mean(dd$se),
+         median_se = median(dd$se),
+         t_crit95_studentised = tcrit,
+         mde_multiplier_studentised = tcrit + qnorm(0.80))
 }
+# Strata: every switcher count with >= 30 draws, so a reader can match the
+# real design's count without an off-script filter.
+by_switch <- d %>% count(n_switch) %>% filter(n >= 30) %>% pull(n_switch)
 summ <- bind_rows(
   summarise_set(d, "all_draws"),
-  if (sum(d$n_switch >= 9 & d$n_switch <= 11) >= 30)
-    summarise_set(filter(d, n_switch >= 9, n_switch <= 11), "switchers_9_to_11") else NULL
-)
+  lapply(by_switch, function(k) summarise_set(filter(d, n_switch == k),
+                                              sprintf("switchers_%d", k))))
 write_csv(summ, file.path(OUT, "ri_summary.csv"))
+jsonlite::write_json(list(
+  script = "analysis/diagnostics/lpdid_ri_post2022.R", run_at = format(Sys.time()),
+  n_perm = N_PERM, n_usable = nrow(d), seed = SEED, design_env = DESIGN_ENV,
+  pool_states = sort(pool), n_launch_dates = length(dates),
+  panel_md5 = unname(tools::md5sum("data/raw/state_month_panel_with_treatment.csv")),
+  schedule_md5 = unname(tools::md5sum(REAL))),
+  file.path(OUT, "run_metadata.json"), auto_unbox = TRUE, pretty = TRUE)
 cat("\n===== RI NULL DISTRIBUTION, POST-2022 DESIGN (no observed estimate anywhere) =====\n")
 print(as.data.frame(summ %>% mutate(across(where(is.numeric), ~round(.x, 4)))), row.names = FALSE)
 cat(glue("\nwritten: {file.path(OUT, 'ri_summary.csv')}\n"))
