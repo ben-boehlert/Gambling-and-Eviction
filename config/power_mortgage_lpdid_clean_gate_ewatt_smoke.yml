@@ -1,0 +1,88 @@
+# =============================================================================
+# power_mortgage_lpdid_clean_gate_ewatt_smoke.yml
+#
+# The headline clean-anchor LP-DiD design (event_clean on shift12, PMD 6,
+# ewatt, wild bootstrap) applied to STATE 90+ DAY MORTGAGE DELINQUENCY.
+#
+# THREE THINGS DIFFER FROM EVERY EVICTION CONFIG. Read them before comparing
+# any number here against the eviction PAP table.
+#
+# 1. OUTCOME IS A RATE IN LEVELS (y_pp), not log filings. The source series is
+#    published to 0.1pp and 87% of design-window state-months sit at or below
+#    1.0pp, so one rounding tick is a 17%+ relative move on the log scale --
+#    roughly twice the eviction design's 12.7% recentered MDE. In levels the
+#    tick is ~0.38 SD of the pooled long difference. Probe: 2026-09-04,
+#    analysis/diagnostics/mortgage_lpdid_feasibility_probe.R.
+#
+# 2. MECHANISM IS `deterministic`, not count_nb. The count mechanisms augment
+#    or thin an integer count and are undefined for a rate. deterministic adds
+#    delta on the outcome scale, so DELTA IS IN PERCENTAGE POINTS, not a
+#    proportional change. An MDE from this config is a pp move in delinquency
+#    and is NOT unit-comparable to the eviction MDEs.
+#
+# 3. THE SPLICE IS THE OPEN DESIGN QUESTION, so it is the scenario axis here.
+#    This outcome FALLS through COVID (CA 0.5 -> 0.3) because forbearance
+#    loans report as current -- the opposite of the eviction spike the
+#    2020-03..2021-07 window was built for. Dropping that window is inherited
+#    reflex, not something this outcome demands. It also costs switchers:
+#    contributing switchers are 24 (keep) vs 13 (drop) of 30. A
+#    forbearance-extended window (..2022-06) leaves 7 and is NOT VIABLE
+#    (0-4 identified cells across horizons) -- it is deliberately absent below.
+#
+# NV excluded (always-treated since 1949). ID/HI/MS KEPT: those eviction
+# exclusions are basket-composition decisions and mortgage has no basket --
+# the series is whole-state.
+#
+# SMOKE ONLY. n_reps 100 cannot classify a cell against the 0.075 size line
+# (MC SE ~0.026). This run exists to prove the plumbing end-to-end and to size
+# the runtime. Escalate to 1,000-2,000 reps with a FRESH run_name before any
+# gate verdict is quoted.
+# =============================================================================
+
+run_name: mortgage_lpdid_clean_gate_ewatt_smoke
+
+level:       state_mortgage
+outcomes:    [y_pp]
+mechanisms:  [deterministic]
+
+schedule:    data/processed/shift12_schedule.csv
+treat_def:   shift12_start_date
+exclude_states: [NV]
+
+sample:        [S2]
+designs:       [D1]
+shapes:        [step]
+control_group: notyettreated
+template:      panel
+est_anticipation: 0
+
+estimators:   [twfe, lpdid]
+lpdid_wild:   true
+lpdid_anchor: event_clean
+lpdid_pmd:    6
+lpdid_weights: ewatt
+
+effect_grid:  [0]          # size gate only
+
+n_reps:     100            # SMOKE -- see header
+base_seed:  20260723
+mde_boot:   200
+
+alpha:      [0.1, 0.05, 0.01]
+min_pre:    12
+min_post:   6
+anticipation_months: 6
+
+scenarios:
+
+  # A. Keep the COVID window. 24 of 30 switchers contribute. Forbearance is a
+  #    largely common shock that differences out inside a cell; the risk is
+  #    state-heterogeneous forbearance uptake correlated with adoption timing.
+  - name: gate_keepcovid
+    covid: keep
+
+  # B. Drop the eviction splice window. 13 of 30 switchers contribute -- 11
+  #    baselines fall inside the hole. Comparable to the eviction design's
+  #    treatment of the same calendar months.
+  - name: gate_spliced
+    covid: drop

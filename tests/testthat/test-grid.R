@@ -569,3 +569,51 @@ test_that("time_agg='year' reaches the loader and shrinks the simulated panel", 
   expect_true(length(seen$n_periods) > 0L)
   expect_lt(max(seen$n_periods), 15L)
 })
+
+
+test_that("lpdid_unit_weights: none leaves ids unchanged, renters moves them and reaches the spec", {
+  mk <- function(extra = character(0)) .write_yaml(c(
+    "level: state", "sample: [S2]", "covid: keep",
+    "treat_def: online_start_date", "designs: [D1]",
+    "mechanisms: [deterministic]", "shapes: [step]",
+    "estimators: [twfe, lpdid]", "effect_grid: [0]",
+    "n_reps: 1", "base_seed: 123", "min_pre: 12", "min_post: 6", extra))
+  g0 <- expand_scenario_grid(read_power_config(mk()))
+  gn <- expand_scenario_grid(read_power_config(mk("lpdid_unit_weights: none")))
+  gr <- expand_scenario_grid(read_power_config(mk("lpdid_unit_weights: renters")))
+  expect_identical(g0$lpdid_unit_weights[1], "none")
+  expect_identical(g0$scenario_id, gn$scenario_id)
+  expect_false(identical(g0$scenario_id, gr$scenario_id))
+
+  seen <- new.env(parent = emptyenv()); seen$vals <- character(0)
+  spy_estimator <- function(panel_sim, estimator = "lpdid", spec = list()) {
+    seen$vals <- c(seen$vals, as.character(spec$lpdid_unit_weights %||% "<missing>"))
+    mock_run_estimator(panel_sim, estimator, spec)
+  }
+  rn <- "_test_lpdid_unit_weights_spec"
+  on.exit(unlink(.power_out_dir(rn), recursive = TRUE), add = TRUE)
+  run_scenario_grid(mk("lpdid_unit_weights: renters"), resume = FALSE, workers = 1,
+                    run_name = rn, impose_fn = mock_impose_effect,
+                    estimator_fn = spy_estimator)
+  expect_true(length(seen$vals) > 0L && all(seen$vals == "renters"))
+})
+
+test_that("inclusion-rule knobs: defaults keep ids, presence/min_horizons/buffer move them", {
+  mk <- function(extra = character(0)) .write_yaml(c(
+    "level: state", "sample: [S2]", "covid: keep",
+    "treat_def: online_start_date", "designs: [D1]",
+    "mechanisms: [deterministic]", "shapes: [step]",
+    "estimators: [twfe, lpdid]", "effect_grid: [0]",
+    "n_reps: 1", "base_seed: 123", "min_pre: 12", "min_post: 6", extra))
+  g0 <- expand_scenario_grid(read_power_config(mk()))
+  gd <- expand_scenario_grid(read_power_config(mk(c("eligibility: span", "splice_buffer_months: 0"))))
+  gp <- expand_scenario_grid(read_power_config(mk("eligibility: presence")))
+  gk <- expand_scenario_grid(read_power_config(mk("min_horizons: 7")))
+  gb <- expand_scenario_grid(read_power_config(mk("splice_buffer_months: 3")))
+  expect_identical(g0$scenario_id, gd$scenario_id)
+  expect_false(identical(g0$scenario_id, gp$scenario_id))
+  expect_false(identical(g0$scenario_id, gk$scenario_id))
+  expect_false(identical(g0$scenario_id, gb$scenario_id))
+  expect_identical(g0$eligibility[1], "span"); expect_true(is.na(g0$min_horizons[1]))
+  expect_equal(g0$splice_buffer_months[1], 0L)
+})

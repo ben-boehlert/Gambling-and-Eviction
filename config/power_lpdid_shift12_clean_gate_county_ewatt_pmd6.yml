@@ -1,0 +1,47 @@
+# power_lpdid_shift12_clean_gate_county_ewatt_pmd6.yml  (2026-09-14)
+# COUNTY companion of power_lpdid_shift12_clean_gate_ewatt_pmd6.yml — identical
+# design (shift12 / event_clean / pmd 6 / ewatt / ex NV,ID,HI,MS / spliced),
+# identical base_seed. NOTE (corrected 2026-09-14 after the run): this does NOT
+# make the runs rep-paired -- the scenario hash includes `level`, so the seed
+# offset differs and these are independent 1,000-rep draws. The SD comparison
+# is still precise at n=1000 each (ratio 0.763 [0.718, 0.818]) but it is not a
+# paired comparison and must not be described as one.
+# Purpose (option C, 2026-09-14): measure what the county arm trades. It GAINS
+# every county the state fixed basket excludes (Miami-Dade, Harris, Rutherford,
+# Ada, Kanawha — the county reader applies no basket) and LOSES every state the
+# state panel sources outside LSC (MD, WI court sources; LA/MA/MO/RI from the
+# ETS internal extract). Clusters, not observations, are the binding constraint.
+# Analytic only: the SD of point estimates and the analytic size are what the
+# comparison needs, and the state gate's analytic arm also passes its gate
+# (0.045/0.048), so analytic-vs-analytic is like-for-like. lpdid_wild stays
+# FALSE — the county wild engine works but costs far more per rep.
+run_name: lpdid_shift12_clean_county_ewatt_pmd6
+exclude_states: [NV, ID, HI, MS]
+schedule:   data/processed/shift12_schedule.csv
+level:      county
+sample:     [S2]
+covid:      drop
+treat_def:  shift12_start_date
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+est_anticipation: 0
+template:   panel
+effect_grid:  [0]
+estimators:   [lpdid]
+lpdid_wild:   false
+lpdid_anchor: event_clean
+lpdid_pmd:    6
+lpdid_weights: ewatt
+n_reps:     1000
+base_seed:  20260723
+mde_boot:   200
+alpha:      [0.1, 0.05, 0.01]
+min_pre:    12
+min_post:   6
+anticipation_months: 6
+scenarios:
+  - name: county_clean_spliced
+    covid: drop

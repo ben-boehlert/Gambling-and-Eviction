@@ -128,6 +128,10 @@ read_power_config <- function(path = NULL) {
     # scenarios. Needed when analytic lpdid over-rejects with few treated
     # clusters (county post-COVID gate, 2026-08-19).
     lpdid_wild          = FALSE,
+    # Delete-one-state CV3 jackknife arm for did2s / bjs / sunab
+    # (run_estimators.R .re_imp_jack). OFF by default; hashed only when TRUE
+    # and only for scenarios running one of those estimators.
+    imp_jack            = FALSE,
     # LP-DiD cell anchor (run_estimators.R spec$lpdid_anchor): "event_clean"
     # (new default) indexes outcomes from the event/maturity date but uses a
     # shared pre-launch baseline for each treated/control cell. "event" and
@@ -220,6 +224,7 @@ read_power_config <- function(path = NULL) {
   } else as.logical(cfg$cs_faster_mode)
 
   cfg$lpdid_wild <- isTRUE(as.logical(cfg$lpdid_wild))
+  cfg$imp_jack   <- isTRUE(as.logical(cfg$imp_jack))
 
   # NULL/NA fall back to the documented defaults so a config that omits either
   # key keeps the documented behavior. match.arg() rejects a typo here.

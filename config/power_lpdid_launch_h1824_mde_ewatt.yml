@@ -1,0 +1,73 @@
+# =============================================================================
+# power_lpdid_launch_h1824_mde_ewatt.yml — MDE companion to
+# power_lpdid_launch_h1824_gate_ewatt.yml (see that header for the design
+# rationale: launch clock, pooled h = 18..24, ewatt, wild).
+#
+# 300 reps on the wide shared effect grid (dense where the spliced window's
+# MDE is expected from the shift12 precedent — 0.115 ewatt there, and the
+# 18..24 window uses fewer cells per state, so expect similar-or-worse;
+# extended to 0.60 so the thin post-COVID scenario can cross 80% power
+# instead of returning never_crosses_target).
+#
+# Deltas are proportional changes in filings (impose_effects.R): 0.10 = a 10%
+# increase. Report in filings-per-year terms in the PAP per AV guidance.
+#
+# Read the gate FIRST: if the wild arm fails size at h=18..24, this MDE is
+# moot for the PAP (size gate first, then MDE among survivors).
+# =============================================================================
+
+# run_name suffix _p39: fresh name for the 2026-08-28 per-state-basket panel.
+run_name: lpdid_launch_h1824_mde_ewatt_p39
+
+exclude_states: [NV, HI, MS]   # HI (4-county) and MS (1-county) baskets pollute placements — sdprobe 2026-08-28
+
+# ---- Top-level defaults -----------------------------------------------------
+
+level:      state
+sample:     [S2]
+covid:      drop
+treat_def:  online_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+
+template:   panel
+
+effect_grid:  [0, 0.02, 0.05, 0.08, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50, 0.60]
+
+estimators:   [lpdid]
+lpdid_wild:   true
+lpdid_weights: ewatt
+lpdid_hmin:   18
+lpdid_post:   24
+lpdid_pmd:    12               # 12-month strict pre-launch baseline: probes cut SD ~30% vs pmd 3
+
+# ---- Execution --------------------------------------------------------------
+
+n_reps:     300
+base_seed:  20260723           # pairs with the h1824 gate and all earlier runs
+mde_boot:   200
+
+alpha:      [0.1, 0.05, 0.01]
+
+min_pre:    12
+min_post:   6
+
+anticipation_months: 6
+
+# ---- Scenario families ------------------------------------------------------
+
+scenarios:
+
+  # A. Spliced panel (primary).
+  - name: mde_h1824_spliced
+    covid: drop
+
+  # B. Clean post-COVID window (probe).
+  - name: mde_h1824_postcovid
+    covid: post

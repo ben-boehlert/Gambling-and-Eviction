@@ -11,7 +11,9 @@
 #   count_nb      count-based stochastic augmentation, NegBin(var/mean = theta)
 #   count_pois    count-based stochastic augmentation, Poisson
 #   thinning      binomial thinning only (BHNS mechanism; for delta <= 0)
-#   deterministic transformed-scale additive shift (M2 benchmark)
+#   deterministic transformed-scale additive shift (M2 benchmark). The ONLY
+#                 mechanism valid for a rate outcome (y_pp): delta is then a
+#                 percentage-point shift, not a proportional change.
 #
 # Shapes (§9): step, delayed, ramp, temporary, anticipation, cohort_het,
 #   state_het, exposure_het, intensity_ramp, null.
@@ -188,11 +190,25 @@ impose_effect <- function(panel, schedule,
                                     "anticipation", "cohort_het", "state_het",
                                     "exposure_het", "intensity_ramp", "null"),
                           delta = 0.10, params = list(),
-                          outcome = c("y_log1p", "y_lograte", "y_asinh"),
+                          # y_pp: state mortgage delinquency, a RATE in
+                          # percentage points. Rate outcomes admit ONLY the
+                          # deterministic mechanism (the count mechanisms
+                          # augment/thin an integer count), and under it delta
+                          # is a PERCENTAGE-POINT shift, not a proportional
+                          # change. Guarded below.
+                          outcome = c("y_log1p", "y_lograte", "y_asinh",
+                                      "y_pp"),
                           seed = 1L) {
   mechanism <- match.arg(mechanism)
   shape     <- match.arg(shape)
   outcome   <- match.arg(outcome)
+  # A rate has no count to augment or thin. Fail loudly rather than silently
+  # producing a count-mechanism draw off an all-NA filings_count column.
+  if (identical(outcome, "y_pp") && !identical(mechanism, "deterministic")) {
+    stop("outcome 'y_pp' is a rate; mechanism must be 'deterministic' ",
+         "(got '", mechanism, "'). Count mechanisms are undefined for a rate.",
+         call. = FALSE)
+  }
   stopifnot(all(c("state_abb", "month_date", "unit_id") %in% names(panel)))
   if (!outcome %in% names(panel)) {
     stop("outcome column '", outcome, "' not found in panel.", call. = FALSE)

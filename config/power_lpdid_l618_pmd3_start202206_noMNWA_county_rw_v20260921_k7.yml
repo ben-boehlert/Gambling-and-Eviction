@@ -1,0 +1,177 @@
+# =============================================================================
+# power_lpdid_l618_pmd3_start202206_noMNWA_county_rw_v20260921_k7.yml  (2026-09-21)
+#
+# COUNTY arm, RENTER-WEIGHTED, of the 2026-09-21 state design
+# power_lpdid_l618_pmd3_start202206_noMNWA_v20260921_k7.yml. Identical in every
+# knob except: level = county, lpdid_unit_weights = renters, template_states
+# (the county feed cannot carry the same switcher set), and run_name.
+#
+# WHY THE SWITCHER SET DIFFERS -- this is a data fact, not a design choice.
+# The county arm reads data/raw/monthly_county_data_download.csv (LSC CCDI +
+# the NC AOC merge + the 2026-09-17 LSC-site extension). Of the 10 state-arm
+# switchers [KS MA MD ME NC OH KY DE VT FL]:
+#   * MA and MD are ABSENT from the county file entirely (Boston is an Eviction
+#     Lab single-series state; MD is a court-source state-panel series), and
+#   * ME is dropped by the blinded county loader by name
+#     (.read_county_panel, state_abb != "ME") and in any case its county rows
+#     were removed from the hybrid file on 2026-09-17 -- ME is spliced at the
+#     STATE panel level only.
+# So the county arm can represent at most 7 of the 10 cohorts. Any county-vs-
+# state precision comparison off this run is a comparison of two different
+# designs, not two measurements of one design.
+#
+# WHAT IT IS FOR. The size gate (delta = 0) and SE/SD calibration for the
+# county renter-weighted cell, plus a simulated MDE grid. Per the state twin's
+# header, the sim's precovid arm isolates the calibrated pre-COVID placements;
+# its SD is the pre-COVID era's, not the real design's. There is no county
+# real-data blind probe yet (analysis/main/lpdid_statepanel.R is state-only),
+# so the county real-design SE is NOT available from this run.
+#
+# Predecessors on the OLD design/vintage (shift12 / 12-24 / pmd 6 / 2026-09-14
+# panel): lpdid_clean_gate_county_ewatt_pmd6_wild_rw_v20260914{,_w126,_k7}.
+# Do NOT pair numbers across that boundary (CLAUDE.md vintage rule).
+# =============================================================================
+
+run_name: lpdid_l618_pmd3_start202206_noMNWA_county_rw_v20260921_k7
+
+# ID REMOVED 2026-09-17, after verifying the data rather than inheriting the
+# exclusion. Idaho was excluded when it was the Twin Falls LSC basket -- ONE of
+# 44 counties -- and the 2026-09-14 swap replaced it with the statewide Idaho
+# Judicial Branch A12 series (44 counties, basket_share 1.00, 2021-01..2026-06).
+# Checked for a Maine-style artifact and found none:
+#   * the A12 statewide total tracks LSC's own Idaho total at correlation 0.918,
+#     mean |diff| 7.55 filings on a ~250/month base (ordinary revision noise);
+#   * 41-43 of 44 counties report in EVERY year -- no county enters or leaves
+#     mid-series, so no composition-driven level shift;
+#   * 58% of the growth is Ada County (Boise) and it is a RAMP, not a step:
+#     monthly range 40-78 (2021) -> 58-97 -> 70-149 -> 103-167 (2024) -> easing.
+#     A court joining the reporting system gives a vertical jump; this does not.
+# Idaho's trend is 6th of 13 never-treated controls (9.6%/yr vs 7.2% median), so
+# it is not an extreme state. Including it raises the pooled placebo SE ~14%
+# because its steep phase coincides with the design window -- but excluding a
+# control on its realized outcome movement is selecting controls on the outcome,
+# which is exactly what the inclusion rule exists to avoid. Idaho never
+# legalized and has data to 2026-06, so it is one of the scarce late-period
+# controls: the pool goes 8 -> 9 at 2024-06 and 7 -> 8 at 2025-06.
+# NB CLAUDE.md's note that Idaho is "the single most extreme state in 100% of
+# pre-era variance placements" refers to the RETIRED Twin Falls single-county
+# series and does not transfer to the statewide one.
+# NV stays (always-treated since 1949). HI stays (LSC's own series ends 2022-09,
+# nothing to add in the late period). MS stays (ONE county, treated from 2018-08).
+exclude_states: [NV, HI, MS, MN, WA]   # MN, WA = DATA_QUALITY_EXCLUDED_STATES (utils/eviction_treatment_schedule.R), adopted 2026-09-21
+
+# ramp75 dating with HYBRID CONTROL CODING: schedule carries online + ramp75
+# dates; run_scenario_grid derives pseudo_launch from the per-cohort lag and
+# .re_lpdid gates controls on launch. Size gate only (delta = 0).
+schedule:   data/raw/sports_gambling_legalization_dates.csv
+
+# ---- Top-level defaults -----------------------------------------------------
+
+level:      county
+sample:     [S2]
+covid:      drop
+treat_def:  online_start_date   # launch-indexed: outcomes are horizons 6..18 after online launch
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+
+template:   panel
+
+# Dense where the spliced window's MDE is expected, extended far enough that
+# the small post-COVID design can actually cross 80% power.
+# GRID EXTENDED to 0.60 on 2026-09-17. At the 0.30 ceiling EVERY wild cell
+# returned never_crosses_target -- the wild bootstrap is conservative enough
+# that a 30% increase in filings does not reach 80% power at alpha 0.05, so the
+# wild MDE simply sits above the old grid. Same failure the legacy
+# power_lpdid_mde.yml header records for the small post-COVID design.
+#
+# NOTE (corrected 2026-09-17): the effect_grid IS part of the scenario id hash.
+# Extending the grid changed the id (Sd0dfdbaec9 -> S5f9048df16), so resume
+# recomputed all 14 deltas rather than reusing the first nine. Budget a full
+# re-run whenever the grid changes; the old 9-delta partials remain in the same
+# output dir under the previous scenario id and are NOT superseded silently --
+# read oc_summary by scenario_id, not by scenario name.
+effect_grid:  [0, 0.02, 0.05, 0.08, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.60]
+
+estimators:   [twfe, lpdid]
+lpdid_wild:   true
+lpdid_anchor: event_clean   # pre-launch baseline; with treat_def = online launch the event IS the launch
+lpdid_pmd:    3
+lpdid_hmin:   6
+lpdid_post:   18
+# ---- INCLUSION RULE (2026-09-16; R/power/inclusion_rule.R) ----------------
+eligibility:          presence   # placement uses the rule itself, not the min_pre/min_post box
+min_horizons:         7          # K: >= 7 usable outcome months in [launch+6, launch+18]
+splice_buffer_months: 0          # the sample start itself (2022-06) replaces the buffer
+# Real switcher set under the rule (coverage-only audit
+# analysis/diagnostics/inclusion_rule_real_switchers.R, 2026-09-17: 9 of 26
+# launched states. ME is IN: its Judicial Branch parse had June-December
+# labels one year too late; corrected and spliced onto live LSC 2026-09-17, it
+# is a switcher at exactly K=7. The blinded loader's ME exclusion was removed
+# the same day, so all 9 template cohorts exist in the framework panel and the
+# simulated design now matches the real one exactly). The D1 template keeps
+# only these cohorts. Dropped by the rule: AZ CT LA MI NY TN VA CO (baseline in
+# the COVID gap), FL WV NH IN MO OR PA RI (< 7 usable outcome months), and
+# AR (2026-09-17: baseline [2021-09, 2022-02] contains the splice-excluded
+# months 2021-09/10 -- the baseline is now held to the same standard as the
+# outcome; see R/power/inclusion_rule.R).
+# COUNTY-FEASIBLE switcher set (coverage-only audit on the county file, 2026-09-21,
+# same rule as the state arm: K=7, pmd 3, h 6-18, buffer 0, start 2022-06, ex NV HI MS MN WA):
+#   7 of 18 launched states with county coverage pass. All 7 carry the full 13 usable
+#   outcome months and a complete 3-month baseline.
+# Lost relative to the state arm's 10: MA and MD (absent from the county feed entirely)
+#   and ME (dropped by name in .read_county_panel; its county rows were removed from the
+#   hybrid file on 2026-09-17 and it is spliced at the state-panel level only).
+# Never-treated control pool from 2022-06: 10 states at county (AK GA ID MT ND OK SC TX UT WI)
+#   vs 11 at state (same minus NM); WI ends 2024-01 and ID 2025-05 in the county feed.
+template_states: [KS, NC, OH, KY, DE, VT, FL]   # county-feasible switchers at 6-18 / pmd 3 / start 2022-06
+lpdid_weights: ewatt            # 1/(1 - Dbar_cell) -- see header
+lpdid_unit_weights: renters     # REQUIRED at county level. Per-unit ACS renter weights: each
+                                # treated RENTER counts once, so a state enters by covered renter
+                                # mass, not LSC county count. Unweighted county ewatt is not a
+                                # pre-registrable estimand (docs/findings-archive/2026-09-16_county-arm-renter-weights.md).
+                                # Runs through the exact weighted WCR engine .re_lpdid_wcr_weighted.
+
+# ---- Execution --------------------------------------------------------------
+
+n_reps:     300   # sequential gate: escalate to 2000 via resume=TRUE ONLY if size lands in [0.055, 0.09] (MC CI +-0.014 at 1000)
+base_seed:  20260723           # pairs with both size gates and smoke/cheap/primary
+mde_boot:   200                # bootstrap CI on the interpolated MDE
+
+alpha:      [0.1, 0.05, 0.01]
+
+min_pre:    3    # anchor bound only (presence rule decides eligibility): 3-month baseline before launch
+                 # which is in treat_def units = shift12_start_date = LAUNCH + 12 MONTHS.
+                 # So min_pre=18 reaches d-18 = LAUNCH - 6 = exactly where the strict
+                 # PMD=6 baseline [launch-6, launch-1] begins. This is the whole point of
+                 # 18 over the legacy 12, which reached only the launch month and so
+                 # guaranteed NONE of the baseline.
+min_post:   12   # anchor bound only: launch+12 = the 7th outcome month of [launch+6, launch+18]
+                 # 0 is correct, not lax: a state contributes at whatever horizons it has,
+                 # so >=1 is the estimator's true minimum. The legacy 6 (month +18,
+                 # 7 of 13 horizons) was a generic guard set 2026-08-03 for the CS/TWFE
+                 # arms, never revisited when the LP-DiD clean anchor arrived.
+                 #
+                 # FEASIBILITY: D1 places iff min_pre + min_post <= 18 on this panel.
+                 # (18,0) and the legacy (12,6) are both 18 wide and both place 25/25;
+                 # (18,3) and (21,0) fail 0/25. (18,0) positions the box at
+                 # [launch-6, launch+12] -- the estimator's exact minimum -- and buys
+                 # +25 live state-slots (485 -> 510, +5%) at identical feasibility.
+                 # Re-test with analysis/diagnostics/eligibility_window_feasibility.R
+                 # before changing.
+
+anticipation_months: 6
+
+# ---- Scenario families ------------------------------------------------------
+
+covid_drop: ['2020-03-01', '2022-05-31']   # sample start 2022-06
+scenarios:
+  - name: l618_county_rw_precovid
+    covid: pre
+  - name: l618_county_rw_postcovid
+    covid: post

@@ -1,0 +1,67 @@
+# =============================================================================
+# power_lpdid_launch_h1824_sdprobe.yml — FAST SD PROBE for the h=18..24 MDE.
+#
+# Purpose (2026-08-28): estimate how the pooled mature-window design
+# (launch clock, h = 18..24, ewatt) moves the MDE relative to the shift12
+# precedent WITHOUT waiting for the wild-bootstrap MDE run. Logic:
+#   - lpdid_wild: false — the wild arm changes inference only; point
+#     estimates are identical draw-for-draw. Skipping B=999 boottest makes
+#     this ~50x faster.
+#   - MDE ~ 2.8 x SD(estimate | delta=0) at 80% power / 5% size, and more
+#     robustly: MDE_h1824 ~ MDE_shift12_wild x SD_h1824 / SD_shift12,
+#     computed on rep-matched draws (shared base_seed).
+# EXPLORATORY: quotes from this run are SD ratios, never size or MDE — those
+# come from the Della gate/MDE pair (power_lpdid_launch_h1824_{gate,mde}_ewatt).
+# =============================================================================
+
+run_name: lpdid_launch_h1824_sdprobe_p39_seg_ewatt
+
+exclude_states: [NV, HI, MS]
+
+# ---- Top-level defaults -----------------------------------------------------
+
+level:      state
+sample:     [S2]
+covid:      drop
+treat_def:  online_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+
+template:   panel
+
+effect_grid:  [0]
+
+estimators:   [lpdid]
+lpdid_wild:   false            # SD of point estimates only — see header
+lpdid_weights: ewatt
+lpdid_hmin:   18
+lpdid_post:   24
+lpdid_pmd:    12
+lpdid_pmd_min: 5
+lpdid_base_gapmax: 2
+
+# ---- Execution --------------------------------------------------------------
+
+n_reps:     300
+base_seed:  20260723           # rep-matched to shift12 gates for the SD ratio
+mde_boot:   200
+
+alpha:      [0.1, 0.05, 0.01]
+
+min_pre:    12
+min_post:   6
+
+anticipation_months: 6
+
+# ---- Scenario families ------------------------------------------------------
+
+scenarios:
+
+  - name: sdprobe_p39_seg_ewatt_spliced
+    covid: drop

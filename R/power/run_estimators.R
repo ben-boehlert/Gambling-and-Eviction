@@ -26,7 +26,14 @@
 #          LP-DiD block below), lpdid_wild (wild
 #          cluster bootstrap arm, default FALSE in simulation; county-safe
 #          via the FWL engine — see the WILD ARM block above .re_lpdid),
-#          lpdid_wild_engine ("fwl" default / "dummy" legacy, test-only).
+#          lpdid_wild_engine ("fwl" default / "dummy" legacy, test-only),
+#          lpdid_unit_weights ("none" default / "renters": per-unit renter
+#          weights so a county-level run weights renters, not LSC county
+#          counts -- see .re_lpdid_weights; 2026-09-16),
+#          lpdid_min_horizons (K: switcher needs >= K usable outcome months
+#          in a cohort, NA = off) and lpdid_excluded_months (dates excluded
+#          as outcome months for everyone) -- the inclusion rule,
+#          R/power/inclusion_rule.R (2026-09-16).
 #   ldam   Debiased linear autoregression (Antonelli, Rubinstein, Agniel et
 #          al., AOAS 2026; arXiv:2408.09012 eq. 3), with calendar-month time
 #          effects: Y_it = a_t + b*(Y_{i,t-1} - theta*A_{i,t-1}) + theta*A_it.
@@ -254,6 +261,7 @@ install_cs_safe_patches <- function(enable = TRUE, root = NULL) {
                    base_period = "varying", anticipation = 0L, biters = 199L,
                    cluster = "state_abb", alpha = 0.05,
                    cs_jack = FALSE, cs_faster_mode = TRUE,
+                   imp_jack = FALSE,
                    ldam_k = 1L, ldam_tol = 1e-9)
   out <- utils::modifyList(defaults, spec %||% list())
   # modifyList() DELETES any key the caller passes as NULL rather than leaving
@@ -850,6 +858,61 @@ run_estimator <- function(panel_sim,
   bind_rows(rows)
 }
 
+# ---------------- CV3 cluster jackknife for did2s / BJS / SunAb ---------------
+#
+# Added 2026-09-18. With singleton cohorts the analytic SEs of the imputation /
+# saturated estimators collapse (state SE/SD 0.85 did2s, 0.63 sunab, 0.53 bjs on
+# estcompare_start202203_v20260918_k7): the cohort-specific fit absorbs each
+# treated state's own residual, so treated clusters contribute ~nothing to the
+# clustered variance. The delete-one-STATE jackknife does not use residuals:
+#
+#     CV3 = sqrt( (H-1)/H * sum_h ( ATT^(h) - ATT )^2 )
+#
+# the same eq. (20) form as .re_cs_cv3 (MacKinnon, Nielsen & Webb's CV3),
+# centered on the full-sample estimate, p from t(df = usable replicates - 1).
+# `fit_att(dat)` re-runs the WHOLE estimator and returns the scalar ATT. Opt-in
+# via spec$imp_jack (costs H extra fits per estimator). Failed replicates are
+# excluded and counted in error_msg, as in .re_cs_cv3; deleting a singleton
+# cohort's only state changes aggregation composition as well as noise -- the
+# same caveat documented there.
+#' @keywords internal
+.re_imp_jack <- function(estimator, dat, fit_att, att_full, alpha, cl) {
+  t0 <- Sys.time()
+  clusters <- sort(unique(as.character(dat$state_abb)))
+  H <- length(clusters)
+  atts <- vapply(clusters, function(h) {
+    sub <- dat[dat$state_abb != h, , drop = FALSE]
+    a <- tryCatch(suppressMessages(suppressWarnings(fit_att(sub))),
+                  error = function(e) NA_real_)
+    if (length(a) == 1L && is.finite(a)) as.numeric(a) else NA_real_
+  }, numeric(1))
+  ok   <- is.finite(atts)
+  reps <- sum(ok)
+  rt   <- as.numeric(difftime(Sys.time(), t0, units = "secs"))
+  se <- if (reps >= 2L) {
+    sqrt(((reps - 1L) / reps) * sum((atts[ok] - att_full)^2))
+  } else NA_real_
+  good <- is.finite(att_full) && is.finite(se) && se > 0
+  if (!good) {
+    return(.re_row(estimator, "jack", "simple", att = att_full,
+                   n_treated_clusters = cl$n_treated,
+                   n_control_clusters = cl$n_control, converged = FALSE,
+                   error_msg = sprintf("jack: %d/%d usable replicates", reps, H),
+                   runtime_s = rt))
+  }
+  df   <- reps - 1L
+  crit <- stats::qt(1 - alpha / 2, df = df)
+  .re_row(estimator, "jack", "simple", att = att_full, se = se,
+          p = .re_tp(att_full, se, df),
+          ci_lo = att_full - crit * se, ci_hi = att_full + crit * se,
+          n_treated_clusters = cl$n_treated, n_control_clusters = cl$n_control,
+          converged = TRUE,
+          error_msg = if (reps < H) sprintf(
+            "note: jack used %d/%d replicates (%d failed)", reps, H, H - reps)
+            else NA_character_,
+          runtime_s = rt)
+}
+
 # ------------------------------ did2s (E3) ------------------------------------
 
 .re_did2s <- function(est, sp, cl, df_cluster) {
@@ -879,7 +942,7 @@ run_estimator <- function(panel_sim,
   }, error = function(e) NA_real_)
   ok <- is.finite(cf) && is.finite(se) && se > 0
 
-  .re_row("did2s", "analytic", "simple", att = cf, se = se,
+  ana <- .re_row("did2s", "analytic", "simple", att = cf, se = se,
           p = .re_tp(cf, se, df_cluster),
           ci_lo = if (ok) cf - z * se else NA_real_,
           ci_hi = if (ok) cf + z * se else NA_real_,
@@ -887,6 +950,11 @@ run_estimator <- function(panel_sim,
           converged = ok,
           error_msg = if (ok) NA_character_ else "did2s SE not identified",
           runtime_s = rt)
+  if (!isTRUE(sp$imp_jack) || !ok) return(ana)
+  fit_att <- function(d) as.numeric(stats::coef(did2s::did2s(
+    data = d, yname = "y_sim", first_stage = ~ 0 | unit_id + t,
+    second_stage = ~ post, treatment = "post", cluster_var = "state_abb"))[1])
+  bind_rows(ana, .re_imp_jack("did2s", dat, fit_att, cf, sp$alpha, cl))
 }
 
 # ------------------------------ BJS (didimputation) ---------------------------
@@ -926,7 +994,7 @@ run_estimator <- function(panel_sim,
   se <- tryCatch(as.numeric(fit$std.error[1]), error = function(e) NA_real_)
   ok <- is.finite(cf) && is.finite(se) && se > 0
 
-  .re_row("bjs", "analytic", "simple", att = cf, se = se,
+  ana <- .re_row("bjs", "analytic", "simple", att = cf, se = se,
           p = .re_tp(cf, se, df_cluster),
           ci_lo = if (ok) cf - z * se else NA_real_,
           ci_hi = if (ok) cf + z * se else NA_real_,
@@ -934,6 +1002,11 @@ run_estimator <- function(panel_sim,
           converged = ok,
           error_msg = if (ok) NA_character_ else "bjs SE not identified",
           runtime_s = rt)
+  if (!isTRUE(sp$imp_jack) || !ok) return(ana)
+  fit_att <- function(d) as.numeric(didimputation::did_imputation(
+    data = d, yname = "y_sim", gname = "first_treat", tname = "t",
+    idname = "id", cluster_var = "state_abb")$estimate[1])
+  bind_rows(ana, .re_imp_jack("bjs", dat, fit_att, cf, sp$alpha, cl))
 }
 
 # ------------------------------ Sun-Abraham (E4) ------------------------------
@@ -965,7 +1038,7 @@ run_estimator <- function(panel_sim,
 
   att <- res$att; se <- res$se
   ok <- is.finite(att) && is.finite(se) && se > 0
-  .re_row("sunab", "analytic", "simple", att = att, se = se,
+  ana <- .re_row("sunab", "analytic", "simple", att = att, se = se,
           p = .re_tp(att, se, df_cluster),
           ci_lo = if (ok) att - z * se else NA_real_,
           ci_hi = if (ok) att + z * se else NA_real_,
@@ -973,6 +1046,13 @@ run_estimator <- function(panel_sim,
           converged = ok,
           error_msg = if (ok) NA_character_ else "sunab att not identified",
           runtime_s = rt)
+  if (!isTRUE(sp$imp_jack) || !ok) return(ana)
+  fit_att <- function(d) {
+    f <- fixest::feols(y_sim ~ sunab(g_int, t) | unit_id + t, data = d,
+                       cluster = ~state_abb, warn = FALSE, notes = FALSE)
+    as.numeric(stats::coef(summary(f, agg = "att"))[1])
+  }
+  bind_rows(ana, .re_imp_jack("sunab", dat, fit_att, att, sp$alpha, cl))
 }
 
 # ------------------------------ LP-DiD (E5) -----------------------------------
@@ -1087,16 +1167,39 @@ run_estimator <- function(panel_sim,
 #' stack loop skips the rest), so Dbar lies strictly inside (0, 1) and neither
 #' denominator can vanish; the is.finite() guards are belt-and-braces.
 #'
+#' UNIT WEIGHTS (\code{w}, 2026-09-16). With per-observation unit weights
+#' a_i > 0 the cell share Dbar_c becomes the a-weighted treated share and the
+#' returned weight is the scheme factor times a_i. By the same FWL algebra,
+#' the pooled coefficient is then a convex combination of a-WEIGHTED cell DiDs
+#' (a-weighted mean dy of switchers minus a-weighted mean dy of controls) with
+#' cell weight sum_{treated} a_i (ewatt) or sum_i a_i * Dbar_c (1 - Dbar_c)
+#' (vwatt). With a_i = renters, ewatt therefore weights every treated RENTER
+#' equally; with a_i = 1 it reduces to the unweighted scheme bit-for-bit. This
+#' is what makes a county-level run defensible: an unweighted county
+#' regression weights each state by its LSC county COUNT (KS 1 vs KY 120),
+#' a data-vendor footprint, not an estimand.
+#'
 #' @param D Treatment indicator (0/1), one element per stacked observation.
 #' @param cell Cell key, same length as \code{D}.
 #' @param scheme "ewatt", "cellsize", or "vwatt".
+#' @param w Optional positive unit weights, same length as \code{D}; NULL
+#'   (default) = every observation weight 1.
 #' @return Numeric weight vector, same length as \code{D}.
 #' @keywords internal
-.re_lpdid_weights <- function(D, cell, scheme = "ewatt") {
+.re_lpdid_weights <- function(D, cell, scheme = "ewatt", w = NULL) {
   scheme <- match.arg(scheme, c("ewatt", "cellsize", "vwatt"))
-  dbar <- as.numeric(tapply(as.numeric(D), cell,
-                            mean)[as.character(cell)])
-  switch(scheme,
+  D <- as.numeric(D)
+  if (is.null(w)) {
+    w <- rep(1, length(D))
+    dbar <- as.numeric(tapply(D, cell, mean)[as.character(cell)])
+  } else {
+    w <- as.numeric(w)
+    stopifnot(length(w) == length(D))
+    num  <- tapply(w * D, cell, sum)
+    den  <- tapply(w,     cell, sum)
+    dbar <- as.numeric((num / den)[as.character(cell)])
+  }
+  fac <- switch(scheme,
          ewatt    = as.numeric(ifelse(is.finite(dbar) & dbar < 1,
                                       1 / (1 - dbar), NA_real_)),
          cellsize = {
@@ -1104,9 +1207,138 @@ run_estimator <- function(panel_sim,
            as.numeric(ifelse(is.finite(v) & v > 0, 1 / v, NA_real_))
          },
          vwatt    = rep(1, length(D)))
+  fac * w
 }
 
 #' @keywords internal
+
+#' Exact restricted wild cluster bootstrap for the weighted cell-FE LP-DiD
+#'
+#' WLS of dy on D_treat with absorbed cell effects and observation weights rw
+#' that vary within cell. Rademacher draws at the state (cluster) level, null
+#' imposed (WCR), two-tailed p = mean(|t| < |t*|) exactly as
+#' fwildclusterboot::boottest() defines it, full enumeration when 2^G <= B
+#' (same rule as boottest), CI by test inversion (bisection on p(b0) = alpha).
+#'
+#' ALGEBRA. Let ~ denote rw-weighted within-cell demeaning, a_i = rw_i * Dt_i,
+#' q = sum(a_i Dt_i), q_g / s_g(b0) the cluster sums of a_i Dt_i / a_i u_i with
+#' restricted residual u_i = ~y_i - b0 ~D_i. For draw v (one +-1 per cluster):
+#'   b* - b0 = sum_g v_g s_g(b0) / q
+#'   e*_i    = ~(u v)_i - ~D_i (b* - b0)        (cell effects RE-ESTIMATED)
+#'   S*_g    = sum_{i in g} a_i e*_i = v_g s_g - [K(b0) v]_g - (b* - b0) q_g
+#' where K(b0) = K_y - b0 K_D is G x G with
+#'   K_y[g, g'] = sum_c A[g, c] U_y[c, g'] / W_c,  A[g, c] = sum_{i in g, c} a_i,
+#'   U_y[c, g'] = sum_{j in c, g'} rw_j ~y_j,     W_c = sum_{j in c} rw_j,
+#' and K_D likewise from ~D. The re-demeaning term [K v]_g is what the
+#' hold-FE-fixed shortcut drops; it vanishes only when cells nest in clusters.
+#' t* = (b* - b0) / sqrt(sum_g S*_g^2) / q; the small-sample constant multiplies
+#' t and every t* identically, so p is invariant to it. All per-draw work is
+#' G x B and BLAS-free (fork-safe in mclapply children; see ddd_wild.R).
+#'
+#' @param stack Data frame with dy, D_treat, rw (> 0, finite), cell (factor),
+#'   state_abb.
+#' @param att The analytic WLS-FE point estimate (asserted to match).
+#' @param alpha CI level (two-sided).
+#' @param B Bootstrap draws (capped at 2^G under enumeration).
+#' @return list(lpdid_wcr_weighted = TRUE, p, ci_lo, ci_hi, B, enumerated).
+#' @keywords internal
+.re_lpdid_wcr_weighted <- function(stack, att, alpha = 0.05, B = 999L) {
+  w  <- as.numeric(stack$rw)
+  y  <- as.numeric(stack$dy)
+  D  <- as.numeric(stack$D_treat)
+  ci <- as.integer(droplevels(factor(stack$cell)))
+  gi <- as.integer(factor(stack$state_abb))
+  G  <- max(gi); C <- max(ci)
+  if (G < 3L) stop("lpdid weighted wild: fewer than 3 clusters")
+
+  # rw-weighted within-cell demeaning
+  Wc <- as.numeric(rowsum(w, ci))
+  Dt <- D - as.numeric(rowsum(w * D, ci) / Wc)[ci]
+  yt <- y - as.numeric(rowsum(w * y, ci) / Wc)[ci]
+  a  <- w * Dt
+  q  <- sum(a * Dt)
+  if (!is.finite(q) || q <= 0) stop("lpdid weighted wild: degenerate design")
+  bhat <- sum(a * yt) / q
+  if (!isTRUE(all.equal(bhat, att, tolerance = 1e-6))) {
+    stop(sprintf("lpdid weighted wild: FWL estimate %.6e != analytic WLS %.6e",
+                 bhat, att))
+  }
+
+  q_g <- as.numeric(rowsum(a * Dt, gi))
+  s_y <- as.numeric(rowsum(a * yt, gi))
+  # G x C and C x G building blocks via a joint (cluster, cell) index
+  gc  <- (gi - 1L) * C + ci
+  ra  <- rowsum(a, gc); uy <- rowsum(w * yt, gc); ud <- rowsum(w * Dt, gc)
+  idx <- as.integer(rownames(ra))
+  gg  <- (idx - 1L) %/% C + 1L
+  cc  <- idx - (gg - 1L) * C
+  A  <- matrix(0, G, C); Uy <- matrix(0, C, G); UD <- matrix(0, C, G)
+  A[cbind(gg, cc)]  <- as.numeric(ra)
+  Uy[cbind(cc, gg)] <- as.numeric(uy)
+  UD[cbind(cc, gg)] <- as.numeric(ud)
+  # K_y, K_D (G x G), BLAS-free
+  AW <- sweep(A, 2L, Wc, "/")
+  Ky <- matrix(0, G, G); KD <- matrix(0, G, G)
+  for (c in seq_len(C)) {
+    Ky <- Ky + outer(AW[, c], Uy[c, ])
+    KD <- KD + outer(AW[, c], UD[c, ])
+  }
+
+  # unrestricted statistic pieces
+  S0 <- s_y - bhat * q_g
+  V0 <- sum(S0^2) / q^2
+  se0 <- sqrt(V0)
+
+  # draws: full enumeration when 2^G <= B (boottest's rule), else random
+  enumerated <- (2^G <= B)
+  if (enumerated) {
+    B <- as.integer(2^G)
+    Vm <- matrix(NA_real_, G, B)
+    for (g in seq_len(G)) {
+      Vm[g, ] <- rep(rep(c(-1, 1), each = 2^(g - 1L)), length.out = B)
+    }
+  } else {
+    Vm <- matrix(sample(c(-1, 1), G * B, replace = TRUE), G, B)
+  }
+
+  p_at <- function(b0) {
+    s  <- s_y - b0 * q_g
+    K  <- Ky - b0 * KD
+    bm <- colSums(Vm * s) / q                      # b* - b0, length B
+    corr <- matrix(0, G, B)
+    for (g2 in seq_len(G)) corr <- corr + outer(K[, g2], Vm[g2, ])
+    Sst <- Vm * s - corr - outer(q_g, bm)
+    tst <- bm / sqrt(colSums(Sst^2) / q^2)
+    t0  <- (bhat - b0) / se0
+    fin <- is.finite(tst)
+    if (!any(fin) || !is.finite(t0)) return(NA_real_)
+    mean(abs(t0) < abs(tst[fin]))
+  }
+
+  p <- p_at(0)
+
+  # CI by inversion: the acceptance region {b0 : p(b0) > alpha}. p is a step
+  # function of b0, so bisect between the estimate (inside) and a far point.
+  half <- function(dir) {
+    lo <- bhat; hi <- bhat + dir * 10 * se0
+    for (k in 1:6) {                              # widen until outside
+      ph <- p_at(hi)
+      if (is.finite(ph) && ph <= alpha) break
+      hi <- bhat + dir * (10 * 2^k) * se0
+    }
+    for (i in seq_len(40L)) {
+      mid <- (lo + hi) / 2
+      pm <- p_at(mid)
+      if (isTRUE(pm > alpha)) lo <- mid else hi <- mid
+    }
+    (lo + hi) / 2
+  }
+  ci_lo <- half(-1); ci_hi <- half(+1)
+
+  list(lpdid_wcr_weighted = TRUE, p = p, ci_lo = ci_lo, ci_hi = ci_hi,
+       B = B, enumerated = enumerated, se_fwl = se0)
+}
+
 .re_lpdid <- function(panel_sim, sp, cl, df_cluster) {
   pmd  <- as.integer(sp$lpdid_pmd  %||% 3L)
   hmax <- as.integer(sp$lpdid_post %||% 12L)
@@ -1115,7 +1347,39 @@ run_estimator <- function(panel_sim,
                       c("event_clean", "event", "launch"))
   wscheme <- match.arg(as.character(sp$lpdid_weights %||% "ewatt"),
                        c("ewatt", "cellsize", "vwatt"))
+  uwscheme <- match.arg(as.character(sp$lpdid_unit_weights %||% "none"),
+                        c("none", "renters"))
   wild <- isTRUE(sp$lpdid_wild)
+  # INCLUSION RULE knobs (2026-09-16; R/power/inclusion_rule.R). Kmin: a
+  # switcher contributes to a cohort only if it has >= Kmin usable outcome
+  # months there (NA = off, i.e. >= 1). excl_dates: outcome months excluded
+  # for EVERY unit (splice-adjacent months); their cells are skipped.
+  Kmin <- suppressWarnings(as.integer(sp$lpdid_min_horizons %||% NA_integer_))
+  if (length(Kmin) != 1L || !is.finite(Kmin)) Kmin <- NA_integer_
+  excl_dates <- sp$lpdid_excluded_months %||% character(0)
+  excl_dates <- if (length(excl_dates)) as.Date(excl_dates) else as.Date(character(0))
+  # 2026-09-17: the excluded months are withheld from the BASELINE as well as
+  # from outcome cells. A month too close to the splice to measure an outcome
+  # is too close to anchor one; holding the baseline to a weaker standard than
+  # the outcome was the rule/s one internal inconsistency (see
+  # R/power/inclusion_rule.R). FALSE restores outcome-only exclusion.
+  base_clean <- !identical(sp$lpdid_baseline_clean %||% TRUE, FALSE)
+
+  # UNIT WEIGHTS (lpdid_unit_weights = "renters"): one time-invariant weight
+  # per unit, the unit's mean renter count over its observed months (the
+  # county file carries a constant ACS figure per county; averaging makes the
+  # state panel's per-row denominators behave the same way). A unit with no
+  # finite positive renter count gets NA and is dropped from the stack by the
+  # is.finite(rw) filter below -- the two such counties in the download are
+  # USVI, which the loader already excludes. Fail loudly if the column is
+  # missing rather than silently running unweighted.
+  if (identical(uwscheme, "renters") && !"renters" %in% names(panel_sim)) {
+    return(.re_row("lpdid", "analytic", "simple",
+                   n_treated_clusters = cl$n_treated,
+                   n_control_clusters = cl$n_control, converged = FALSE,
+                   error_msg = "lpdid_unit_weights = renters but panel_sim has no `renters` column",
+                   runtime_s = 0))
+  }
 
   # Fail loudly rather than silently pooling nothing: an empty horizon window
   # would otherwise reach feols() as a zero-row stack and surface as the
@@ -1140,16 +1404,32 @@ run_estimator <- function(panel_sim,
     units <- sort(unique(as.character(d$unit_id)))
     m_min <- min(d$m)
     M <- max(d$m) - m_min + 1L
+    excl_rel <- if (length(excl_dates)) m_of(excl_dates) - m_min + 1L else integer(0)
 
     # Y[unit, calendar month]; absent months (covid gap, coverage) stay NA.
     Y <- matrix(NA_real_, length(units), M)
     Y[cbind(match(as.character(d$unit_id), units), d$m - m_min + 1L)] <- d$y_sim
+    # Splice-adjacent months become unobserved for every purpose, so no
+    # baseline can be anchored on them. The outcome-cell mask further down is
+    # now redundant for these columns and is kept as a guard.
+    if (base_clean && length(excl_rel)) {
+      keep_cols <- excl_rel[excl_rel >= 1L & excl_rel <= M]
+      if (length(keep_cols)) Y[, keep_cols] <- NA_real_
+    }
 
     gcols <- intersect(c("unit_id", "state_abb", "pseudo_g", "pseudo_launch"),
                        names(d))
     gtab <- d[!duplicated(d$unit_id), gcols, drop = FALSE]
     ord  <- match(units, as.character(gtab$unit_id))
     st   <- as.character(gtab$state_abb)[ord]
+    aw <- if (identical(uwscheme, "renters")) {
+      r <- as.numeric(d$renters)
+      r[!is.finite(r) | r <= 0] <- NA_real_
+      mu <- tapply(r, as.character(d$unit_id), mean, na.rm = TRUE)
+      a  <- as.numeric(mu[units])
+      a[!is.finite(a) | a <= 0] <- NA_real_
+      a / mean(a, na.rm = TRUE)      # scale-free for WLS; mean 1 for readability
+    } else rep(1, length(units))
     gm   <- ifelse(is.na(gtab$pseudo_g[ord]), NA_integer_,
                    m_of(gtab$pseudo_g[ord]) - m_min + 1L)
     # HYBRID CONTROL CODING: control eligibility is gated on the LAUNCH month
@@ -1232,12 +1512,20 @@ run_estimator <- function(panel_sim,
       cohorts <- unique(data.frame(event = gm, launch = lm))
       cohorts <- cohorts[is.finite(cohorts$event) & is.finite(cohorts$launch),
                          , drop = FALSE]
-      for (h in hmin:hmax) {
-        for (j in seq_len(nrow(cohorts))) {
-          tt <- cohorts$event[j]
-          bb <- cohorts$launch[j]
+      n_h <- hmax - hmin + 1L
+      for (j in seq_len(nrow(cohorts))) {
+        tt <- cohorts$event[j]
+        bb <- cohorts$launch[j]
+        if (bb < pmd + 1L || bb > M) next
+        swj <- !is.na(gm) & !is.na(lm) & gm == tt & lm == bb
+        # Pass 1: every horizon's long difference for this cohort, with the
+        # excluded-month and no-straddling masks, and a per-unit count of
+        # usable outcome months (the inclusion rule's K).
+        dys <- vector("list", n_h); has <- logical(n_h)
+        usable <- integer(length(units))
+        for (h in hmin:hmax) {
           far <- tt + h
-          if (bb < pmd + 1L || bb > M || far < 1L || far > M) next
+          if (far < 1L || far > M || far %in% excl_rel) next
           dy <- Y[, far] - B[, bb]
           if (!is.null(SEG)) {
             # Cell-level no-straddling: baseline must end in the same observed
@@ -1249,16 +1537,29 @@ run_estimator <- function(panel_sim,
             dy[!(fin & !is.na(segb) & !is.na(SEG[, far]) &
                    segb == SEG[, far])] <- NA
           }
-          sw <- !is.na(gm) & !is.na(lm) & gm == tt & lm == bb
+          i_h <- h - hmin + 1L
+          dys[[i_h]] <- dy; has[i_h] <- TRUE
+          usable <- usable + as.integer(is.finite(dy))
+        }
+        # Inclusion rule: a switcher below the floor is dropped from ALL of
+        # this cohort's cells (it is dirty: launched, so never a control).
+        swok <- swj & (usable >= (if (is.finite(Kmin)) max(1L, Kmin) else 1L))
+        if (!any(swok)) next
+        # Pass 2: build the cells.
+        for (h in hmin:hmax) {
+          i_h <- h - hmin + 1L
+          if (!has[i_h]) next
+          far <- tt + h
+          dy  <- dys[[i_h]]
           # Launch is absorbing: a state is clean only if it has not launched
           # by the mature outcome. Buildup observations never become controls.
           ctl <- is.na(lm) | lm > far
-          keep <- (sw | ctl) & is.finite(dy)
-          if (!any(keep & sw) || !any(keep & ctl)) next
+          keep <- (swok | ctl) & is.finite(dy)
+          if (!any(keep & swok) || !any(keep & ctl)) next
           k <- k + 1L
           out[[k]] <- data.frame(
-            state_abb = st[keep], D_treat = as.integer(sw[keep]),
-            dy = dy[keep], cell = paste(tt, bb, h, sep = "_"),
+            state_abb = st[keep], D_treat = as.integer(swok[keep]),
+            dy = dy[keep], a = aw[keep], cell = paste(tt, bb, h, sep = "_"),
             stringsAsFactors = FALSE)
         }
       }
@@ -1269,6 +1570,7 @@ run_estimator <- function(panel_sim,
         if (M - h < pmd + 1L) next
         for (tt in (pmd + 1L):(M - h)) {
           far <- tt + h
+          if (far %in% excl_rel) next
           dy  <- Y[, far] - B[, tt]
           sw  <- !is.na(gm) & !is.na(am) & am == tt
           ctl <- is.na(lm) | lm > far
@@ -1277,7 +1579,7 @@ run_estimator <- function(panel_sim,
           k <- k + 1L
           out[[k]] <- data.frame(
             state_abb = st[keep], D_treat = as.integer(sw[keep]),
-            dy = dy[keep], cell = paste0(tt, "_", h),
+            dy = dy[keep], a = aw[keep], cell = paste0(tt, "_", h),
             stringsAsFactors = FALSE)
         }
       }
@@ -1297,8 +1599,11 @@ run_estimator <- function(panel_sim,
 
   res <- tryCatch(suppressMessages(suppressWarnings({
     stack$cell <- factor(stack$cell)
-    stack$rw <- .re_lpdid_weights(stack$D_treat, stack$cell, wscheme)
+    stack$rw <- .re_lpdid_weights(
+      stack$D_treat, stack$cell, wscheme,
+      w = if (identical(uwscheme, "renters")) stack$a else NULL)
     stack <- stack[is.finite(stack$rw), , drop = FALSE]
+    stack$cell <- droplevels(stack$cell)
     # Cluster-robust t inference should use the clusters that actually reach
     # feols(), not the panel-wide count in df_cluster. States can be placed
     # in panel_sim but contribute zero rows to the stack -- dropped by the
@@ -1352,6 +1657,18 @@ run_estimator <- function(panel_sim,
           fwildclusterboot::boottest(res$fit, param = "D_treat",
                                      clustid = ~state_abb, B = 999L,
                                      type = "rademacher")
+        } else if (identical(uwscheme, "renters")) {
+          # UNIT-WEIGHTED path. With renter weights rw varies WITHIN a cell,
+          # so sqrt(rw) * alpha_c is no longer one free constant per cell and
+          # boottest's fe= absorption trick below does not apply; boottest
+          # also refuses WLS. .re_lpdid_wcr_weighted() is the exact restricted
+          # wild cluster bootstrap for the weighted cell-FE model, with the
+          # cell effects RE-ESTIMATED in every draw (as boottest's fe= /
+          # dummy paths do -- NOT the hold-the-FE-fixed shortcut of
+          # R/power/ddd_wild.R, which differs here because cells span states).
+          # Unit-tested to reproduce the fe= path bit-for-bit under constant
+          # weights and the dummy-expanded WLS path under varying weights.
+          .re_lpdid_wcr_weighted(stack, att = att, alpha = sp$alpha, B = 999L)
         } else {
           # Every weight scheme is CELL-CONSTANT (rw is a function of the
           # cell's Dbar alone — see .re_lpdid_weights; vwatt's constant is 1).
@@ -1395,10 +1712,15 @@ run_estimator <- function(panel_sim,
         n_treated_clusters = cl$n_treated, n_control_clusters = cl$n_control,
         converged = FALSE, error_msg = attr(wb, "err"), runtime_s = rt1)
     } else {
-      p_w  <- tryCatch(as.numeric(fwildclusterboot::pval(wb)),
-                       error = function(e) NA_real_)
-      ci_w <- tryCatch(as.numeric(stats::confint(wb)),
-                       error = function(e) c(NA_real_, NA_real_))
+      if (is.list(wb) && !is.null(wb$lpdid_wcr_weighted)) {
+        p_w  <- wb$p
+        ci_w <- c(wb$ci_lo, wb$ci_hi)
+      } else {
+        p_w  <- tryCatch(as.numeric(fwildclusterboot::pval(wb)),
+                         error = function(e) NA_real_)
+        ci_w <- tryCatch(as.numeric(stats::confint(wb)),
+                         error = function(e) c(NA_real_, NA_real_))
+      }
       rows[[2L]] <- .re_row(
         "lpdid", "wild", "simple", att = att, se = se, p = p_w,
         ci_lo = ci_w[1], ci_hi = ci_w[2],

@@ -39,7 +39,8 @@
 #   # 2026-09-06, quality_reports/parity_check_lpdid_statepanel_2026-09-06.md):
 #   TREAT_DEF=shift12 ANCHOR=event_clean PMD=6 POST=12 POST_MIN=0 LPDID_WEIGHTS=ewatt \
 #     Rscript analysis/main/lpdid_statepanel.R
-#   # Sample knobs (defaults = the power spec): EXCLUDE_STATES="NV,ID,HI,MS",
+#   # Sample knobs (defaults = the power spec): EXCLUDE_STATES="NV,HI,MS,MN,WA"
+#   # (Idaho included since 2026-09-17; MN and WA excluded since 2026-09-21),
 #   # MAX_DATE unset (no cap), BALANCE_PANEL=FALSE.
 #
 # NOTE: results in output/lpdid_statepanel/ generated before 2026-08-17 used
@@ -79,6 +80,14 @@ POST_MIN        <- as.integer(getenv1(
 PRE             <- as.integer(getenv1("PRE",  "12"))    # months before (pre-trend)
 PMD             <- as.integer(getenv1("PMD",  "3"))     # pre-mean-difference baseline
 DROP_STRADDLING <- toupper(getenv1("DROP_STRADDLING", "FALSE")) == "TRUE"
+# SWITCHER INCLUSION RULE (2026-09-16; R/power/inclusion_rule.R). Applied
+# identically in the blinded power framework (config knobs min_horizons /
+# splice_buffer_months). MIN_HORIZONS = K: a switcher enters a cohort only if
+# it has >= K usable outcome months in POST_MIN..POST (empty = off).
+# SPLICE_BUFFER: months on each side of the dropped COVID window excluded as
+# OUTCOME months for every state (0 = off). Headline decision: K = 7, buffer 3.
+MIN_HORIZONS    <- suppressWarnings(as.integer(getenv1("MIN_HORIZONS", "")))
+SPLICE_BUFFER   <- as.integer(getenv1("SPLICE_BUFFER", "0"))
 BOOT_REPS       <- as.integer(getenv1("BOOT_REPS", "9999"))
 JOINT_SEED      <- as.integer(getenv1("JOINT_SEED", "20260820"))  # joint pre-trend bootstrap
 REWEIGHT        <- TRUE                                  # weight cells (see below)
@@ -97,7 +106,9 @@ stopifnot(POST_MIN >= 0L, POST_MIN <= POST)
 # gets an explicit suffix so a clean run cannot overwrite a legacy result.
 TAG <- if (identical(ANCHOR, "event")) TREAT_DEF else paste(TREAT_DEF, ANCHOR, sep = "_")
 
-OUT_DIR <- "output/lpdid_statepanel"
+# OUT_DIR override (2026-09-17): diagnostics and RI/placebo drivers must not
+# clobber the LIVE results; point them at a scratch directory.
+OUT_DIR <- getenv1("OUT_DIR", "output/lpdid_statepanel")
 dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
 
 # COVID drop window. Default matches the two specs this script has to be
@@ -127,7 +138,11 @@ DROP_END   <- as.Date(getenv1("DROP_END",   "2021-07-31"))
 # so a naive join would make it a never-treated control); ID/HI/MS are the
 # basket-composition exclusions (FINDINGS.md §2). Pass EXCLUDE_STATES="" to
 # keep everything; the pre-PASPA assertion below still fires for NV.
-EXCLUDE_STATES <- { v <- Sys.getenv("EXCLUDE_STATES", unset = "NV,ID,HI,MS")
+# Default (2026-09-21): NV (pre-PASPA, always-treated), HI and MS (LSC-stale, short
+# series), MN and WA (DATA_QUALITY_EXCLUDED_STATES, utils/eviction_treatment_schedule.R).
+# Idaho is INCLUDED: the Twin Falls basket behind the old exclusion was replaced by the
+# statewide Idaho Judicial Branch series on 2026-09-14 and verified 2026-09-17.
+EXCLUDE_STATES <- { v <- Sys.getenv("EXCLUDE_STATES", unset = "NV,HI,MS,MN,WA")
                     v <- trimws(strsplit(v, ",")[[1]]); v[nzchar(v)] }
 
 # BALANCE_PANEL (default FALSE, 2026-09-06). LP-DiD needs no balanced panel:
@@ -144,7 +159,10 @@ ym_index <- function(d) (as.integer(format(d, "%Y")) - 2000L) * 12L + as.integer
 G_DROP <- c(ym_index(DROP_START), ym_index(DROP_END))    # gap in calendar-month index
 
 # ── Panel ────────────────────────────────────────────────────────────────────
-p <- read_csv("data/raw/state_month_panel_with_treatment.csv", show_col_types = FALSE) %>%
+# PANEL_FILE override (2026-09-18): what-if probes on a scratch panel without
+# touching the canonical file. Default is the canonical panel.
+PANEL_FILE <- getenv1("PANEL_FILE", "data/raw/state_month_panel_with_treatment.csv")
+p <- read_csv(PANEL_FILE, show_col_types = FALSE) %>%
   transmute(state_abb = as.character(state_abb), month_date = as.Date(month_date),
             filings_count = as.numeric(filings_count)) %>%
   filter(month_date >= MIN_DATE, is.na(MAX_DATE) | month_date <= MAX_DATE) %>%
@@ -164,8 +182,13 @@ cat(glue("Sample: {n_distinct(p$state_abb)} states, {min(p$month_date)}..{max(p$
          "balanced = {BALANCE_PANEL}, excluded: ",
          "{if (length(EXCLUDE_STATES)) paste(EXCLUDE_STATES, collapse = ', ') else 'none'}"), "\n")
 
+# TREAT_FILE override (2026-09-17) for RANDOMIZATION INFERENCE. The RI driver
+# writes permuted schedules -- the observed launch dates reassigned across
+# states -- and points this at each one in turn. Default is the real schedule,
+# so every existing invocation is unchanged.
+TREAT_FILE <- getenv1("TREAT_FILE", "data/raw/sports_gambling_legalization_dates.csv")
 sched <- load_eviction_treatment_schedule(
-  treat_file = "data/raw/sports_gambling_legalization_dates.csv",
+  treat_file = TREAT_FILE,
   treat_date_col = "online_start_date", states = p$state_abb)
 abb  <- tibble(State = c(state.name, "District of Columbia"), state_abb = c(state.abb, "DC"))
 lags <- read_csv("data/processed/cohort_ramp_lags.csv", show_col_types = FALSE) %>%
@@ -227,14 +250,36 @@ y_at <- function(state, tt) {
 
 # Baseline: mean of the PMD months ending at t-1 (pre-mean differencing).
 # PMD = 1 reproduces the plain t-1 baseline of the paper's default.
+#
+# 2026-09-17: the baseline is held to the SAME splice standard as the outcome.
+# A month too close to the COVID splice to measure an outcome is too close to
+# anchor one, and holding the baseline to a weaker test was the inclusion
+# rule's one internal inconsistency. EXCL_T is defined below, so this reads it
+# lazily; BASELINE_CLEAN=0 restores the old outcome-only behaviour.
+# On the real data this removes exactly one switcher, AR (launch 2022-03,
+# baseline [2021-09, 2022-02], of which 2021-09/10 are splice-adjacent).
+BASELINE_CLEAN <- !identical(getenv1("BASELINE_CLEAN", "1"), "0")
 baseline_at <- function(state, tt) {
-  b <- vapply(seq(tt - PMD, tt - 1L), function(s) y_at(state, s), numeric(1))
+  bt <- seq(tt - PMD, tt - 1L)
+  if (BASELINE_CLEAN && exists("EXCL_T") && length(EXCL_T) && any(bt %in% EXCL_T))
+    return(NA_real_)
+  b <- vapply(bt, function(s) y_at(state, s), numeric(1))
   if (any(is.na(b))) NA_real_ else mean(b)
 }
 
 spans_gap <- function(lo, hi) lo <= G_DROP[2] && hi >= G_DROP[1]
 
-# ── Build the LP-DiD stacked sample for one horizon ─────────────────────────
+# ── Inclusion rule: excluded outcome months and the per-cohort K floor ───────
+EXCL_T <- if (is.finite(SPLICE_BUFFER) && SPLICE_BUFFER > 0L) {
+  c(seq(G_DROP[1] - SPLICE_BUFFER, G_DROP[1] - 1L), seq(G_DROP[2] + 1L, G_DROP[2] + SPLICE_BUFFER))
+} else integer(0)
+if (length(EXCL_T)) cat(glue("Splice-adjacent months excluded as outcomes (calendar index): ",
+                             "{paste(EXCL_T, collapse = ', ')}"), "\n")
+cat(glue("Switcher floor (MIN_HORIZONS): {ifelse(is.finite(MIN_HORIZONS), MIN_HORIZONS, 'off')}"), "\n\n")
+# switcher_ok[[cell_id]] = states allowed to switch in that cohort cell.
+# Counted on the same objects build_h() uses, so the floor and the cells agree.
+switcher_ok <- NULL   # filled after cohort_cells is defined (below)
+
 # event_clean cells are indexed by BOTH launch and event. Their baseline is
 # immediately before launch and their outcome is event +/- h. Controls use the
 # same two calendar endpoints and must remain unlaunched through the outcome.
@@ -264,11 +309,36 @@ cohort_cells <- if (identical(ANCHOR, "event_clean")) {
     distinct()
 }
 
+.count_usable <- function(s, cc) {
+  # usable post horizons for state s in cohort cell cc (same masks as build_h)
+  base <- baseline_at(s, cc$base_t)
+  if (is.na(base)) return(0L)
+  n <- 0L
+  for (hh in POST_MIN:POST) {
+    far <- cc$cell_t + hh
+    if (far %in% EXCL_T) next
+    if (is.na(y_at(s, far))) next
+    lo <- min(far, cc$base_t - PMD); hi <- max(far, cc$base_t - 1L)
+    if (DROP_STRADDLING && spans_gap(lo, hi)) next
+    n <- n + 1L
+  }
+  n
+}
+switcher_ok <- setNames(lapply(seq_len(nrow(cohort_cells)), function(j) {
+  cc <- cohort_cells[j, ]
+  cand <- treat_tbl$state_abb[!is.na(treat_tbl$g) & !is.na(treat_tbl$g_launch) &
+                              treat_tbl$g == cc$event_t & treat_tbl$g_launch == cc$launch_t]
+  if (!is.finite(MIN_HORIZONS)) return(cand)
+  cand[vapply(cand, function(s) .count_usable(s, cc) >= MIN_HORIZONS, logical(1))]
+}), cohort_cells$cell_id)
+
 build_h <- function(h, side = c("post", "pre")) {
   side <- match.arg(side)
   rows <- map_dfr(seq_len(nrow(cohort_cells)), function(j) {
     cc <- cohort_cells[j, ]
     far <- if (side == "post") cc$cell_t + h else cc$cell_t - h
+    # Inclusion rule: splice-adjacent months are not outcome months for anyone.
+    if (far %in% EXCL_T) return(NULL)
 
     # In clean mode a lead is diagnostic only if it is genuinely pre-launch.
     # Legal-to-maturity months are neither untreated leads nor controls.
@@ -282,7 +352,8 @@ build_h <- function(h, side = c("post", "pre")) {
       g_l <- if (length(g_l) == 0 || is.na(g_l) || g_l > t_max) NA_integer_ else g_l
 
       is_switch <- if (identical(ANCHOR, "event_clean")) {
-        !is.na(g_s) && !is.na(g_l) && g_s == cc$event_t && g_l == cc$launch_t
+        !is.na(g_s) && !is.na(g_l) && g_s == cc$event_t && g_l == cc$launch_t &&
+          s %in% switcher_ok[[cc$cell_id]]      # inclusion rule K floor
       } else if (identical(ANCHOR, "launch")) {
         !is.na(g_s) && !is.na(g_l) && g_l == cc$launch_t
       } else {
@@ -472,11 +543,21 @@ pool_window <- function(dat, h_lo, h_hi, era, label) {
                   error = function(e) NULL)
   if (is.null(fit) || !("D_treat" %in% names(coef(fit))))
     return(base_row %>% mutate(note = "fit failed"))
-  pw <- if (HAS_BOOT) tryCatch(
+  # 2026-09-17: also invert the test for a wild CONFIDENCE INTERVAL, not just a
+  # p-value. The analytic SE is the quantity the blinded sims show to be
+  # miscalibrated at this cluster count (SE/SD 0.50-0.92), so the wild interval
+  # -- not se(fit) -- is what any power or precision statement should rest on.
+  # WILD_CI=0 skips the inversion, which is the slow part.
+  wild_ci <- !identical(getenv1("WILD_CI", "1"), "0")
+  bt <- if (HAS_BOOT) tryCatch(
     boottest(fit, param = "D_treat", clustid = "state_abb", B = BOOT_REPS,
-             type = "rademacher")$p_val, error = function(e) NA_real_) else NA_real_
+             type = "rademacher", conf_int = wild_ci), error = function(e) NULL) else NULL
+  pw <- if (is.null(bt)) NA_real_ else as.numeric(bt$p_val)
+  wlo <- if (is.null(bt) || is.null(bt$conf_int)) NA_real_ else as.numeric(bt$conf_int)[1]
+  whi <- if (is.null(bt) || is.null(bt$conf_int)) NA_real_ else as.numeric(bt$conf_int)[2]
   base_row %>% mutate(
     att = as.numeric(coef(fit)["D_treat"]), se = as.numeric(se(fit)["D_treat"]),
+    ci_lo_wild = wlo, ci_hi_wild = whi, ci_width_wild = whi - wlo,
     p_analytic = as.numeric(pvalue(fit)["D_treat"]), p_wild = as.numeric(pw),
     n_switch_states  = n_distinct(d$state_abb[d$D_treat == 1]),
     n_control_states = n_distinct(d$state_abb[d$D_treat == 0]),

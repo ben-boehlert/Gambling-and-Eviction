@@ -1,0 +1,93 @@
+# =============================================================================
+# power_lpdid_launch_h1824_gate_ewatt.yml — MATURE-WINDOW GATE: launch clock,
+# pooled horizons h = 18..24, EWATT, wild. The PAP-candidate primary spec.
+#
+# Design settled in the 2026-08-28 session (memo: "Why LP-DiD", revised):
+#   - Treatment clock is the VERIFIED ONLINE LAUNCH (treat_def
+#     online_start_date) — no shifted schedule, no handle-based redating. The
+#     maturity adjustment lives entirely in the horizon window: lpdid_hmin 18
+#     drops the buildup horizons (did::aggte(min_e=) transposition, see the
+#     anchor block in run_estimators.R), lpdid_post 24 caps the pool where
+#     contributor composition collapses (15 non-straddle states at h=18 ->
+#     7 by h=30; open-ended "18+" reweights toward a shrinking mid-cohort
+#     subsample).
+#   - EWATT: average over admissible horizons within state, states weighted
+#     equally — the estimand the memo describes in words. vwatt companion can
+#     be added later; ewatt is the registered primary.
+#   - Wild cluster bootstrap: the only size-valid LP-DiD inference arm in the
+#     shift12 gates (analytic failed 0.145 ewatt).
+#
+# Unshifted run => lpdid_anchor is a no-op (pseudo_g == pseudo_launch):
+# baseline is the pmd(3) months before launch, horizons are true calendar
+# months since launch. On the covid: drop panel, cells whose baseline or
+# outcome touches the gap drop as NA — but NO no-straddling rule exists, so
+# IN/NH contribute cross-gap cells at h~20..24 (baseline pre-COVID, outcome
+# post-gap). Straddle share at 18..24 is small (2 of ~17 contributors); a
+# DROP_STRADDLING arm is a separate config if the PAP registers the rule.
+#
+# GATE ONLY: delta = 0 at 2,000 reps (MC SE ~0.005 at p=0.05 — classifies
+# against the 0.075 line, the ramp75 lesson). MDE companion:
+# power_lpdid_launch_h1824_mde_ewatt.yml (300 reps, shared base_seed =>
+# rep-for-rep paired panels with this gate and every earlier run).
+# FRESH run_name: lpdid_hmin/lpdid_post are hashed when non-default, but the
+# window/estimand combination has never run — do not reuse shift12 dirs.
+# =============================================================================
+
+# run_name suffix _p39: fresh name for the 2026-08-28 per-state-basket panel
+# (39 states, adds NY/CO treated + SC/HI/MS). The pre-basket partial under the
+# unsuffixed name is in output_blinded_power/deprecated/ and must not be resumed.
+run_name: lpdid_launch_h1824_gate_ewatt_p39
+
+exclude_states: [NV, HI, MS]   # HI (4-county) and MS (1-county) baskets pollute placements — sdprobe 2026-08-28
+
+# ---- Top-level defaults -----------------------------------------------------
+
+level:      state
+sample:     [S2]
+covid:      drop
+treat_def:  online_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+
+template:   panel
+
+effect_grid:  [0]
+
+estimators:   [lpdid]
+lpdid_wild:   true
+lpdid_weights: ewatt
+lpdid_hmin:   18               # drop buildup horizons 0..17 from the pool
+lpdid_post:   24
+lpdid_pmd:    12               # 12-month strict pre-launch baseline: probes cut SD ~30% vs pmd 3
+
+# ---- Execution --------------------------------------------------------------
+
+n_reps:     2000
+base_seed:  20260723           # pairs rep-for-rep with shift12 gates + MDE runs
+mde_boot:   200
+
+alpha:      [0.1, 0.05, 0.01]
+
+min_pre:    12
+min_post:   6
+
+anticipation_months: 6
+
+# ---- Scenario families ------------------------------------------------------
+
+scenarios:
+
+  # A. Spliced panel — the primary window (2016+ ex COVID 2020-03..2021-07).
+  - name: gate_h1824_spliced
+    covid: drop
+
+  # B. Clean post-COVID window — probe only; at h=18..24 the treated count is
+  #    thinner still than the 7-cluster shift12 postcovid cell.
+  - name: gate_h1824_postcovid
+    covid: post

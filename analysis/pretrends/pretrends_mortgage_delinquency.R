@@ -263,7 +263,10 @@ panel <- panel %>%
     id = as.integer(as.factor(state_abb)),
     t  = ym_index(month_date),
     g  = ifelse(is.na(treat_start), 0L, ym_index(treat_start)),
-    g  = as.integer(g),
+    # MUST stay double. did::att_gt recodes never-treated g==0 to Inf; in an
+    # INTEGER column Inf truncates to NA and every never-treated state is
+    # silently dropped (found 2026-08-28; see docs/findings-archive/).
+    g  = as.numeric(g),
     event_time = ifelse(g > 0L, t - g, NA_integer_),
     y  = dplyr::case_when(
       OUTCOME == "delinq_pct"     ~ delinq_pct,

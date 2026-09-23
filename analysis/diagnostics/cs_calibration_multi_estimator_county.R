@@ -63,6 +63,12 @@ N_SIMS    <- parse_int(getenv1("N_SIMS",    "50"), 50L)
 N_WORKERS <- parse_int(getenv1("N_WORKERS", "8"),  8L)
 SEED      <- 20260521L
 ALPHA     <- 0.05
+# RUN_CS=FALSE skips the CS-analytic arm (~80% of runtime on the current
+# vintage). Its county verdict is a skip anyway (id-clustered analytic; see
+# call-site note), and the citable CS county result is the bootstrap adaptive
+# gate (output_blinded_power/county_cs_adaptive/). Seeds are drawn before the
+# estimator loop, so the simulated panels are identical either way.
+RUN_CS    <- toupper(getenv1("RUN_CS", "TRUE")) %in% c("1", "TRUE", "T", "YES")
 
 P_COUNTY_RAW <- "data/raw/monthly_county_data_download.csv"
 P_STATE_TR   <- "data/raw/state_month_panel_with_treatment.csv"
@@ -147,12 +153,18 @@ panel <- panel_full %>%
     y = log1p(pmax(filings_count, 0)),
     t = ym_index(month_date),
     g = if_else(!is.na(treat_start), ym_index(treat_start), 0L),
-    g = as.integer(g),
+    # MUST stay double. did::att_gt recodes never-treated g==0 to Inf; in an
+    # INTEGER column Inf truncates to NA and every never-treated county is
+    # silently dropped (same footgun as the pretrends template, fixed there
+    # 2026-08-20; reintroduced in this port, found 2026-08-28).
+    g = as.numeric(g),
     id = as.integer(fips),
     state_abb = as.character(state_abb),
     untreated_obs = (g == 0L) | (t < g),
     post_treat = (g > 0L) & (t >= g),
-    first_treat = if_else(g == 0L, NA_integer_, g),
+    # first_treat (NA = never-treated) is for didimputation ONLY — do not pass
+    # it to sunab(), which drops NA-cohort rows instead of using them as controls.
+    first_treat = if_else(g == 0L, NA_real_, g),
     rel_time = if_else(g == 0L, NA_integer_, as.integer(t - g))
   ) %>%
   filter(is.finite(y), !is.na(id), !is.na(t))
@@ -190,14 +202,21 @@ twfe_real <- feols(y ~ post_treat | id + t, data = dat_real,
 cat(glue("  TWFE:  ATT={round(coef(twfe_real)[1], 4)}, SE={round(se(twfe_real)[1], 4)}"), "\n")
 
 tryCatch({
-  sunab_real <- feols(y ~ sunab(first_treat, t) | id + t, data = dat_real,
+  # sunab must use g (0 = never-treated): fixest drops NA-cohort rows, so
+  # sunab(first_treat, t) silently ran without never-treated controls
+  # (bug found 2026-08-28; see docs/findings-archive/).
+  sunab_real <- feols(y ~ sunab(g, t) | id + t, data = dat_real,
                       cluster = ~state_abb, warn = FALSE, notes = FALSE)
   sunab_agg <- summary(sunab_real, agg = "att")
   cat(glue("  SunAb: ATT={round(coef(sunab_agg)[1], 4)}, SE={round(se(sunab_agg)[1], 4)}"), "\n")
 }, error = function(e) cat("  SunAb: ERROR -", conditionMessage(e), "\n"))
 
-# CS-DiD: cluster at state via clustervars argument; idname is county.
-tryCatch({
+# CS-DiD: NOTE — with bstrap = FALSE the did package IGNORES clustervars
+# (its warning "clustering the standard errors requires using the bootstrap"
+# was suppressed below). Analytic SEs here are county-level (idname), NOT
+# state-clustered; state-clustered CS inference requires the bootstrap arms
+# (see output_blinded_power/county_cs_adaptive/).
+if (RUN_CS) tryCatch({
   cs_real <- did::att_gt(
     yname = "y", tname = "t", idname = "id", gname = "g",
     data = dat_real, est_method = "reg",
@@ -293,7 +312,7 @@ one_sim <- function(seed) {
   out$sunab_ok <- FALSE
   tryCatch({
     suppressMessages(suppressWarnings({
-      fit_sa <- feols(y ~ sunab(first_treat, t) | id + t, data = dat,
+      fit_sa <- feols(y ~ sunab(g, t) | id + t, data = dat,
                       cluster = ~state_abb, warn = FALSE, notes = FALSE)
       agg_sa <- summary(fit_sa, agg = "att")
       out$sunab_att <- as.numeric(coef(agg_sa)[1])
@@ -305,9 +324,9 @@ one_sim <- function(seed) {
     out$sunab_err <<- conditionMessage(e)
   })
 
-  # --- CS Analytic, state-clustered ---
+  # --- CS Analytic (id-clustered; see clustervars note above) ---
   out$cs_ok <- FALSE
-  tryCatch({
+  if (RUN_CS) tryCatch({
     suppressMessages(suppressWarnings({
       cs_fit <- did::att_gt(
         yname = "y", tname = "t", idname = "id", gname = "g",
@@ -392,7 +411,7 @@ if (use_parallel) {
     cl,
     varlist = c("panel", "resid_pool_by_t", "global_pool",
                 "n_switch_s", "draw_errors", "compute_t_p", "one_sim",
-                "HAS_DIDIMP", "HAS_DID2S"),
+                "HAS_DIDIMP", "HAS_DID2S", "RUN_CS"),
     envir = environment()
   )
 }

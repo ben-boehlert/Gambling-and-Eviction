@@ -1,0 +1,259 @@
+# 2026-09-18 EXPLORATORY: estimator comparison (did2s/BJS/SunAb vs LP-DiD/TWFE) on the boundary-11 panel
+# with a March 2022 sample start. Copy of power_lpdid_clean_mde_ewatt_pmd6_v20260918_k7.yml; post-COVID
+# placement only, so it inherits that arm's non-representability caveat (FINDINGS section 2).
+# power_lpdid_clean_mde_ewatt_pmd6_v20260918_k7.yml  (2026-09-18)
+#
+# k7 MDE grid on the 2026-09-17-evening vintage (LSC-site extension, boundary
+# 11: 4,429-row / 42-state panel, blinded panel 40 states). Two scenarios:
+#   k7_precovid  -- covid: pre. The template placed ONLY in the pre-COVID era.
+#                   Replaces the 09-17 mixture arm (k7_spliced), whose post-COVID
+#                   placements were non-representable: at real-era anchors the
+#                   16 never-treated states had to be both pseudo-switchers (9)
+#                   and controls (7), and the two latest anchors carried a
+#                   -0.20/-0.27 null offset from the 4-state 2025-10+ pool.
+#                   Within the spliced arm the pre-COVID placements were
+#                   calibrated (SE/SD 0.96, mean att 0.000); this arm isolates
+#                   them. Its SD is the pre-COVID era's, not the real design's.
+#   k7_postcovid -- kept for the record; non-representable for the reason above.
+# The real design's precision is read off the real data blind
+# (analysis/main/lpdid_statepanel.R, SE only) -- the sim supplies the size and
+# SE/SD calibration evidence, not the headline MDE. See SESSION_REPORT cont. 14.
+#
+# power_lpdid_clean_mde_ewatt_pmd6_v20260917_k7.yml  (2026-09-17)
+#
+# MDE twin of the k7 size gate, on the 2026-09-17 vintage (42 states / 4,288
+# rows; blinded panel 40 states after the Maine repair restored ME).
+# Identical to the gate in every knob except effect_grid and n_reps.
+#
+# READ BEFORE CITING. Placement under `anchor_rule: random_feasible` is a
+# MIXTURE: roughly 40% of reps land pre-COVID (where the control pool runs up
+# to 21 deep) and 60% at the real 2022-2024 dates (pool of 8). SD(att) therefore
+# blends between-placement variance with sampling variance at any one design,
+# which is the likely source of the 40-rep smoke's LP-DiD analytic se_sd_ratio
+# of 0.591. The WILD arm was nominal (0.05) on that smoke, so the wild MDE is
+# the one to read; the analytic MDE will be optimistic while se_sd_ratio < 1.
+# If the anchor is later restricted to pre-COVID only, this run must be redone
+# under a fresh run_name -- the two are different designs, not two draws.
+#
+# power_lpdid_clean_gate_ewatt_pmd6_v20260914_k7.yml  (2026-09-16)
+#
+# STATE size gate under the SWITCHER INCLUSION RULE (Ben's decision 2026-09-16):
+#   a switcher must have the full 6-month pre-launch baseline observed and at
+#   least K = 7 usable outcome months in [launch+12, launch+24], where the 3
+#   months on either side of the dropped COVID window (2019-12..2020-02,
+#   2021-08..2021-10) are excluded as outcome months for everyone.
+# The rule replaces the min_pre/min_post span box in placement
+# (eligibility: presence -- placed == contributing by construction; cohorts
+# nobody can fill are dropped and reported) and is applied identically in the
+# estimator (lpdid_min_horizons / lpdid_excluded_months). min_pre/min_post
+# below only bound the anchor window now. Twin of the (18,0) run
+# lpdid_clean_gate_ewatt_pmd6_v20260914; see FINDINGS §5 for why neither
+# box rule expressed the design.
+#
+# =============================================================================
+# power_lpdid_clean_gate_ewatt_pmd6_v20260914.yml  (2026-09-14)
+#
+# FRESH run_name for the 2026-09-14 PANEL VINTAGE BOUNDARY. The 6 Eviction Lab
+# single-series states were rebuilt from the internal county extract
+# (RI +77 months, MO/NM +41, MA +31), moving the real switcher set 13 -> 15.
+# Scenario ids hash SETTINGS, not data, so re-using the pre-rebuild run_name
+# would silently resume partials computed on the OLD panel and mix two
+# vintages in one output dir. Identical to
+# power_lpdid_shift12_clean_gate_ewatt_pmd6.yml in every knob; only run_name differs.
+# =============================================================================
+# =============================================================================
+# power_lpdid_shift12_gate_ewatt.yml -- shift12, NV-free, CORRECTED CELL WEIGHTS.
+#
+# Identical to power_lpdid_shift12_gate_noNV.yml except for the LP-DiD cell
+# weighting. Until 2026-08-24 .re_lpdid weighted cells by 1/Var_cell(D), which
+# by Frisch-Waugh-Lovell weights each cell by its TOTAL size (switchers +
+# surviving clean controls) -- neither the paper's variance-weighted ATT nor
+# its equally-weighted one, despite the code calling it EWATT. `ewatt` is now
+# the default and applies 1/(1 - Dbar_cell), giving cell weight N_treated,c
+# (Dube, Girardi, Jorda & Taylor 2023 sec. 2.5.2).
+#
+# FRESH run_name is mandatory, not cosmetic. Scenario ids hash SETTINGS, and
+# `lpdid_weights` is hashed on its new default precisely so a post-fix run can
+# never resume a pre-fix partial -- but reusing the old run_name would still
+# mix two estimands inside one output directory. Pair this against
+# power_lpdid_shift12_gate_noNV.yml (same seeds, rep for rep) to read off how
+# much the correction moved the size.
+# =============================================================================
+# =============================================================================
+# power_lpdid_shift12_gate_noNV.yml — shift12 treatment definition, NV-free.
+#
+# shift12 = online launch + 12 months, uniformly. Paired against the ramp75
+# arms to answer ONE question: does ramp75's size-gate advantage over raw
+# online dating come from the LAG, or from the handle-specific timing?
+#
+# WHY IT MATTERS. ramp75 dates each state by when handle reaches 75% of its own
+# MAX OBSERVED month, so the date is a function of data vintage: the ramp75 lag
+# past launch correlates 0.957 with months of post-launch handle observed
+# (slope 0.257, t = 17.4). Since observation length is determined by launch
+# date, ramp75 systematically redates early cohorts later and late cohorts
+# earlier -- contaminating event time along the cohort dimension the design
+# identifies from. It is also a blindness violation (handle is post-treatment
+# and outcome-adjacent). shift12 uses no outcome data at all.
+#
+# ramp75's median lag is 18 months against shift12's 12, and ramp75 is EARLIER
+# than shift12 for only 8 of 30 states -- so these are different timings, not a
+# relabelling.
+#
+# Schedule: data/processed/shift12_schedule.csv (data_prep/build_shift12_schedule.R).
+# NV excluded from the outset so this is directly comparable to
+# lpdid_ramp75_{gate,mde}_noNV. D1 feasibility pre-checked: 30/30 NV-free.
+#
+# 2,000 reps, NOT 300. A single 300-rep run cannot classify a cell near the
+# 0.075 line: MC SE is 0.0147 at p=0.07, and the identical ramp75 config
+# returned 0.083 (gate) and 0.063 (MDE) as independent draws. At 2,000 reps
+# the MC SE falls to ~0.006.
+# =============================================================================
+# =============================================================================
+# power_lpdid_mde.yml — MDE curves for the post-COVID vs spliced windows.
+#
+# The two size gates (power_lpdid_gate.yml, power_lpdid_gate_postcovid.yml)
+# established SIZE with a 2-point grid (delta = 0, 0.05). They cannot locate an
+# MDE. This config runs both windows on one wide effect grid so the MDEs are
+# directly comparable, with identical seeds (base_seed 20260723) => rep-for-rep
+# paired panels across both windows and with every earlier run.
+#
+# GRID RANGE. The post-COVID design is small (7 treated / 10 control) and its
+# LP-DiD sampling SD is ~0.115 log points, so 80% power needs roughly
+# 2.8 x SE ~ 0.28 log points. A grid stopping at 0.20 (as in power_primary)
+# would return "never_crosses_target" for every estimator in that window, so it
+# is extended to 0.60. The spliced window will cross far earlier; the shared
+# grid is what makes the two windows comparable.
+#
+# Deltas are proportional changes in filings (impose_effects.R), so 0.30 = a
+# 30% increase — report these in real-world filings terms in the PAP per AV
+# guidance, not as raw log points.
+#
+# Scenario count: 2 (A = spliced/covid drop, B = post-COVID). Run locally.
+# =============================================================================
+
+run_name: estcompare_jack_start202203_v20260918_k7
+
+# ID REMOVED 2026-09-17, after verifying the data rather than inheriting the
+# exclusion. Idaho was excluded when it was the Twin Falls LSC basket -- ONE of
+# 44 counties -- and the 2026-09-14 swap replaced it with the statewide Idaho
+# Judicial Branch A12 series (44 counties, basket_share 1.00, 2021-01..2026-06).
+# Checked for a Maine-style artifact and found none:
+#   * the A12 statewide total tracks LSC's own Idaho total at correlation 0.918,
+#     mean |diff| 7.55 filings on a ~250/month base (ordinary revision noise);
+#   * 41-43 of 44 counties report in EVERY year -- no county enters or leaves
+#     mid-series, so no composition-driven level shift;
+#   * 58% of the growth is Ada County (Boise) and it is a RAMP, not a step:
+#     monthly range 40-78 (2021) -> 58-97 -> 70-149 -> 103-167 (2024) -> easing.
+#     A court joining the reporting system gives a vertical jump; this does not.
+# Idaho's trend is 6th of 13 never-treated controls (9.6%/yr vs 7.2% median), so
+# it is not an extreme state. Including it raises the pooled placebo SE ~14%
+# because its steep phase coincides with the design window -- but excluding a
+# control on its realized outcome movement is selecting controls on the outcome,
+# which is exactly what the inclusion rule exists to avoid. Idaho never
+# legalized and has data to 2026-06, so it is one of the scarce late-period
+# controls: the pool goes 8 -> 9 at 2024-06 and 7 -> 8 at 2025-06.
+# NB CLAUDE.md's note that Idaho is "the single most extreme state in 100% of
+# pre-era variance placements" refers to the RETIRED Twin Falls single-county
+# series and does not transfer to the statewide one.
+# NV stays (always-treated since 1949). HI stays (LSC's own series ends 2022-09,
+# nothing to add in the late period). MS stays (ONE county, treated from 2018-08).
+exclude_states: [NV, HI, MS]
+
+# ramp75 dating with HYBRID CONTROL CODING: schedule carries online + ramp75
+# dates; run_scenario_grid derives pseudo_launch from the per-cohort lag and
+# .re_lpdid gates controls on launch. Size gate only (delta = 0).
+schedule:   data/processed/shift12_schedule.csv
+
+# ---- Top-level defaults -----------------------------------------------------
+
+level:      state
+sample:     [S2]
+covid:      drop
+treat_def:  shift12_start_date
+
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+
+est_anticipation: 0
+
+template:   panel
+
+# Dense where the spliced window's MDE is expected, extended far enough that
+# the small post-COVID design can actually cross 80% power.
+# GRID EXTENDED to 0.60 on 2026-09-17. At the 0.30 ceiling EVERY wild cell
+# returned never_crosses_target -- the wild bootstrap is conservative enough
+# that a 30% increase in filings does not reach 80% power at alpha 0.05, so the
+# wild MDE simply sits above the old grid. Same failure the legacy
+# power_lpdid_mde.yml header records for the small post-COVID design.
+#
+# NOTE (corrected 2026-09-17): the effect_grid IS part of the scenario id hash.
+# Extending the grid changed the id (Sd0dfdbaec9 -> S5f9048df16), so resume
+# recomputed all 14 deltas rather than reusing the first nine. Budget a full
+# re-run whenever the grid changes; the old 9-delta partials remain in the same
+# output dir under the previous scenario id and are NOT superseded silently --
+# read oc_summary by scenario_id, not by scenario name.
+effect_grid:  [0, 0.05, 0.10, 0.15, 0.20, 0.30]
+
+estimators:   [twfe, lpdid, did2s, bjs, sunab]
+lpdid_wild:   true
+imp_jack:     true           # CV3 delete-one-state jackknife arm for did2s / bjs / sunab (2026-09-18)
+lpdid_anchor: event_clean   # PRE-LAUNCH baseline (the memo estimand), outcomes launch+12..24
+lpdid_pmd:    6
+# ---- INCLUSION RULE (2026-09-16; R/power/inclusion_rule.R) ----------------
+eligibility:          presence   # placement uses the rule itself, not the min_pre/min_post box
+min_horizons:         7          # K: a switcher needs >= 7 usable outcome months in [launch+12, launch+24]
+splice_buffer_months: 3          # 2019-12..2020-02 and 2021-08..2021-10 excluded as outcome months
+# Real switcher set under the rule (coverage-only audit
+# analysis/diagnostics/inclusion_rule_real_switchers.R, 2026-09-17: 9 of 26
+# launched states. ME is IN: its Judicial Branch parse had June-December
+# labels one year too late; corrected and spliced onto live LSC 2026-09-17, it
+# is a switcher at exactly K=7. The blinded loader's ME exclusion was removed
+# the same day, so all 9 template cohorts exist in the framework panel and the
+# simulated design now matches the real one exactly). The D1 template keeps
+# only these cohorts. Dropped by the rule: AZ CT LA MI NY TN VA CO (baseline in
+# the COVID gap), FL WV NH IN MO OR PA RI (< 7 usable outcome months), and
+# AR (2026-09-17: baseline [2021-09, 2022-02] contains the splice-excluded
+# months 2021-09/10 -- the baseline is now held to the same standard as the
+# outcome; see R/power/inclusion_rule.R).
+template_states: [KS, MA, MD, ME, NC, OH, KY, DE, VT]
+lpdid_weights: ewatt            # 1/(1 - Dbar_cell) -- see header
+
+# ---- Execution --------------------------------------------------------------
+
+n_reps:     300   # sequential gate: escalate to 2000 via resume=TRUE ONLY if size lands in [0.055, 0.09] (MC CI +-0.014 at 1000)
+base_seed:  20260723           # pairs with both size gates and smoke/cheap/primary
+mde_boot:   200                # bootstrap CI on the interpolated MDE
+
+alpha:      [0.1, 0.05, 0.01]
+
+min_pre:    18   # ANCHOR: min_pre/min_post are measured from the pseudo-cohort date d,
+                 # which is in treat_def units = shift12_start_date = LAUNCH + 12 MONTHS.
+                 # So min_pre=18 reaches d-18 = LAUNCH - 6 = exactly where the strict
+                 # PMD=6 baseline [launch-6, launch-1] begins. This is the whole point of
+                 # 18 over the legacy 12, which reached only the launch month and so
+                 # guaranteed NONE of the baseline.
+min_post:    0   # -> d+0 = month +12 = the FIRST outcome month [launch+12, launch+24].
+                 # 0 is correct, not lax: a state contributes at whatever horizons it has,
+                 # so >=1 is the estimator's true minimum. The legacy 6 (month +18,
+                 # 7 of 13 horizons) was a generic guard set 2026-08-03 for the CS/TWFE
+                 # arms, never revisited when the LP-DiD clean anchor arrived.
+                 #
+                 # FEASIBILITY: D1 places iff min_pre + min_post <= 18 on this panel.
+                 # (18,0) and the legacy (12,6) are both 18 wide and both place 25/25;
+                 # (18,3) and (21,0) fail 0/25. (18,0) positions the box at
+                 # [launch-6, launch+12] -- the estimator's exact minimum -- and buys
+                 # +25 live state-slots (485 -> 510, +5%) at identical feasibility.
+                 # Re-test with analysis/diagnostics/eligibility_window_feasibility.R
+                 # before changing.
+
+anticipation_months: 6
+
+# ---- Scenario families ------------------------------------------------------
+
+covid_drop: ['2020-03-01', '2021-11-30']   # + 3-month buffer -> first usable month 2022-03
+scenarios:
+  - name: k7_start202203
+    covid: post

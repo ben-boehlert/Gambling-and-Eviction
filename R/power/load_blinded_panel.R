@@ -86,7 +86,19 @@ if (!exists("load_eviction_treatment_schedule", mode = "function")) {
 .read_state_panel <- function(path) {
   raw <- guarded_read_csv(path)
   raw %>%
-    filter(.data$state_abb != "ME") %>%
+    # MAINE -- exclusion REMOVED 2026-09-17. It was added with the framework
+    # (12725a5) with no comment, and it was right at the time: Maine's series
+    # came from a Judicial Branch parse whose JUNE-DECEMBER labels were one
+    # year too late (a judicial-year boundary written as a calendar year), so
+    # Maine showed no COVID moratorium at all and then a moratorium-shaped
+    # collapse a year late. Maine was the only affected state.
+    # Repaired 2026-09-17: live LSC through 2023-05 (89 months, matching LSC
+    # exactly) spliced to the fiscal-year-corrected court series from 2023-06
+    # (data_prep/add_me_to_state_panel.R; the relabel validates against LSC at
+    # mean |diff| 0.92 filings over 89 overlapping months). ME is now a clean
+    # 113-month series with no interior gaps AND a switcher under the inclusion
+    # rule, so excluding it would leave the simulation unable to represent a
+    # cohort the real design estimates. Blinded panel 39 -> 40 states.
     transmute(
       unit_id       = as.character(.data$state_abb),
       state_abb     = as.character(.data$state_abb),
@@ -96,9 +108,36 @@ if (!exists("load_eviction_treatment_schedule", mode = "function")) {
     )
 }
 
+#' Read + normalize the state-month MORTGAGE DELINQUENCY panel
+#'
+#' The outcome is a RATE in percentage points, not a count, so this reader
+#' fills \code{filings_count} / \code{renters} with NA and carries the rate in
+#' \code{delinq_pp}. Two consequences the caller must respect:
+#'   * the count mechanisms (count_nb, count_pois, thinning) are unavailable —
+#'     use \code{mechanism = "deterministic"}, which adds delta on the outcome
+#'     scale, so delta is in PERCENTAGE POINTS, not a proportional change;
+#'   * outcome must be \code{y_pp}. The log transforms are deliberately NOT
+#'     built: the source series is published to 0.1pp and 87% of design-window
+#'     state-months sit at or below 1.0pp, so one rounding tick is a 17%+
+#'     relative move on the log scale (probe: 2026-09-04).
+#' @keywords internal
+.read_state_mortgage_panel <- function(path) {
+  raw <- guarded_read_csv(path)
+  raw %>%
+    transmute(
+      unit_id       = as.character(.data$state_abb),
+      state_abb     = as.character(.data$state_abb),
+      month_date    = floor_date(as.Date(.data$month_date), "month"),
+      delinq_pp     = as.numeric(.data$delinquency_rate),
+      filings_count = NA_real_,
+      renters       = NA_real_
+    ) %>%
+    filter(!is.na(.data$delinq_pp))
+}
+
 #' Load a blinded untreated calibration panel
 #'
-#' @param level "county" or "state".
+#' @param level "county", "state", or "state_mortgage" (rate outcome).
 #' @param treat_def Treatment-definition column for the schedule join. Cutoffs
 #'   always use first_start_date regardless (protocol §4).
 #' @param anticipation Anticipation exclusion window in months (default 6).
@@ -115,7 +154,7 @@ if (!exists("load_eviction_treatment_schedule", mode = "function")) {
 #'   level, quarterly, never_treated. \code{assert_blinded()} passes before
 #'   return.
 #' @export
-load_blinded_panel <- function(level = c("county", "state"),
+load_blinded_panel <- function(level = c("county", "state", "state_mortgage"),
                                treat_def = c("online_start_date",
                                              "first_start_date",
                                              "retail_start_date",
@@ -167,12 +206,18 @@ load_blinded_panel <- function(level = c("county", "state"),
 
   sched <- .load_gambling_schedule(config$schedule, treat_def)
 
+  is_rate <- identical(level, "state_mortgage")
   base <- if (level == "county") {
     .read_county_panel(config$county_panel)
+  } else if (is_rate) {
+    .read_state_mortgage_panel(config$mortgage_panel %||%
+                                 "data/processed/mortgage_treatment_panel.csv")
   } else {
     .read_state_panel(config$state_panel)
   }
-  base <- base %>% filter(!is.na(.data$filings_count))
+  # A rate panel has no counts to be missing; its own NA filter ran in the
+  # reader. Applying the count filter here would empty it.
+  if (!is_rate) base <- base %>% filter(!is.na(.data$filings_count))
 
   # Panel-start floor (config.R: default 2016-01-01). A handful of states in
   # the raw state-month panel carry legacy pre-2016 data; without this floor
@@ -231,7 +276,13 @@ load_blinded_panel <- function(level = c("county", "state"),
       mutate(period = floor_date(.data$month_date, time_agg)) %>%
       group_by(.data$unit_id, .data$state_abb, .data$period) %>%
       summarise(
-        filings_count = sum(.data$filings_count, na.rm = TRUE),
+        # A COUNT aggregates by summing; a RATE aggregates by averaging.
+        # Summing delinq_pp across months would fabricate a level shift
+        # proportional to period length.
+        filings_count = if (is_rate) NA_real_
+                        else sum(.data$filings_count, na.rm = TRUE),
+        delinq_pp     = if (is_rate) mean(.data$delinq_pp, na.rm = TRUE)
+                        else NA_real_,
         renters       = mean(.data$renters, na.rm = TRUE),
         n_months      = dplyr::n_distinct(.data$month_date),
         .groups = "drop"
@@ -253,17 +304,28 @@ load_blinded_panel <- function(level = c("county", "state"),
   )
   panel$t <- as.integer(tkey - min(tkey) + 1L)
 
-  panel <- panel %>%
-    mutate(
-      y_log1p   = log1p(.data$filings_count),
-      y_lograte = log(.data$filings_count / .data$renters * 1000 + 0.01),
-      y_asinh   = asinh(.data$filings_count),
-      g         = 0
-    ) %>%
-    select("unit_id", "state_abb", "month_date", "t",
-           "filings_count", "renters",
-           "y_log1p", "y_lograte", "y_asinh", "g") %>%
-    arrange(.data$state_abb, .data$unit_id, .data$month_date)
+  panel <- if (is_rate) {
+    # LEVELS ONLY. y_pp is the rate in percentage points; no log transform is
+    # offered (see .read_state_mortgage_panel). Pair with
+    # mechanism = "deterministic", so delta is read in percentage points.
+    panel %>%
+      mutate(y_pp = .data$delinq_pp, g = 0) %>%
+      select("unit_id", "state_abb", "month_date", "t",
+             "filings_count", "renters", "y_pp", "g") %>%
+      arrange(.data$state_abb, .data$unit_id, .data$month_date)
+  } else {
+    panel %>%
+      mutate(
+        y_log1p   = log1p(.data$filings_count),
+        y_lograte = log(.data$filings_count / .data$renters * 1000 + 0.01),
+        y_asinh   = asinh(.data$filings_count),
+        g         = 0
+      ) %>%
+      select("unit_id", "state_abb", "month_date", "t",
+             "filings_count", "renters",
+             "y_log1p", "y_lograte", "y_asinh", "g") %>%
+      arrange(.data$state_abb, .data$unit_id, .data$month_date)
+  }
 
   attr(panel, "sample_id")        <- sample
   attr(panel, "treat_def")        <- treat_def
@@ -285,6 +347,10 @@ load_blinded_panel <- function(level = c("county", "state"),
   attr(panel, "never_treated")    <-
     sort(setdiff(unique(base$state_abb[is.na(base$g_first)]),
                  PRE_PASPA_SPORTS_BETTING))
+
+  # Appended last so the eviction panels' existing attribute ORDER is
+  # untouched (positional all.equal comparisons stay clean).
+  attr(panel, "outcome_kind")     <- if (is_rate) "rate_pp" else "count"
 
   assert_blinded(panel, sched, anticipation, universal_cutoff)
 

@@ -472,3 +472,241 @@ test_that("lpdid wild: fwl engine reproduces the legacy dummy-expansion engine",
                  tolerance = 1e-6)
   }
 })
+
+# ---- unit weights (lpdid_unit_weights = "renters", 2026-09-16) --------------
+
+.lpdid_uw_fixture <- function() {
+  # Within-cell dy varies by unit so unit weights move the cell DiD; weights
+  # are deliberately skewed (one heavy unit per group) so the a-weighted and
+  # unweighted cell DiDs differ materially.
+  set.seed(11)
+  mk <- function(cell, n_tr, n_ct, b) {
+    n <- n_tr + n_ct
+    data.frame(cell = cell, D = c(rep(1L, n_tr), rep(0L, n_ct)),
+               dy = b * c(rep(1L, n_tr), rep(0L, n_ct)) + stats::rnorm(n, 0, 0.5),
+               a  = c(5, rep(1, n_tr - 1L), 5, rep(1, n_ct - 1L)),
+               stringsAsFactors = FALSE)
+  }
+  d <- rbind(mk("c1", 2L, 10L, 1), mk("c2", 6L, 6L, 2),
+             mk("c3", 3L, 8L, 3), mk("c4", 4L, 4L, 4))
+  d$cell <- factor(d$cell)
+  d
+}
+
+test_that(".re_lpdid_weights with unit weights hits the a-weighted closed forms", {
+  d <- .lpdid_uw_fixture()
+  # a-weighted cell DiD and a-weighted treated share, by hand
+  agg <- do.call(rbind, lapply(split(d, d$cell), function(x) {
+    tr <- x$D == 1L
+    data.frame(cell = x$cell[1],
+               b_a  = weighted.mean(x$dy[tr], x$a[tr]) - weighted.mean(x$dy[!tr], x$a[!tr]),
+               b_1  = mean(x$dy[tr]) - mean(x$dy[!tr]),
+               A    = sum(x$a), Atr = sum(x$a[tr]), p_a = sum(x$a[tr]) / sum(x$a))
+  }))
+  target_ewatt_a <- weighted.mean(agg$b_a, agg$Atr)
+  target_vwatt_a <- weighted.mean(agg$b_a, agg$A * agg$p_a * (1 - agg$p_a))
+  target_ewatt_1 <- weighted.mean(agg$b_1, sapply(split(d$D, d$cell), sum))
+  expect_gt(abs(target_ewatt_a - target_ewatt_1), 0.05)   # the fixture discriminates
+
+  fit <- function(scheme, w) {
+    d$rw <- .re_lpdid_weights(d$D, d$cell, scheme, w = w)
+    as.numeric(stats::coef(fixest::feols(dy ~ D | cell, data = d, weights = ~rw,
+                                         warn = FALSE, notes = FALSE))["D"])
+  }
+  expect_equal(fit("ewatt", d$a), target_ewatt_a, tolerance = 1e-10)
+  expect_equal(fit("vwatt", d$a), target_vwatt_a, tolerance = 1e-10)
+  # w = NULL and w = 1 are the same estimator, bit for bit
+  expect_equal(.re_lpdid_weights(d$D, d$cell, "ewatt", w = rep(1, nrow(d))),
+               .re_lpdid_weights(d$D, d$cell, "ewatt"), tolerance = 1e-14)
+  expect_equal(fit("ewatt", NULL), target_ewatt_1, tolerance = 1e-10)
+})
+
+test_that("lpdid_unit_weights = renters with constant renters reproduces the unweighted arm", {
+  # The toy panel has renters = 1000 for every unit, so renter weighting is a
+  # constant rescaling: identical point estimate and analytic SE, and -- on 8
+  # enumerated clusters -- the identical wild p-value from the weighted FWL
+  # path as from the fe= absorption path.
+  toy <- build_toy_est(seed = 555L, n_states = 8L)
+  inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",
+                       shape = "step", delta = 0, outcome = "y_log1p", seed = 3L)
+  base <- run_estimator(inj, "lpdid", spec = list(lpdid_wild = TRUE))
+  rw   <- run_estimator(inj, "lpdid", spec = list(lpdid_wild = TRUE,
+                                                  lpdid_unit_weights = "renters"))
+  ba <- base[base$inference == "analytic", ]; ra <- rw[rw$inference == "analytic", ]
+  bw <- base[base$inference == "wild", ];     rww <- rw[rw$inference == "wild", ]
+  expect_true(ra$converged); expect_true(rww$converged)
+  expect_equal(ra$att, ba$att, tolerance = 1e-10)
+  expect_equal(ra$se,  ba$se,  tolerance = 1e-8)
+  expect_equal(rww$p,  bw$p,   tolerance = 1e-8)
+  # CI: both invert a 256-step, non-monotone p(b0); the engines may settle on
+  # different jumps, so compare to ~1% of the interval width, not to 1e-6.
+  expect_equal(c(rww$ci_lo, rww$ci_hi), c(bw$ci_lo, bw$ci_hi), tolerance = 0.02)
+})
+
+test_that("lpdid_unit_weights = renters is live under heterogeneous renters and wild converges", {
+  toy <- build_toy_est(seed = 909L, n_states = 8L, units_per_state = 4L)
+  # heavy-tailed renter counts, constant within unit (as in the county file)
+  set.seed(5)
+  ru <- setNames(round(exp(stats::rnorm(length(unique(toy$panel$unit_id)), 8, 1))),
+                 unique(toy$panel$unit_id))
+  toy$panel$renters <- as.numeric(ru[toy$panel$unit_id])
+  inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",
+                       shape = "step", delta = TRUTH, outcome = "y_log1p", seed = 3L)
+  base <- run_estimator(inj, "lpdid", spec = list(lpdid_wild = TRUE))
+  rw   <- run_estimator(inj, "lpdid", spec = list(lpdid_wild = TRUE,
+                                                  lpdid_unit_weights = "renters"))
+  ra <- rw[rw$inference == "analytic", ]; rww <- rw[rw$inference == "wild", ]
+  expect_true(ra$converged); expect_true(rww$converged)
+  # weights are live: a different estimate from the unweighted arm ...
+  expect_false(isTRUE(all.equal(ra$att, base$att[base$inference == "analytic"][1],
+                                tolerance = 1e-6)))
+  # ... still unbiased for a homogeneous effect (low-noise toy) ...
+  expect_equal(ra$att, TRUTH, tolerance = 0.05)
+  # ... and the wild row carries the analytic point estimate (FWL equality)
+  expect_equal(rww$att, ra$att, tolerance = 1e-10)
+  expect_true(is.finite(rww$p) && rww$p >= 0 && rww$p <= 1)
+})
+
+test_that("lpdid_unit_weights = renters fails loudly without a renters column", {
+  toy <- build_toy_est(seed = 555L, n_states = 8L)
+  inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",
+                       shape = "step", delta = 0, outcome = "y_log1p", seed = 3L)
+  inj$renters <- NULL
+  r <- run_estimator(inj, "lpdid", spec = list(lpdid_unit_weights = "renters"))
+  expect_false(any(r$converged))
+  expect_match(r$error_msg[1], "renters")
+})
+
+# ---- exact weighted WCR engine ----------------------------------------------
+
+.lpdid_wcr_fixture <- function(hetero, seed = 21L) {
+  # 6 cells x 16 obs, 8 clusters scattered ACROSS cells (so cells do not nest
+  # in clusters and the FE re-estimation term is live), 8 clusters => 256
+  # enumerated draws, so every engine sees the identical draw set.
+  set.seed(seed)
+  n_cell <- 6L; per <- 16L
+  d <- data.frame(cell = factor(rep(sprintf("c%d", 1:n_cell), each = per)),
+                  D_treat = rep(c(rep(1L, 5L), rep(0L, 11L)), n_cell),
+                  state_abb = sprintf("S%d", sample(1:8, n_cell * per, TRUE)),
+                  stringsAsFactors = FALSE)
+  cl_fx <- setNames(stats::rnorm(8, 0, 0.3), sprintf("S%d", 1:8))
+  d$dy <- 0.1 * d$D_treat + as.numeric(cl_fx[d$state_abb]) + stats::rnorm(nrow(d), 0, 0.4)
+  d$a  <- if (hetero) exp(stats::rnorm(nrow(d), 0, 0.8)) else rep(1, nrow(d))
+  d$rw <- .re_lpdid_weights(d$D_treat, d$cell, "ewatt", w = d$a)
+  d
+}
+
+test_that("weighted WCR engine reproduces boottest's fe= path under constant weights", {
+  d <- .lpdid_wcr_fixture(hetero = FALSE)
+  fit <- fixest::feols(dy ~ D_treat | cell, data = d, weights = ~rw,
+                       cluster = ~state_abb, warn = FALSE, notes = FALSE)
+  att <- as.numeric(stats::coef(fit)["D_treat"])
+  eng <- .re_lpdid_wcr_weighted(d, att = att, alpha = 0.05, B = 999L)
+  expect_true(eng$enumerated); expect_equal(eng$B, 256L)
+  # reference: the cell-scaled fe= path (rw is cell-constant here)
+  sqw <- sqrt(d$rw)
+  sdat <- data.frame(ty = sqw * d$dy, tD = sqw * d$D_treat,
+                     cell_int = as.integer(d$cell), state_abb = d$state_abb)
+  ref <- fwildclusterboot::boottest(
+    fixest::feols(ty ~ tD | cell_int, data = sdat, cluster = ~state_abb,
+                  warn = FALSE, notes = FALSE),
+    param = "tD", clustid = ~state_abb, B = 999L, type = "rademacher",
+    fe = "cell_int")
+  expect_equal(eng$p, as.numeric(fwildclusterboot::pval(ref)), tolerance = 1e-8)
+  expect_equal(c(eng$ci_lo, eng$ci_hi), as.numeric(stats::confint(ref)),
+               tolerance = 0.02)   # step-function inversion, see above
+})
+
+test_that("weighted WCR engine reproduces the dummy-expanded WLS path under varying weights", {
+  d <- .lpdid_wcr_fixture(hetero = TRUE)
+  fit <- fixest::feols(dy ~ D_treat | cell, data = d, weights = ~rw,
+                       cluster = ~state_abb, warn = FALSE, notes = FALSE)
+  att <- as.numeric(stats::coef(fit)["D_treat"])
+  eng <- .re_lpdid_wcr_weighted(d, att = att, alpha = 0.05, B = 999L)
+  # reference: WLS-FE == OLS on sqrt(w)-scaled y, D AND cell dummies
+  # (fully re-estimated in every draw by boottest's dummy path)
+  sqw <- sqrt(d$rw)
+  sdat <- data.frame(ty = sqw * d$dy, tD = sqw * d$D_treat, sw = sqw,
+                     cell = d$cell, state_abb = d$state_abb)
+  fit_ref <- fixest::feols(ty ~ 0 + tD + i(cell, sw), data = sdat,
+                           cluster = ~state_abb, warn = FALSE, notes = FALSE)
+  expect_equal(as.numeric(stats::coef(fit_ref)["tD"]), att, tolerance = 1e-8)
+  ref <- fwildclusterboot::boottest(fit_ref, param = "tD", clustid = ~state_abb,
+                                    B = 999L, type = "rademacher")
+  expect_equal(eng$p, as.numeric(fwildclusterboot::pval(ref)), tolerance = 1e-8)
+  expect_equal(c(eng$ci_lo, eng$ci_hi), as.numeric(stats::confint(ref)),
+               tolerance = 0.02)   # step-function inversion, see above
+  # (The hold-FE-fixed shortcut of ddd_wild.R is a different bootstrap here --
+  # it dropped 2 of 256 draws' orderings on the toy panel in development --
+  # but a 256-draw p-value is too coarse to assert inequality reliably.)
+})
+
+# ---- inclusion rule in the estimator (lpdid_min_horizons / excluded months) --
+
+test_that("lpdid_min_horizons drops a switcher below the floor, K = NA keeps it", {
+  # Truncate S02's series so it has exactly 5 of 13 outcome months after its
+  # event; S04/S06 keep full windows. Under K = 7 S02 must contribute nothing.
+  toy <- build_toy_est(seed = 777L, n_states = 10L, n_months = 60L,
+                       treat = c(S02 = 18L, S04 = 26L, S06 = 30L), noise_sd = 0.05)
+  pan <- toy$panel
+  # In the toy the event month IS the launch month (no pseudo_launch), and the
+  # pooled horizons are event+0..event+12, so S02's outcome months are 18..30.
+  cut_after <- 18L + 4L                             # keep 18..22 = 5 of 13
+  pan <- pan[!(pan$state_abb == "S02" & pan$t > cut_after), ]
+  inj <- impose_effect(pan, toy$sched, mechanism = "deterministic", shape = "step",
+                       delta = TRUTH, outcome = "y_log1p", seed = 3L)
+  base <- run_estimator(inj, "lpdid", spec = list(lpdid_anchor = "event_clean", lpdid_pmd = 3L))
+  k7   <- run_estimator(inj, "lpdid", spec = list(lpdid_anchor = "event_clean", lpdid_pmd = 3L,
+                                                  lpdid_min_horizons = 7L))
+  k5   <- run_estimator(inj, "lpdid", spec = list(lpdid_anchor = "event_clean", lpdid_pmd = 3L,
+                                                  lpdid_min_horizons = 5L))
+  ba <- base[base$inference == "analytic", ]; k7a <- k7[k7$inference == "analytic", ]
+  k5a <- k5[k5$inference == "analytic", ]
+  expect_true(ba$converged && k7a$converged && k5a$converged)
+  # K = 5 keeps S02 (exactly 5 usable) -> identical to no floor
+  expect_equal(k5a$att, ba$att, tolerance = 1e-12)
+  # K = 7 removes S02's cells -> a different (still unbiased) estimate
+  expect_false(isTRUE(all.equal(k7a$att, ba$att, tolerance = 1e-8)))
+  expect_equal(k7a$att, TRUTH, tolerance = 0.05)
+})
+
+test_that("lpdid_excluded_months removes those outcome months for every unit", {
+  toy <- build_toy_est(seed = 778L, n_states = 10L, n_months = 60L,
+                       treat = c(S02 = 18L, S04 = 26L, S06 = 30L), noise_sd = 0.05)
+  inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic", shape = "step",
+                       delta = TRUTH, outcome = "y_log1p", seed = 3L)
+  md <- sort(unique(toy$panel$month_date))
+  # exclude the calendar months that are outcome months 12..14 for S02's cohort
+  ex <- md[(18L + 12L):(18L + 14L)]
+  base <- run_estimator(inj, "lpdid", spec = list(lpdid_anchor = "event_clean", lpdid_pmd = 3L))
+  exr  <- run_estimator(inj, "lpdid", spec = list(lpdid_anchor = "event_clean", lpdid_pmd = 3L,
+                                                  lpdid_excluded_months = as.character(ex)))
+  ba <- base[base$inference == "analytic", ]; ea <- exr[exr$inference == "analytic", ]
+  expect_true(ea$converged)
+  expect_false(isTRUE(all.equal(ea$att, ba$att, tolerance = 1e-8)))
+  expect_equal(ea$att, TRUTH, tolerance = 0.05)
+  # excluding months outside every window changes nothing
+  far <- run_estimator(inj, "lpdid", spec = list(lpdid_anchor = "event_clean", lpdid_pmd = 3L,
+                                                 lpdid_excluded_months = as.character(md[1:3])))
+  expect_equal(far$att[far$inference == "analytic"], ba$att, tolerance = 1e-12)
+})
+
+test_that("imp_jack adds a CV3 jackknife arm to did2s / bjs / sunab, off by default", {
+  skip_if_not_installed("did2s"); skip_if_not_installed("didimputation")
+  toy <- build_toy_est(seed = 104L)
+  inj <- impose_effect(toy$panel, toy$sched, mechanism = "deterministic",
+                       shape = "step", delta = TRUTH, outcome = "y_log1p",
+                       seed = 1L)
+  for (est in c("did2s", "bjs", "sunab")) {
+    off <- run_estimator(inj, est)
+    expect_false("jack" %in% off$inference)
+    on <- run_estimator(inj, est, spec = list(imp_jack = TRUE))
+    expect_identical(names(on), .RE_SCHEMA)
+    a <- on[on$inference == "analytic", ]; j <- on[on$inference == "jack", ]
+    expect_identical(nrow(j), 1L)
+    expect_true(j$converged)
+    expect_identical(j$att, a$att)          # same point estimate, new SE only
+    expect_true(is.finite(j$se) && j$se > 0)
+    expect_true(j$ci_lo < j$att && j$att < j$ci_hi)
+  }
+})

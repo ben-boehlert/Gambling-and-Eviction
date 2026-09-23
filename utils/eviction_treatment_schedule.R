@@ -145,6 +145,21 @@ EVICTION_STATE_UNIVERSE <- c(state.abb, "DC")
 # the schedule for a reason that is NOT "never adopted". Never valid as controls.
 PRE_PASPA_SPORTS_BETTING <- c("NV")
 
+# States excluded from every June-2022-onward analysis sample for a documented,
+# outcome-independent reason (decided by Ben, 2026-09-21; FINDINGS.md section 2).
+# They are neither controls, switchers, nor noise donors.
+#   WA -- Eviction Resolution Pilot Program (SB 5160): mandatory pre-filing
+#         dispute resolution for nonpayment cases, 2021-11-01..2023-06-30. The
+#         panel's WA series (Pierce County) averages 167 filings/month under it
+#         and 290 in the year after -- a policy break inside the analysis window.
+#   MN -- eviction filings are incompletely observed in public court records
+#         owing to expungement (Minnesota Management and Budget, Evaluation of
+#         Emergency Assistance in Minnesota, May 2026, PDF p. 39: since 2020,
+#         3.7% of judgments, 26.8% of settled and 50.3% of dismissed cases
+#         expunged). MN re-enters if counts inclusive of expunged cases are
+#         obtained from the Minnesota Judicial Branch before the analysis lock.
+DATA_QUALITY_EXCLUDED_STATES <- c("MN", "WA")
+
 #' Adoption outcomes over the full 51-state universe
 #'
 #' Returns exactly one row per state in EVICTION_STATE_UNIVERSE, so a join can

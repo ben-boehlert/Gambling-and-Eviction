@@ -32,6 +32,8 @@ if (!exists("assert_blinded", mode = "function"))       source("R/power/blindnes
 if (!exists("load_blinded_panel", mode = "function"))   source("R/power/load_blinded_panel.R")
 if (!exists("make_pseudo_schedule", mode = "function")) source("R/power/make_pseudo_schedules.R")
 if (!exists("impose_effect", mode = "function"))        source("R/power/impose_effects.R")
+if (!exists("ddd_assign_H", mode = "function"))         source("R/power/ddd_h_rules.R")
+if (!exists("ddd_fit_wild", mode = "function"))         source("R/power/ddd_wild.R")
 
 DDD_BASE_SEED <- 20260723L   # shared with the rest of the power framework
 
@@ -44,18 +46,30 @@ DDD_BASE_SEED <- 20260723L   # shared with the rest of the power framework
 #' @param covid "drop" (framework default) or "keep" (the DDD's selling point:
 #'   state x month FE absorb state-specific pandemic shocks, so the COVID window
 #'   need not be discarded).
-#' @param h_rule "within_state" (median split inside each state; guarantees a
-#'   high/low contrast in every state) or "national" (national median).
+#' @param h_rule How the high/low indicator is assigned. See
+#'   \code{R/power/ddd_h_rules.R} for the full menu and the balance evidence:
+#'   "poverty_resid" (DEFAULT since 2026-09-14), "poverty_renterwt",
+#'   "poverty_median", "evrate_renterwt", "national". The legacy value
+#'   "within_state" is accepted as an alias for "poverty_median" so the
+#'   2026-08-21 run stays reproducible.
+#'
+#'   DEFAULT CHANGED 2026-09-14. The old default ("within_state") splits
+#'   counties, not renters, on raw poverty; in this panel that selects smaller,
+#'   more rural, LOWER-filing-rate counties (within-state cor(poverty, log
+#'   eviction rate) = -0.202; only 35.2% of renters land in H = 1). Any run
+#'   meant to be compared with the 2026-08-21 output must pass
+#'   h_rule = "within_state" explicitly.
 #' @param config A power config list.
 #' @return County panel with unit_id, state_abb, month_date, filings_count,
 #'   renters, poverty_rate, H, and a precomputed count-DGP baseline mu.
 #' @export
 build_ddd_skeleton <- function(covid = c("drop", "keep"),
-                               h_rule = c("within_state", "national"),
+                               h_rule = "poverty_resid",
                                config,
                                county_csv = "data/raw/monthly_county_data_download.csv") {
   covid  <- match.arg(covid)
-  h_rule <- match.arg(h_rule)
+  if (identical(h_rule, "within_state")) h_rule <- "poverty_median"
+  h_rule <- match.arg(h_rule, DDD_H_RULES)
 
   panel <- load_blinded_panel(level = "county", treat_def = "online_start_date",
                               anticipation = 6, sample = "S2", covid = covid,
@@ -69,27 +83,18 @@ build_ddd_skeleton <- function(covid = c("drop", "keep"),
   out <- panel %>%
     inner_join(pov, by = "unit_id")
 
-  out <- if (h_rule == "within_state") {
-    out %>% group_by(.data$state_abb) %>%
-      mutate(H = as.integer(.data$poverty_rate > median(.data$poverty_rate))) %>%
-      ungroup()
-  } else {
-    out %>% mutate(H = as.integer(.data$poverty_rate > median(.data$poverty_rate)))
-  }
-
-  # Drop states that carry no within-state high/low contrast: with state x month
-  # FE they contribute nothing to beta and only inflate the cluster count.
-  keep <- out %>% group_by(.data$state_abb) %>%
-    summarise(k = n_distinct(.data$H), .groups = "drop") %>%
-    filter(.data$k == 2L) %>% pull(.data$state_abb)
-  out <- out %>% filter(.data$state_abb %in% keep)
+  # H assignment + the no-contrast-state drop both live in ddd_h_rules.R, which
+  # also attaches the county-level classifier frame for ddd_h_balance().
+  out <- ddd_assign_H(out, rule = h_rule)
 
   # Count-DGP baseline mu depends only on (unit, calendar month, filings) which
   # are fixed across reps -> precompute once instead of per injection.
+  hf <- attr(out, "h_frame")
   out$mu_base <- .ie_baseline_mu(out$unit_id, out$month_date, out$filings_count)
 
-  attr(out, "covid")  <- covid
-  attr(out, "h_rule") <- h_rule
+  attr(out, "covid")   <- covid
+  attr(out, "h_rule")  <- h_rule
+  attr(out, "h_frame") <- hf
   out
 }
 
@@ -148,7 +153,10 @@ build_ddd_skeleton <- function(covid = c("drop", "keep"),
   a <- grab(ddd, "DH"); b <- grab(did, "D")
   tibble(estimator = c("ddd", "did_twfe"),
          est = c(a$est, b$est), se = c(a$se, b$se),
-         reject = c(a$rej, b$rej), n_clusters = G, df = df)
+         reject = c(a$rej, b$rej),
+         reject_wild = NA_integer_, p_wild = NA_real_,
+         ci_lo = NA_real_, ci_hi = NA_real_,
+         n_clusters = G, df = df)
 }
 
 #' Run the DDD power simulation
@@ -166,7 +174,11 @@ run_ddd_power <- function(skeleton, deltas = c(0, 0.025, 0.05, 0.075, 0.10, 0.15
                           dgps = c("differential", "uniform"),
                           n_reps = 400L, n_cores = max(1L, parallel::detectCores() - 2L),
                           real_schedule_path = "data/raw/sports_gambling_legalization_dates.csv",
-                          theta = 1.4) {
+                          theta = 1.4,
+                          wild = TRUE, B = 999L,
+                          weight_by = c("none", "renters")) {
+
+  weight_by <- match.arg(weight_by)
 
   real_sched <- guarded_read_csv(real_schedule_path)
   states_ok  <- sort(unique(skeleton$state_abb))
@@ -181,7 +193,9 @@ run_ddd_power <- function(skeleton, deltas = c(0, 0.025, 0.05, 0.075, 0.10, 0.15
     if (inherits(sch, "try-error")) {
       return(tibble(rep = rep, delta = NA_real_, dgp = NA_character_,
                     estimator = NA_character_, est = NA_real_, se = NA_real_,
-                    reject = NA_integer_, n_clusters = NA_integer_, df = NA_integer_,
+                    reject = NA_integer_, reject_wild = NA_integer_,
+                    p_wild = NA_real_, ci_lo = NA_real_, ci_hi = NA_real_,
+                    n_clusters = NA_integer_, df = NA_integer_,
                     n_treated_obs = NA_integer_, feasible = FALSE))
     }
 
@@ -199,21 +213,37 @@ run_ddd_power <- function(skeleton, deltas = c(0, 0.025, 0.05, 0.075, 0.10, 0.15
       ll <- if (dg == "differential") 0 else dl
       d$y_sim <- .ddd_inject(d, delta_h = dh, delta_l = ll, theta = theta)
       k <- k + 1L
-      res[[k]] <- .ddd_fit(d) %>%
+      fitres <- if (wild) {
+        ddd_fit_wild(d, B = B, weight_by = weight_by,
+                     seed = seed_rep + 7919L * k) %>%
+          mutate(df = .data$n_clusters - 1L)
+      } else {
+        .ddd_fit(d)
+      }
+      res[[k]] <- fitres %>%
         mutate(rep = rep, delta = dl, dgp = dg, n_treated_obs = n_tr, feasible = TRUE)
     }
     bind_rows(res)
   }
 
   reps <- seq_len(as.integer(n_reps))
+  # fixest::demean() is OpenMP-threaded; forking a multithreaded process under
+  # mclapply silently kills the workers on macOS ("did not deliver results").
+  # Parallelism is across reps, so one thread per worker is also the right
+  # allocation. Restored on exit.
+  if (n_cores > 1L) {
+    .old_nthreads <- fixest::getFixest_nthreads()
+    fixest::setFixest_nthreads(1L)
+    on.exit(fixest::setFixest_nthreads(.old_nthreads), add = TRUE)
+  }
   out <- if (n_cores > 1L && .Platform$OS.type != "windows") {
     parallel::mclapply(reps, one_rep, mc.cores = n_cores, mc.preschedule = TRUE)
   } else {
     lapply(reps, one_rep)
   }
   bind_rows(out) %>%
-    select(rep, dgp, delta, estimator, est, se, reject, n_clusters, df,
-           n_treated_obs, feasible)
+    select(rep, dgp, delta, estimator, est, se, reject, reject_wild, p_wild,
+           ci_lo, ci_hi, n_clusters, df, n_treated_obs, feasible)
 }
 
 #' Summarize operating characteristics (size, power, calibration, bias)
@@ -241,7 +271,8 @@ summarize_ddd <- function(raw, high_share) {
       sd_est   = stats::sd(.data$est),
       mean_se  = mean(.data$se),
       se_sd    = mean_se / sd_est,
-      rej_rate = mean(.data$reject),
+      rej_rate      = mean(.data$reject),
+      rej_rate_wild = mean(.data$reject_wild),
       .groups  = "drop"
     ) %>%
     arrange(.data$dgp, .data$estimator, .data$delta)

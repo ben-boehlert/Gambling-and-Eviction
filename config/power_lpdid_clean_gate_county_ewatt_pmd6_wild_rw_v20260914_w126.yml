@@ -1,0 +1,108 @@
+# power_lpdid_clean_gate_county_ewatt_pmd6_wild_rw_v20260914_w126.yml  (2026-09-16)
+#
+# DIAGNOSTIC TWIN of the renter-weighted county wild gate with the LEGACY
+# eligibility window (12,6), spliced window only, 1,000 reps. WHY: the
+# 2026-09-14 unweighted county run (SD 0.0297) used (12,6) while the rw gate
+# (SD 0.0500) used (18,0), so weights and window are confounded; on the state
+# arm the window alone moved SD 0.034 -> 0.063. This isolates the weights.
+#
+# power_lpdid_clean_gate_county_ewatt_pmd6_wild_rw_v20260914.yml  (2026-09-16)
+#
+# RENTER-WEIGHTED twin of power_lpdid_clean_gate_county_ewatt_pmd6_wild_v20260914.yml.
+# Identical except lpdid_unit_weights: renters. WHY: an unweighted county ewatt
+# run equally weights ~1,180 LSC counties, so a state enters the comparison with
+# weight equal to its LSC county COUNT (KS 1, AZ 2, GA 3, OH 4 vs VA 124, KY 120)
+# -- a data-vendor footprint, not an estimand. On the real untreated panel this
+# reweighting alone reproduces the county SD advantage (scratch decomposition
+# 2026-09-16: county-count-weighted state dispersion 0.92x the state panel;
+# equal-state county means 1.20x). Renter weights make the estimand "effect per
+# covered renter" and make the county arm defensible. Wild inference for the
+# weighted WLS-FE runs through .re_lpdid_wcr_weighted() (exact WCR, cell FE
+# re-estimated per draw; boottest cannot do WLS). The (12,6) in the original
+# header below is stale: the body carries (18,0), which is what runs.
+#
+# ---- original header (2026-09-14) -------------------------------------------
+#
+# COUNTY LP-DiD **wild** size gate on the clean 12-24 design — the arm that
+# decides whether the county level is usable at all.
+#
+# WHY. The 2026-09-14 analytic county run (`lpdid_shift12_clean_county_ewatt_pmd6`)
+# found a 24% tighter sampling distribution and half the null bias of the state
+# arm, but analytic size 0.157 (SE/SD 0.85, anti-conservative) — a hard gate
+# FAIL, so that SD advantage cannot be cited as an MDE. Only a size-valid
+# inference arm can cash it. The 300-rep county wildsmoke gave spliced wild
+# 0.060: inside the [0.055, 0.09] escalation band, so 1,000 reps cannot
+# classify it against the 0.075 line. Hence 2,000 reps here, not 1,000.
+#
+# VINTAGE. The county arm reads data/raw/monthly_county_data_download.csv,
+# which the 2026-09-14 rebuild did NOT touch (that rebuild changed the STATE
+# panel: RI +77 months, MO/NM +41, MA +31, Oregon added as a new state — now 40
+# states / 4,174 rows, switchers 13 -> 16, full-window 6 -> 7). So this run is
+# vintage-immune, but its STATE comparator is not: pair it only with
+# `lpdid_clean_gate_ewatt_pmd6_v20260914`, never with the 2026-08-28
+# `lpdid_shift12_clean_gate_ewatt_pmd6`. Both are in this upload; run both.
+#
+# WHAT THE COUNTY ARM DROPS. The county download is LSC-only, so it carries no
+# OR, MO, MD, LA, MA, RI or NM rows at all — seven states the state panel has,
+# including four the 2026-09-14 rebuild just improved and the newly added OR.
+# Measured on the real design the arm runs 26 clusters (17 treated + 9 control)
+# against the state arm's 33. One upside worth noting against session-memo
+# decision 2: MO is absent from the county download entirely, so the county arm
+# is MO-free by construction and needs no `_noMO` companion.
+#
+# ELIGIBILITY WINDOW. min_pre 12 / min_post 6, matching the reverted state
+# configs. Verified feasible at county: the 2026-09-14 analytic run placed
+# 17 treated / 9 control on every rep, 1,000 of 1,000, zero failures.
+#
+# ESTIMAND WARNING. ewatt at county level equally weights ~1,180 COUNTIES, not
+# 33 states. This gate establishes whether county inference is size-valid; it
+# does NOT produce a state-comparable MDE. Renter weights within state are a
+# separate change (option A, 2026-09-14 discussion).
+run_name: lpdid_clean_gate_county_ewatt_pmd6_wild_rw_v20260914_w126
+exclude_states: [NV, ID, HI, MS]
+schedule:   data/processed/shift12_schedule.csv
+level:      county
+sample:     [S2]
+covid:      drop
+treat_def:  shift12_start_date
+designs:      [D1]
+mechanisms:   [count_nb]
+shapes:       [step]
+outcomes:     [y_log1p]
+control_group: notyettreated
+est_anticipation: 0
+template:   panel
+effect_grid:  [0]
+estimators:   [lpdid]
+lpdid_wild:   true             # cell-scaled FWL boottest engine (commit 8790c52)
+lpdid_anchor: event_clean
+lpdid_pmd:    6
+lpdid_weights: ewatt
+lpdid_unit_weights: renters   # per-unit ACS renter weights: each treated RENTER counts once, so a state enters by its covered renter mass, not its LSC county count (2026-09-16; see .re_lpdid_weights)
+n_reps:     1000   # diagnostic: SD/null-center comparison, not a gate               # straight to 2,000: the smoke landed in the escalation band
+base_seed:  20260723
+mde_boot:   200
+alpha:      [0.1, 0.05, 0.01]
+min_pre:    12   # (12,6) TWIN -- 2026-09-16 window-vs-weights attribution   # ANCHOR: min_pre/min_post are measured from the pseudo-cohort date d,
+                 # which is in treat_def units = shift12_start_date = LAUNCH + 12 MONTHS.
+                 # So min_pre=18 reaches d-18 = LAUNCH - 6 = exactly where the strict
+                 # PMD=6 baseline [launch-6, launch-1] begins. This is the whole point of
+                 # 18 over the legacy 12, which reached only the launch month and so
+                 # guaranteed NONE of the baseline.
+min_post:    6   # (12,6) TWIN   # -> d+0 = month +12 = the FIRST outcome month [launch+12, launch+24].
+                 # 0 is correct, not lax: a state contributes at whatever horizons it has,
+                 # so >=1 is the estimator's true minimum. The legacy 6 (month +18,
+                 # 7 of 13 horizons) was a generic guard set 2026-08-03 for the CS/TWFE
+                 # arms, never revisited when the LP-DiD clean anchor arrived.
+                 #
+                 # FEASIBILITY: D1 places iff min_pre + min_post <= 18 on this panel.
+                 # (18,0) and the legacy (12,6) are both 18 wide and both place 25/25;
+                 # (18,3) and (21,0) fail 0/25. (18,0) positions the box at
+                 # [launch-6, launch+12] -- the estimator's exact minimum -- and buys
+                 # +25 live state-slots (485 -> 510, +5%) at identical feasibility.
+                 # Re-test with analysis/diagnostics/eligibility_window_feasibility.R
+                 # before changing.
+anticipation_months: 6
+scenarios:
+  - name: w126_county_rw_spliced
+    covid: drop

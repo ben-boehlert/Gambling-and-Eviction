@@ -122,7 +122,8 @@ panel <- panel0 %>%
     id = as.integer(as.factor(state_abb)),
     untreated_obs = (g == 0L) | (t < g),
     post_treat = (g > 0L) & (t >= g),
-    # For sunab: need a treat_date that's NA for never-treated
+    # first_treat (NA = never-treated) is for didimputation ONLY — sunab()
+    # drops NA-cohort rows, so it must use g (0 = never-treated) instead.
     first_treat = ifelse(g == 0L, NA_integer_, g),
     # For didimputation: need relative_time
     rel_time = ifelse(g == 0L, NA_integer_, t - g)
@@ -150,7 +151,10 @@ twfe_real <- feols(y ~ post_treat | id + t, data = dat_real, cluster = ~id,
 cat(glue("  TWFE: ATT={round(coef(twfe_real)[1], 4)}, SE={round(se(twfe_real)[1], 4)}"), "\n")
 
 # Sun-Abraham
-sunab_real <- feols(y ~ sunab(first_treat, t) | id + t, data = dat_real,
+# sunab must use g (0 = never-treated): fixest drops NA-cohort rows, so
+# sunab(first_treat, t) silently ran without never-treated controls
+# (bug found 2026-08-28; see docs/findings-archive/).
+sunab_real <- feols(y ~ sunab(g, t) | id + t, data = dat_real,
                     cluster = ~id, warn = FALSE, notes = FALSE)
 sunab_agg <- summary(sunab_real, agg = "att")
 cat(glue("  SunAb: ATT={round(coef(sunab_agg)[1], 4)}, SE={round(se(sunab_agg)[1], 4)}"), "\n")
@@ -161,7 +165,12 @@ tryCatch({
                          data = dat_real, est_method = "reg",
                          control_group = "notyettreated",
                          bstrap = FALSE, cband = FALSE,
-                         allow_unbalanced_panel = TRUE, print_details = FALSE)
+                         allow_unbalanced_panel = TRUE, print_details = FALSE,
+                            # faster_mode=TRUE (patched default) routes through
+                            # pre_process_did2, which truncates integer g==0 -> Inf
+                            # to NA and drops never-treated units; repo policy is
+                            # faster_mode = FALSE (found 2026-08-28).
+                            faster_mode = FALSE)
   cs_agg_real <- did::aggte(cs_real, type = "simple")
   cat(glue("  CS:    ATT={round(cs_agg_real$overall.att, 4)}, SE={round(cs_agg_real$overall.se, 4)}"), "\n")
 }, error = function(e) cat("  CS: ERROR -", conditionMessage(e), "\n"))
@@ -262,7 +271,7 @@ one_sim <- function(seed) {
   # --- Sun-Abraham ---
   tryCatch({
     suppressMessages(suppressWarnings({
-      fit_sa <- feols(y ~ sunab(first_treat, t) | id + t, data = dat,
+      fit_sa <- feols(y ~ sunab(g, t) | id + t, data = dat,
                       cluster = ~id, warn = FALSE, notes = FALSE)
       agg_sa <- summary(fit_sa, agg = "att")
       out$sunab_att <- as.numeric(coef(agg_sa)[1])
@@ -282,7 +291,12 @@ one_sim <- function(seed) {
                             data = dat, est_method = "reg",
                             control_group = "notyettreated",
                             bstrap = FALSE, cband = FALSE,
-                            allow_unbalanced_panel = TRUE, print_details = FALSE)
+                            allow_unbalanced_panel = TRUE, print_details = FALSE,
+                            # faster_mode=TRUE (patched default) routes through
+                            # pre_process_did2, which truncates integer g==0 -> Inf
+                            # to NA and drops never-treated units; repo policy is
+                            # faster_mode = FALSE (found 2026-08-28).
+                            faster_mode = FALSE)
       agg <- did::aggte(cs_fit, type = "simple")
       out$cs_att <- agg$overall.att
       out$cs_se  <- agg$overall.se

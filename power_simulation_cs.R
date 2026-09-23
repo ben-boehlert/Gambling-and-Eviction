@@ -915,6 +915,10 @@ att_gt_safe <- function(df_in, cfg, cluster_var) {
   if ("cores"  %in% fmls) args$cores  <- 1L
   if ("ncores" %in% fmls) args$ncores <- 1L
   if ("parallel" %in% fmls) args$parallel <- FALSE
+  # faster_mode = FALSE required: the patched default TRUE routes through
+  # pre_process_did2, which truncates integer g==0 -> Inf to NA and drops
+  # never-treated units; also repo policy (found 2026-08-28).
+  if ("faster_mode" %in% fmls) args$faster_mode <- FALSE
 
   # Call att_gt - errors will be caught by tryCatch in run_estimator_and_extract_p
   do.call(did::att_gt, args)
@@ -962,8 +966,12 @@ run_estimator_and_extract_p <- function(df_sim, cfg, cluster_var) {
     left_join(time_mapping, by = "time_id") %>%
     left_join(g_mapping, by = "g_placebo") %>%
     mutate(
-      # Create gname: 0 for never-treated, sequential time_id for treated
-      gname = if_else(is.na(g_placebo) | g_placebo == 0L, 0L, coalesce(g_placebo_seq, 0L))
+      # Create gname: 0 for never-treated, sequential time_id for treated.
+      # MUST be double: did::att_gt recodes never-treated g==0 to Inf, and in
+      # an INTEGER column Inf truncates to NA, silently dropping every
+      # never-treated unit (bug found 2026-08-28; see docs/findings-archive/).
+      gname = as.numeric(if_else(is.na(g_placebo) | g_placebo == 0L, 0L,
+                                 coalesce(g_placebo_seq, 0L)))
     )
 
   if (all(df_in$gname == 0L)) return(out)

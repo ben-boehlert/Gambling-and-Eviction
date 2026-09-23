@@ -250,7 +250,10 @@ panel <- panel %>%
     id = as.integer(as.factor(state_abb)),
     t  = ym_index(month_date),
     g  = ifelse(is.na(treat_start), 0L, ym_index(treat_start)),
-    g  = as.integer(g),
+    # MUST stay double. did::att_gt recodes never-treated g==0 to Inf; in an
+    # INTEGER column Inf truncates to NA and every never-treated state is
+    # silently dropped (found 2026-08-28; see docs/findings-archive/).
+    g  = as.numeric(g),
     untreated_obs = (g == 0L) | (t < g),
     post_treat = (g > 0L) & (t >= g),
     y = dplyr::case_when(
@@ -555,7 +558,11 @@ if (isTRUE(RUN_CS)) {
         biters        = CS_BITERS,
         cband         = FALSE,
         base_period   = "universal",
-        allow_unbalanced_panel = TRUE
+        allow_unbalanced_panel = TRUE,
+        # faster_mode = FALSE required: the patched default TRUE routes through
+        # pre_process_did2, which truncates integer g==0 -> Inf to NA and drops
+        # never-treated units; also repo policy (found 2026-08-28).
+        faster_mode = FALSE
       )
 
       agg <- did::aggte(cs_out, type = "simple")

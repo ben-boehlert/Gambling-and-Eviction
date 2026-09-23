@@ -337,7 +337,11 @@ impose_exposure_effect <- function(panel, schedule, ramps, delta, lag = 0L,
 fit_cs <- function(sim_injected) {
   est <- .re_prep(sim_injected)
   months <- sort(unique(sim_injected$month_date))
-  dat <- data.frame(id = est$id, t = est$t, g = est$g_int, y = est$y_sim,
+  # g MUST be double for did::att_gt: it recodes never-treated g==0 to Inf,
+  # and in an INTEGER column Inf truncates to NA, silently dropping every
+  # never-treated unit (bug found 2026-08-28; see docs/findings-archive/).
+  dat <- data.frame(id = est$id, t = est$t, g = as.numeric(est$g_int),
+                    y = est$y_sim,
                     state_abb = est$state_abb, stringsAsFactors = FALSE)
   a <- did::att_gt(
     yname = "y", tname = "t", idname = "id", gname = "g",

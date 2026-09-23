@@ -108,7 +108,11 @@ one_rep <- function(seed, panel, g_pool, n_states) {
   g_assign <- tibble(id = ids, g = sample(g_pool, length(ids), replace = FALSE))
 
   dat <- panel %>% select(id, t, y, state_abb) %>% left_join(g_assign, by = "id") %>%
-    mutate(post_treat = as.integer(g > 0L & t >= g),
+    # g MUST be double for did::att_gt: it recodes never-treated g==0 to Inf,
+    # and in an INTEGER column Inf truncates to NA, silently dropping every
+    # never-treated unit (bug found 2026-08-28; see docs/findings-archive/).
+    mutate(g = as.numeric(g),
+           post_treat = as.integer(g > 0L & t >= g),
            first_treat = ifelse(g == 0L, NA_integer_, g),
            rel_time = ifelse(g == 0L, NA_integer_, t - g)) %>%
     as.data.frame()
@@ -132,7 +136,11 @@ one_rep <- function(seed, panel, g_pool, n_states) {
   })
 
   sunab_r <- safe({
-    fs <- feols(y ~ sunab(first_treat, t) | id + t, data = dat, cluster = ~id,
+    # sunab must use g (0 = never-treated): fixest drops NA-cohort rows, so
+    # sunab(first_treat, t) silently ran without never-treated controls
+    # (bug found 2026-08-28; see docs/findings-archive/). first_treat stays
+    # NA-encoded for did_imputation below.
+    fs <- feols(y ~ sunab(g, t) | id + t, data = dat, cluster = ~id,
                 warn = FALSE, notes = FALSE)
     a <- summary(fs, agg = "att")
     c(as.numeric(coef(a)[1]), as.numeric(se(a)[1]), as.numeric(pvalue(a)[1]))
@@ -142,7 +150,11 @@ one_rep <- function(seed, panel, g_pool, n_states) {
     cs <- did::att_gt(yname = "y", tname = "t", idname = "id", gname = "g", data = dat,
                       est_method = "reg", control_group = "notyettreated",
                       bstrap = FALSE, cband = FALSE, allow_unbalanced_panel = TRUE,
-                      print_details = FALSE)
+                      # faster_mode = FALSE required: the patched default TRUE routes
+                      # through pre_process_did2, which truncates integer g==0 -> Inf
+                      # to NA and drops never-treated units; also repo policy
+                      # (found 2026-08-28).
+                      print_details = FALSE, faster_mode = FALSE)
     ag <- did::aggte(cs, type = "simple")
     c(ag$overall.att, ag$overall.se, compute_t_p(ag$overall.att, ag$overall.se, df_t))
   }) else c(NA_real_, NA_real_, NA_real_)

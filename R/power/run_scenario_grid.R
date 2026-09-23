@@ -38,6 +38,7 @@ suppressPackageStartupMessages({
 if (!exists("power_paths", mode = "function")) source("R/power/config.R")
 if (!exists("assert_blinded", mode = "function")) source("R/power/blindness_checks.R")
 if (!exists("load_blinded_panel", mode = "function")) source("R/power/load_blinded_panel.R")
+if (!exists("switcher_inclusion_ok", mode = "function")) source("R/power/inclusion_rule.R")
 if (!exists("make_pseudo_schedule", mode = "function")) source("R/power/make_pseudo_schedules.R")
 if (!exists("summarize_oc", mode = "function")) {
   source("R/power/summarize_operating_characteristics.R")
@@ -279,6 +280,12 @@ power_rep_seed <- function(base_seed, rep, scenario_offset) {
       "lpdid" %in% as.character(unlist(g$estimators[[i]]))) {
     id$lpdid_wild <- TRUE
   }
+  # `imp_jack`: same conditional rule -- adds a "jack" inference arm to did2s /
+  # bjs / sunab fits only, so other scenarios keep their ids.
+  if (isTRUE(g$imp_jack[i]) &&
+      any(c("did2s", "bjs", "sunab") %in% as.character(unlist(g$estimators[[i]])))) {
+    id$imp_jack <- TRUE
+  }
   # `lpdid_anchor` uses an inverted compatibility rule. Historical partials
   # used "event" and omitted this key. New runs default to "event_clean", so
   # that value MUST be hashed; explicit legacy "event" stays unhashed and can
@@ -325,7 +332,36 @@ power_rep_seed <- function(base_seed, rep, scenario_offset) {
     wsc <- as.character(g$lpdid_weights[i] %||% "ewatt")
     if (length(wsc) != 1L || is.na(wsc)) wsc <- "ewatt"
     if (!identical(wsc, "cellsize")) id$lpdid_weights <- wsc
+    # `lpdid_unit_weights` (2026-09-16, per-unit renter weights) follows the
+    # usual rule: "none" reproduces every existing id; any other value is a
+    # different estimand and must land on its own id.
+    uws <- as.character(g$lpdid_unit_weights[i] %||% "none")
+    if (length(uws) != 1L || is.na(uws)) uws <- "none"
+    if (!identical(uws, "none")) id$lpdid_unit_weights <- uws
   }
+  # Inclusion-rule knobs (2026-09-16): each hashed only when non-default, so
+  # every existing id is unchanged. eligibility changes placement for every
+  # estimator, so it is NOT gated on lpdid; the other two are estimator
+  # inputs but also enter placement under presence, so they are ungated too.
+  elg <- as.character(g$eligibility[i] %||% "span")
+  if (length(elg) == 1L && !is.na(elg) && !identical(elg, "span")) id$eligibility <- elg
+  mh <- suppressWarnings(as.integer(g$min_horizons[i] %||% NA_integer_))
+  if (length(mh) == 1L && is.finite(mh)) id$min_horizons <- mh
+  sbm <- suppressWarnings(as.integer(g$splice_buffer_months[i] %||% 0L))
+  if (length(sbm) == 1L && is.finite(sbm) && sbm > 0L) {
+    id$splice_buffer_months <- sbm
+    # baseline_clean (2026-09-17) can only bite where a splice buffer exists,
+    # so it is hashed exactly there. This changes every k7-family id -- which
+    # is correct, since those are the runs whose behaviour changed -- and
+    # leaves every other scenario id untouched.
+    id$baseline_clean <- !identical(g$baseline_clean[i] %||% TRUE, FALSE)
+  }
+  # anchor_rule only affects placement under the presence rule, so it is hashed
+  # exactly there -- no other scenario id moves.
+  if (identical(as.character(g$eligibility[i] %||% "span"), "presence"))
+    id$anchor_rule <- as.character(g$anchor_rule[i] %||% "random_feasible")
+  ts <- sort(as.character(unlist(g$template_states[[i]] %||% character(0))))
+  if (length(ts) > 0L) id$template_states <- ts
   # `shift_mode` is hashed CONDITIONALLY, same principle as `template` /
   # `cs_safe_patches` above: FALSE reproduces pre-flag behavior bit-for-bit,
   # so every existing partial must keep its id. TRUE changes what a
@@ -426,6 +462,29 @@ expand_scenario_grid <- function(cfg) {
     # launch. See the anchor warning on .eligible_states() before changing.
     g$min_pre  <- as.integer(blk$min_pre %||% cfg$min_pre %||% 12L)
     g$min_post <- as.integer(blk$min_post %||% cfg$min_post %||% 6L)
+    # INCLUSION RULE (2026-09-16, R/power/inclusion_rule.R). eligibility
+    # "presence" replaces the min_pre/min_post span box with the rule itself
+    # (placement); min_horizons = K and splice_buffer_months feed both the
+    # placement rule and the estimator (lpdid_min_horizons /
+    # lpdid_excluded_months). Defaults reproduce every existing run.
+    g$eligibility <- as.character(blk$eligibility %||% cfg$eligibility %||% "span")
+    g$min_horizons <- suppressWarnings(as.integer(
+      blk$min_horizons %||% cfg$min_horizons %||% NA_integer_))
+    g$splice_buffer_months <- as.integer(
+      blk$splice_buffer_months %||% cfg$splice_buffer_months %||% 0L)
+    # 2026-09-17: the baseline is held to the same splice standard as the
+    # outcome. TRUE is the new default; FALSE restores outcome-only exclusion.
+    g$baseline_clean <- !identical(
+      blk$baseline_clean %||% cfg$baseline_clean %||% TRUE, FALSE)
+    # ANCHOR RULE (2026-09-17, option A). Only bites under eligibility
+    # "presence"; "max_placed" restores the 2026-09-16 behaviour.
+    g$anchor_rule <- as.character(
+      blk$anchor_rule %||% cfg$anchor_rule %||% "random_feasible")
+    # Real switcher set under the inclusion rule (coverage-only audit); the
+    # D1 template keeps only these states' cohorts. Empty = no restriction.
+    g$template_states <- rep(list(sort(unique(as.character(unlist(
+      blk$template_states %||% cfg$template_states %||% character(0)
+    ))))), nrow(g))
     # Run-level only (no per-block override): the guard is a property of the
     # R process, installed once per worker, so it cannot vary scenario to
     # scenario within a run.
@@ -436,6 +495,7 @@ expand_scenario_grid <- function(cfg) {
                                  TRUE)
     # Per-fit boottest arm for LP-DiD; block may override, same principle.
     g$lpdid_wild <- isTRUE(blk$lpdid_wild %||% cfg$lpdid_wild %||% FALSE)
+    g$imp_jack <- isTRUE(blk$imp_jack %||% cfg$imp_jack %||% FALSE)
     # LP-DiD cell anchor and pooled-horizon floor; block may override.
     g$lpdid_anchor <- as.character(blk$lpdid_anchor %||% cfg$lpdid_anchor %||%
                                      "event_clean")
@@ -451,6 +511,10 @@ expand_scenario_grid <- function(cfg) {
       blk$lpdid_base_gapmax %||% cfg$lpdid_base_gapmax %||% NA_integer_))
     g$lpdid_weights <- as.character(blk$lpdid_weights %||% cfg$lpdid_weights %||%
                                       "ewatt")
+    # Per-unit observation weights for LP-DiD ("none" / "renters"); block may
+    # override. See .re_lpdid_weights() in run_estimators.R.
+    g$lpdid_unit_weights <- as.character(blk$lpdid_unit_weights %||%
+                                           cfg$lpdid_unit_weights %||% "none")
     # States dropped from the panel BEFORE schedule/template derivation —
     # neither treated-template members nor controls (dose-tercile
     # subdesigns, 2026-08-19). Block may override the run level.
@@ -1183,6 +1247,13 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
     sc$estimator_reps <- sc$estimator_reps[[1]]
     sc$exclude_states <- as.character(unlist(sc$exclude_states %||%
                                                character(0)))
+    sc$template_states <- as.character(unlist(sc$template_states %||%
+                                                character(0)))
+    # Splice-adjacent outcome months (inclusion rule): only meaningful when
+    # the COVID window is dropped; a keep/post window has no splice.
+    sc$excluded_months <- if (identical(sc$covid, "drop")) {
+      splice_excluded_months(cfg$covid_drop, sc$splice_buffer_months %||% 0L)
+    } else as.Date(character(0))
 
     est_reps <- .estimator_rep_counts(sc$estimators, sc$n_reps,
                                       sc$estimator_reps)
@@ -1331,7 +1402,7 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
       # under mocks and in serial runs, where the sentinel already exists.
       if (!exists(".ie_event_time", mode = "function") ||
           !exists(".re_prep", mode = "function")) {
-        for (mod in c("config.R", "blindness_checks.R",
+        for (mod in c("config.R", "blindness_checks.R", "inclusion_rule.R",
                       "make_pseudo_schedules.R", "impose_effects.R",
                       "run_estimators.R")) {
           source(file.path(power_root, "R", "power", mod))
@@ -1387,7 +1458,21 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
         make_pseudo_schedule(
           design = sc$design, panel = panel, real_schedule = real_schedule,
           treat_def = sc$treat_def, min_pre = sc$min_pre,
-          min_post = sc$min_post, seed = seed_rep, template = sc$template
+          min_post = sc$min_post, seed = seed_rep, template = sc$template,
+          eligibility = as.character(sc$eligibility %||% "span"),
+          min_horizons = sc$min_horizons %||% NA_integer_,
+          pmd = as.integer(sc$lpdid_pmd %||% 3L),
+          excluded_months = sc$excluded_months %||% as.Date(character(0)),
+          template_states = if (length(sc$template_states)) sc$template_states else NULL,
+          # Rule window follows the LP-DiD horizons only when they are
+          # non-default; default horizons keep the historical 12..24 window.
+          hmin  = if (as.integer(sc$lpdid_hmin %||% 0L) != 0L ||
+                      as.integer(sc$lpdid_post %||% 12L) != 12L)
+                    as.integer(sc$lpdid_hmin %||% 0L) else NULL,
+          hpost = if (as.integer(sc$lpdid_hmin %||% 0L) != 0L ||
+                      as.integer(sc$lpdid_post %||% 12L) != 12L)
+                    as.integer(sc$lpdid_post %||% 12L) else NULL,
+          anchor_rule = as.character(sc$anchor_rule %||% "random_feasible")
         ),
         error = function(e) e)
       # HYBRID CONTROL CODING (2026-08-20): under a redated treat_def
@@ -1458,6 +1543,7 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
              # rather than error.
              cs_faster_mode = isTRUE(sc$cs_faster_mode %||% TRUE),
              lpdid_wild     = isTRUE(sc$lpdid_wild %||% FALSE),
+             imp_jack       = isTRUE(sc$imp_jack %||% FALSE),
              lpdid_anchor   = as.character(sc$lpdid_anchor %||% "event_clean"),
              lpdid_hmin     = as.integer(sc$lpdid_hmin %||% 0L),
              lpdid_post     = as.integer(sc$lpdid_post %||% 12L),
@@ -1466,7 +1552,13 @@ run_scenario_grid <- function(config_path, resume = TRUE, workers = NULL,
                                                             NA_integer_)),
              lpdid_base_gapmax = suppressWarnings(as.integer(
                sc$lpdid_base_gapmax %||% NA_integer_)),
-             lpdid_weights  = as.character(sc$lpdid_weights %||% "ewatt"))
+             lpdid_weights  = as.character(sc$lpdid_weights %||% "ewatt"),
+             lpdid_unit_weights = as.character(sc$lpdid_unit_weights %||%
+                                                 "none"),
+             lpdid_min_horizons = sc$min_horizons %||% NA_integer_,
+             lpdid_baseline_clean = !identical(sc$baseline_clean %||% TRUE, FALSE),
+             lpdid_excluded_months = as.character(sc$excluded_months %||%
+                                                    character(0)))
       }
 
       out <- list()
