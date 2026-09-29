@@ -50,7 +50,7 @@ build_panel <- function(min_date = "2018-01-01", max_date = "2024-12-31",
 
   cov <- raw |> count(state_abb, name="n") |> arrange(desc(n))
   keep <- cov |> filter(n == max(n)) |> pull(state_abb)
-  raw <- raw |> filter(state_abb %in% keep)
+  raw <- raw |> filter(state_abb %in% keep) |> drop_pre_paspa_states("did2s_covid_adjustment_test")
   n_pre <- n_distinct(raw$state_abb)
   common <- raw |> count(month_date, name="n") |> filter(n == n_pre) |> pull(month_date)
   raw <- raw |> filter(month_date %in% common)

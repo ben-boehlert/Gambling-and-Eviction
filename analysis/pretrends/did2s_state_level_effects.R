@@ -39,7 +39,7 @@ raw <- read_csv("data/raw/state_month_panel_with_treatment.csv",
   anti_join(bad_obs, by=c("state_abb","month_date"))
 cov <- raw |> count(state_abb, name="n") |> arrange(desc(n))
 keep <- cov |> filter(n == max(n)) |> pull(state_abb)
-raw <- raw |> filter(state_abb %in% keep)
+raw <- raw |> filter(state_abb %in% keep) |> drop_pre_paspa_states("did2s_state_level_effects")
 n_pre <- n_distinct(raw$state_abb)
 common <- raw |> count(month_date, name="n") |> filter(n == n_pre) |> pull(month_date)
 raw <- raw |> filter(month_date %in% common)

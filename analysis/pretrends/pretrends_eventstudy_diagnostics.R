@@ -28,6 +28,7 @@ suppressPackageStartupMessages({
   library(did)
   library(fixest)
 })
+source("utils/eviction_treatment_schedule.R")  # drop_pre_paspa_states(): NV never enters
 
 # ----------------------------- helpers ----------------------------------------
 
@@ -252,6 +253,7 @@ panel <- panel_raw %>%
   left_join(treat, by = c("state_abb","month_date")) %>%
   filter(state_abb %in% unique(treat$state_abb))
 
+panel <- drop_pre_paspa_states(panel, "pretrends_eventstudy_diagnostics")
 if (length(EXCLUDE_STATES_VEC) > 0) panel <- panel %>% filter(!state_abb %in% EXCLUDE_STATES_VEC)
 if (is.finite(MAX_DATE)) panel <- panel %>% filter(month_date <= MAX_DATE)
 

@@ -1,0 +1,56 @@
+# 2026-09-29: mortgage 90+ day delinquency size gate, SPLICED window.
+# Design = the eviction 6-18 / pmd 3 / ewatt / K = 7 spec, applied to the CFPB
+# state 90+ delinquency rate. Only the COVID months 2020-03..2021-07 are dropped;
+# every other month from the 2016-01 panel floor to 2025-03 is kept.
+# Why the window is on the table: the June-2022 start is an eviction-data fix
+# (post-moratorium filing dispersion). Mortgage 12-month-growth dispersion is at
+# or below its pre-COVID 90th percentile (0.149) by 2021-08; COVID shows up as a
+# common level fall (0.98pp -> ~0.5pp), not a cross-state blow-up.
+# Twin: power_mortgage_lpdid_l618_pmd3_start202206_gate_v20260929.yml. Same seeds.
+# Supersedes nothing: the 2026-09-04 smoke was shift12 / 12-24 / pmd 6, 100 reps.
+
+run_name: mortgage_lpdid_l618_pmd3_spliced_gate_v20260929
+
+level:       state_mortgage
+outcomes:    [y_pp]            # rate in percentage points; logs not built (0.1pp rounding, see loader)
+mechanisms:  [deterministic]   # delta is a pp shift; count mechanisms are undefined for a rate
+
+schedule:    data/raw/sports_gambling_legalization_dates.csv
+treat_def:   online_start_date # launch-indexed: outcomes are horizons 6..18 after online launch
+exclude_states: [NV]           # always-treated since 1949. WA/MN/HI/MS/ID eviction exclusions are
+                               # eviction-series decisions; the mortgage series is whole-state CFPB.
+
+sample:        [S2]
+designs:       [D1]
+shapes:        [step]
+control_group: notyettreated
+template:      panel
+est_anticipation: 0
+
+estimators:    [twfe, lpdid]
+lpdid_wild:    true
+lpdid_anchor:  event_clean
+lpdid_pmd:     3
+lpdid_hmin:    6
+lpdid_post:    18
+lpdid_weights: ewatt
+eligibility:          presence
+min_horizons:         7
+splice_buffer_months: 0
+
+effect_grid: [0]               # size gate only
+n_reps:      2000              # MC SE ~0.005 at p = 0.05; classifies against the 0.075 line
+base_seed:   20260723
+mde_boot:    200
+alpha:       [0.1, 0.05, 0.01]
+min_pre:     3
+min_post:    12
+anticipation_months: 6
+
+covid_drop: ['2020-03-01', '2021-07-31']
+# Real switchers under the rule at this window (buffer 0, data through 2025-03):
+template_states: [AR, DE, FL, KS, KY, LA, MA, MD, ME, NC, NJ, NY, OH, VT, WV]
+
+scenarios:
+  - name: spliced
+    covid: drop

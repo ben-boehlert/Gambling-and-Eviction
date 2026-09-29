@@ -322,6 +322,7 @@ panel0 <- panel0_raw %>%
     filings_per_1k_renters = as.numeric(filings_per_1k_renters)
   )
 
+panel0 <- drop_pre_paspa_states(panel0, "pretrends_statepanel_template")
 if (length(EXCLUDE_STATES) > 0) panel0 <- panel0 %>% filter(!(state_abb %in% EXCLUDE_STATES))
 if (!is.na(MIN_DATE)) panel0 <- panel0 %>% filter(month_date >= MIN_DATE)
 if (!is.na(MAX_DATE)) panel0 <- panel0 %>% filter(month_date <= MAX_DATE)

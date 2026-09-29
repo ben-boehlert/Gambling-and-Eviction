@@ -31,6 +31,7 @@ suppressPackageStartupMessages({
   library(did)
   library(glue)
 })
+source("utils/eviction_treatment_schedule.R")  # drop_pre_paspa_states(): NV never enters
 
 ################################################################################
 # SECTION 1: HELPER FUNCTIONS
@@ -216,6 +217,7 @@ panel0 <- mort_long %>%
   left_join(treat_sched, by = "state_abb")
 
 # Apply filters
+panel0 <- drop_pre_paspa_states(panel0, "pretrends_mortgage_delinquency")
 if (length(EXCLUDE_STATES) > 0 && any(nzchar(EXCLUDE_STATES))) {
   panel0 <- panel0 %>% filter(!(state_abb %in% EXCLUDE_STATES))
 }

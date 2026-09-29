@@ -1,0 +1,72 @@
+# 2026-09-29: 30-89 DAY mortgage delinquency (log rate), JUNE-2022 design --
+# the eviction design's spec (online launch, horizons 6-18, pmd 3, ewatt, wild,
+# K = 7, sample start 2022-06). Panel data/processed/mortgage3089_treatment_panel.csv
+# (data_prep/build_mortgage3089_panel.R). NV excluded only.
+# Real design: 10 switchers (DE FL KS KY MA MD ME NC OH VT) vs 20 untreated
+# through 2025-03 (19 never-legalizers + MO, online 2025-12).
+# Arms, as in the eviction l618 runs:
+#   precovid    -- template placed in 2016-01..2020-02 (calibration evidence;
+#                  the arm the eviction 0.097 comparator comes from)
+#   start202206 -- real-era placements (thin pool; understates the real design)
+# Each arm: 2,000-rep size gate + 500-rep MDE grid (delta in log points).
+
+run_name: mortgage3089_lpdid_l618_start202206_v20260929
+
+mortgage_panel: data/processed/mortgage3089_treatment_panel.csv
+
+level:       state_mortgage
+outcomes:    [y_log_pp]        # log of the 30-89 day rate; delta in log points
+mechanisms:  [deterministic]   # delta is a pp shift; count mechanisms are undefined for a rate
+
+schedule:    data/raw/sports_gambling_legalization_dates.csv
+treat_def:   online_start_date # launch-indexed: outcomes are horizons 6..18 after online launch
+exclude_states: [NV]           # always-treated since 1949. WA/MN/HI/MS/ID eviction exclusions are
+                               # eviction-series decisions; the mortgage series is whole-state CFPB.
+
+sample:        [S2]
+designs:       [D1]
+shapes:        [step]
+control_group: notyettreated
+template:      panel
+est_anticipation: 0
+
+estimators:    [twfe, lpdid]
+lpdid_wild:    true
+lpdid_anchor:  event_clean
+lpdid_pmd:     3
+lpdid_hmin:    6
+lpdid_post:    18
+lpdid_weights: ewatt
+eligibility:          presence
+min_horizons:         7
+splice_buffer_months: 0
+
+effect_grid: [0]               # size gate only
+n_reps:      2000              # MC SE ~0.005 at p = 0.05; classifies against the 0.075 line
+base_seed:   20260723
+mde_boot:    200
+alpha:       [0.1, 0.05, 0.01]
+min_pre:     3
+min_post:    12
+anticipation_months: 6
+
+covid_drop: ['2020-03-01', '2022-05-31']   # sample start 2022-06
+template_states: [DE, FL, KS, KY, MA, MD, ME, NC, OH, VT]
+
+scenarios:
+  - name: precovid_gate
+    covid: pre
+    effect_grid: [0]
+    n_reps: 2000
+  - name: start202206_gate
+    covid: post
+    effect_grid: [0]
+    n_reps: 2000
+  - name: precovid_mde
+    covid: pre
+    effect_grid: [0, 0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60]
+    n_reps: 500
+  - name: start202206_mde
+    covid: post
+    effect_grid: [0, 0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.15, 0.20, 0.25, 0.30, 0.40, 0.50, 0.60]
+    n_reps: 500

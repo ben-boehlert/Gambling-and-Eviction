@@ -32,6 +32,7 @@ suppressPackageStartupMessages({
   library(patchwork)
   library(MASS)
 })
+source("utils/eviction_treatment_schedule.R")  # drop_pre_paspa_states(): NV never enters
 
 # Optional packages
 has_honestdid <- requireNamespace("HonestDiD", quietly = TRUE)
@@ -258,6 +259,8 @@ build_analysis_panel <- function(panel_raw, gambling_dates, analysis) {
   panel <- panel_raw %>%
     filter(month_date >= analysis$period_start & month_date <= analysis$period_end) %>%
     left_join(gambling_filtered, by = "state_abb")
+
+  panel <- drop_pre_paspa_states(panel, "pretrends_pre_post_covid")
 
   # Exclude states
   if (nzchar(analysis$exclude_states)) {

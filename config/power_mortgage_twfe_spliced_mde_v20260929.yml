@@ -1,0 +1,53 @@
+# 2026-09-29: TWFE MDE on the SPLICED mortgage window (pre + post COVID; drop
+# 2020-03..2021-07 only). Twin of power_mortgage_lpdid_l618_pmd3_spliced_gate_v20260929.yml,
+# where TWFE wild passed size (0.067, recentered 0.052, SE/SD 1.00, null centre
+# -0.023pp) and LP-DiD wild failed (0.085). TWFE only; every other knob identical,
+# same seeds. TWFE here is STATIC (one post dummy, state + month FE): its estimand
+# pools all post-launch months, not the LP-DiD 6-18 horizon window.
+# Delta is a percentage-point shift in the 90+ delinquency rate.
+
+run_name: mortgage_twfe_spliced_mde_v20260929
+
+level:       state_mortgage
+outcomes:    [y_pp]            # rate in percentage points; logs not built (0.1pp rounding, see loader)
+mechanisms:  [deterministic]   # delta is a pp shift; count mechanisms are undefined for a rate
+
+schedule:    data/raw/sports_gambling_legalization_dates.csv
+treat_def:   online_start_date # launch-indexed: outcomes are horizons 6..18 after online launch
+exclude_states: [NV]           # always-treated since 1949. WA/MN/HI/MS/ID eviction exclusions are
+                               # eviction-series decisions; the mortgage series is whole-state CFPB.
+
+sample:        [S2]
+designs:       [D1]
+shapes:        [step]
+control_group: notyettreated
+template:      panel
+est_anticipation: 0
+
+estimators:    [twfe]
+lpdid_wild:    true
+lpdid_anchor:  event_clean
+lpdid_pmd:     3
+lpdid_hmin:    6
+lpdid_post:    18
+lpdid_weights: ewatt
+eligibility:          presence
+min_horizons:         7
+splice_buffer_months: 0
+
+effect_grid: [0, 0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18, 0.20, 0.25, 0.30, 0.40]   # pp; gate SD(att) 0.0475 -> 2.8 x SD ~ 0.13pp
+n_reps:      500               # MDE grid; MC SE of power ~0.02 near 0.8
+base_seed:   20260723
+mde_boot:    200
+alpha:       [0.1, 0.05, 0.01]
+min_pre:     3
+min_post:    12
+anticipation_months: 6
+
+covid_drop: ['2020-03-01', '2021-07-31']
+# Real switchers under the rule at this window (buffer 0, data through 2025-03):
+template_states: [AR, DE, FL, KS, KY, LA, MA, MD, ME, NC, NJ, NY, OH, VT, WV]
+
+scenarios:
+  - name: spliced
+    covid: drop

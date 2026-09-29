@@ -16,6 +16,7 @@ suppressPackageStartupMessages({
   library(patchwork)
   library(scales)
 })
+source("utils/eviction_treatment_schedule.R")  # drop_pre_paspa_states(): NV never enters
 
 DATA_FILE <- Sys.getenv("DATA_FILE", "data/raw/combined_monthly_panel.csv")
 GAMBLING_FILE <- Sys.getenv("GAMBLING_FILE", "data/raw/sports_gambling_legalization_dates.csv")
@@ -125,7 +126,7 @@ gambling_dates <- read_csv(GAMBLING_FILE, show_col_types = FALSE) %>%
   select(state_abb, online_start_date) %>%
   filter(!is.na(state_abb))
 
-panel <- panel_raw %>%
+panel <- drop_pre_paspa_states(panel_raw, "plot_pre2020_state_pretrends") %>%
   left_join(gambling_dates, by = "state_abb") %>%
   filter(!(state_abb %in% exclude_states)) %>%
   filter(month_date <= MAX_DATE) %>%

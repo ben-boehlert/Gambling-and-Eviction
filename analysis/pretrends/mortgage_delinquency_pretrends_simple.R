@@ -28,6 +28,7 @@ suppressPackageStartupMessages({
   library(ggplot2)
   library(fixest)
 })
+source("utils/eviction_treatment_schedule.R")  # drop_pre_paspa_states(): NV never enters
 
 cat("=== Mortgage Delinquency Pre-Trends Analysis ===\n\n")
 
@@ -144,7 +145,7 @@ in_window <- function(d, start, end) {
 build_panel_with_spec <- function(panel_raw, spec) {
   cat(glue("Building panel for: {spec$name}\n"))
 
-  panel <- panel_raw
+  panel <- drop_pre_paspa_states(panel_raw, "mortgage_delinquency_pretrends_simple")
 
   # Filter by treatment years if specified
   if (!is.null(spec$treatment_years_allowed)) {

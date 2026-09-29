@@ -1,0 +1,52 @@
+state,judicial,nonjudicial,comment,process_days
+Alabama,1,1,Judicial not common,49-74
+Alaska,1,1,Judicial  as last alternative,105
+Arizona,1,1,Judicial not common,90+
+Arkansas,1,1,Both are used equally,70
+California,1,1,Judicial not common,117
+Colorado,1,1,Judicial not common,145
+Connecticut,1,0,Judicial only,62
+Delaware,1,0,Judicial only,170-210
+District of Columbia,0,1,Trustee Sale only,47
+Florida,1,0,Judicial only,135
+Georgia,1,1,Judicial not common,37
+Hawaii,1,1,Both  used equally,220
+Idaho,1,1,Trustee Sale more common,150
+Illinois,1,0,Judicial only,300
+Indiana,1,0,Judicial only,261
+Iowa,1,1,Trustee Sale Voluntary,160
+Kansas,1,0,Judicial only,130
+Kentucky,1,0,Judicial only,147
+Louisiana,1,0,Judicial only,180
+Maine,1,0,Judicial only,240
+Maryland,1,0,Judicial only,46
+Massachusetts,1,0,Judicial only,75
+Michigan,0,1,Non-Judicial only,60
+Minnesota,1,1,Non-Judicial more common,90-100
+Mississippi,1,1,Non-Judicial more common,90
+Missouri,1,1,Non-Judicial more common,60
+Montana,1,1,Trustee Sale more common,150
+Nebraska,1,0,Judicial only,142
+Nevada,1,1,Trustee Sale more common,116
+New Hampshire,0,1,Non-Judicial only,59
+New Jersey,1,0,Judicial only,270
+New Mexico,1,0,Judicial only,180
+New York,1,0,Judicial only,445
+North Carolina,1,1,Non-Judicial more common,110
+North Dakota,1,0,Judicial only,150
+Ohio,1,0,Judicial only,217
+Oklahoma,1,1,Judicial more common,186
+Oregon,1,1,Trustee Sale more common,150
+Pennsylvania,1,0,Judicial only,270
+Rhode Island,1,1,Non-Judicial more common,62
+South Carolina,1,0,Judicial only,150
+South Dakota,1,1,Judicial more common,150
+Tennessee,0,1,Non-Judicial only,40-45
+Texas,1,1,Non-Judicial more common,27
+Utah,0,0,Non-Judicial only,142
+Vermont,1,0,Judicial only,95
+Virginia,1,1,Trustee Sale more common,45
+Washington,1,1,Trustee Sale more common,135
+West Virginia,0,1,Trustee Sale only,60-90
+Wisconsin,1,1,Judicial more common,290
+Wyoming,1,1,Non-Judicial more common,60

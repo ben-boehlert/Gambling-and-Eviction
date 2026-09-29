@@ -239,6 +239,26 @@ eviction_control_states <- function(panel_states,
   intersect(panel_states, out$state_abb[out$control_eligible])
 }
 
+#' Drop pre-PASPA (always-treated) states from an analysis panel
+#'
+#' Unconditional: not an EXCLUDE_STATES default that a caller can override.
+#' Every pretrends script calls this on its panel before estimation (2026-09-29).
+#'
+#' @param df panel with a state column
+#' @param context label for the log message
+#' @param state_col name of the state-abbreviation column
+drop_pre_paspa_states <- function(df, context = "analysis panel",
+                                  state_col = "state_abb") {
+  st <- as.character(df[[state_col]])
+  present <- intersect(unique(st), PRE_PASPA_SPORTS_BETTING)
+  if (length(present)) {
+    message(context, ": dropping pre-PASPA sports-betting state(s) ",
+            paste(present, collapse = ", "),
+            " (always-treated; never a control or a switcher)")
+  }
+  df[!(st %in% PRE_PASPA_SPORTS_BETTING), ]
+}
+
 #' Hard check that no pre-PASPA state has leaked into a control pool
 #'
 #' @param states the control states an analysis is about to use

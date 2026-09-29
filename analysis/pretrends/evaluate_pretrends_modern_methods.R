@@ -37,6 +37,7 @@ suppressPackageStartupMessages({
   library(fixest)
   library(patchwork)
 })
+source("utils/eviction_treatment_schedule.R")  # drop_pre_paspa_states(): NV never enters
 
 # Optional modern packages (graceful degradation if not installed)
 has_honestdid <- requireNamespace("HonestDiD", quietly = TRUE)
@@ -292,6 +293,8 @@ build_panel_for_spec <- function(panel_raw, gambling_dates, spec) {
   # Merge treatment dates
   panel <- panel_raw %>%
     left_join(gambling_dates, by = "state_abb")
+
+  panel <- drop_pre_paspa_states(panel, "evaluate_pretrends_modern_methods")
 
   # Apply exclusions
   if (nzchar(spec$exclude_states)) {

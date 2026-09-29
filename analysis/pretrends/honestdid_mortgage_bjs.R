@@ -33,6 +33,7 @@ suppressPackageStartupMessages({
   library(HonestDiD)
   library(glue)
 })
+source("utils/eviction_treatment_schedule.R")  # drop_pre_paspa_states(): NV never enters
 
 getenv1 <- function(k, d="") { v <- Sys.getenv(k, unset=d); if(!nzchar(v)) d else v }
 parse_int <- function(x, d=NA_integer_) if(!nzchar(x)) d else suppressWarnings(as.integer(x))
@@ -94,7 +95,8 @@ treat_sched <- treat_raw %>%
 coverage <- mort_long %>% count(state_abb, name = "n_months")
 max_cov <- max(coverage$n_months)
 keep <- coverage %>% filter(n_months >= max_cov) %>% pull(state_abb)
-panel0 <- mort_long %>% filter(state_abb %in% keep)
+panel0 <- mort_long %>% filter(state_abb %in% keep) %>%
+  drop_pre_paspa_states("honestdid_mortgage_bjs")
 n_states_pre <- n_distinct(panel0$state_abb)
 common <- panel0 %>% count(month_date, name = "n") %>%
   filter(n == n_states_pre) %>% pull(month_date)

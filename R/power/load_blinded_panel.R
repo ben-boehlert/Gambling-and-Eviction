@@ -116,9 +116,11 @@ if (!exists("load_eviction_treatment_schedule", mode = "function")) {
 #'   * the count mechanisms (count_nb, count_pois, thinning) are unavailable —
 #'     use \code{mechanism = "deterministic"}, which adds delta on the outcome
 #'     scale, so delta is in PERCENTAGE POINTS, not a proportional change;
-#'   * outcome must be \code{y_pp}. The log transforms are deliberately NOT
-#'     built: the source series is published to 0.1pp and 87% of design-window
-#'     state-months sit at or below 1.0pp, so one rounding tick is a 17%+
+#'   * outcome is \code{y_pp} (levels) or, since 2026-09-29, the opt-in
+#'     \code{y_log_pp} (log of the rate). The count log transforms are NOT
+#'     built. Logs were withheld until then because the source series is
+#'     published to 0.1pp and 87% of design-window state-months sit at or
+#'     below 1.0pp, so one rounding tick is a 17%+
 #'     relative move on the log scale (probe: 2026-09-04).
 #' @keywords internal
 .read_state_mortgage_panel <- function(path) {
@@ -305,13 +307,19 @@ load_blinded_panel <- function(level = c("county", "state", "state_mortgage"),
   panel$t <- as.integer(tkey - min(tkey) + 1L)
 
   panel <- if (is_rate) {
-    # LEVELS ONLY. y_pp is the rate in percentage points; no log transform is
-    # offered (see .read_state_mortgage_panel). Pair with
-    # mechanism = "deterministic", so delta is read in percentage points.
+    # y_pp is the rate in percentage points; pair with mechanism =
+    # "deterministic", so delta is read in percentage points.
+    # y_log_pp (2026-09-29) = log(rate): opt-in, for testing whether the
+    # 0.1pp rounding makes a proportional spec unusable. Under "deterministic"
+    # its delta is in LOG POINTS. The rate is never 0 in the source (minimum
+    # 0.2pp since 2016), so no offset is added; a non-positive value stops.
+    if (any(panel$delinq_pp <= 0, na.rm = TRUE))
+      stop("state_mortgage: non-positive delinquency rate; y_log_pp undefined.",
+           call. = FALSE)
     panel %>%
-      mutate(y_pp = .data$delinq_pp, g = 0) %>%
+      mutate(y_pp = .data$delinq_pp, y_log_pp = log(.data$delinq_pp), g = 0) %>%
       select("unit_id", "state_abb", "month_date", "t",
-             "filings_count", "renters", "y_pp", "g") %>%
+             "filings_count", "renters", "y_pp", "y_log_pp", "g") %>%
       arrange(.data$state_abb, .data$unit_id, .data$month_date)
   } else {
     panel %>%

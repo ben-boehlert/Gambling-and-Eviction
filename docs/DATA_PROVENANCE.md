@@ -133,7 +133,9 @@ Filings: Added", counties assigned via a 15-courthouse crosswalk, fiscal year Ju
 From `data/processed/state_panel_rebuild_source_table.csv`, 2026-08-20 rebuild.
 
 - **`county_download_fixed_basket` (29 states) → LSC CCDI.** AK AR AZ CO CT DE FL GA HI IN
+| `StateMortgagesPercent-30-89DaysLate-thru-2025-03.csv` | CFPB Mortgage Performance Trends (files.consumerfinance.gov), retrieved 2026-09-29; URL, SHA-256 and caveats in the sidecar `.source.md`. The same download path is the likely origin of the 90+ file, but that is not verified | `VERIFIED-SESSION` |
   KS KY ME MN MS MT NC ND NY OH OK PA SC TN TX UT VA VT WV + GA/CO/HI/MS/NY/SC per-state
+| `covariates/` (RealtyTrac 2010 foreclosure regime, ACS 2019, BLS LAUS 2019, FHFA PO HPI, HMDA 2019) | Public APIs / Wayback, retrieved 2026-09-29 by `data_prep/build_state_covariates_2019.R` → `data/processed/state_covariates_2019.csv`. URLs, caveats and SHA-256 in `data/raw/covariates/SOURCES.md` | `VERIFIED-SESSION` |
   baskets added 2026-08-28. ID left this group on 2026-09-14 (next bullet).
 - **`id_courts_a12_2026-09-14` (1 state) → Idaho Judicial Branch.** ID, swapped 2026-09-14 by
   `data_prep/add_id_to_state_panel.R` from `data/raw/idaho/id_state_month_a12.csv`, pulled by

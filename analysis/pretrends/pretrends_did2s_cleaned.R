@@ -64,7 +64,7 @@ build_panel <- function(label, min_date, max_date, drop_bad,
 
   cov <- raw |> count(state_abb, name="n") |> arrange(desc(n))
   keep <- cov |> filter(n == max(n)) |> pull(state_abb)
-  raw <- raw |> filter(state_abb %in% keep)
+  raw <- raw |> filter(state_abb %in% keep) |> drop_pre_paspa_states("pretrends_did2s_cleaned")
   n_pre <- n_distinct(raw$state_abb)
   common <- raw |> count(month_date, name="n") |> filter(n == n_pre) |> pull(month_date)
   raw <- raw |> filter(month_date %in% common)

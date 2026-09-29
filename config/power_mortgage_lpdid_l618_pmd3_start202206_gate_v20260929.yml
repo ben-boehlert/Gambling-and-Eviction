@@ -1,0 +1,56 @@
+# 2026-09-29: mortgage 90+ day delinquency size gate, POST-COVID-ONLY window
+# (sample starts 2022-06, matching the eviction design exactly). Twin of
+# power_mortgage_lpdid_l618_pmd3_spliced_gate_v20260929.yml; same seeds and knobs.
+# Two placement arms, following the eviction l618 gate precedent:
+#   start202206 -- covid: post. Placements at real-era dates, where the untreated
+#                  pool must supply both pseudo-switchers and controls; this arm
+#                  can understate the real design's control pool.
+#   precovid    -- covid: pre. Same template geometry placed in 2016-01..2020-02;
+#                  calibration evidence for the estimator, not the real-era SD.
+
+run_name: mortgage_lpdid_l618_pmd3_start202206_gate_v20260929
+
+level:       state_mortgage
+outcomes:    [y_pp]            # rate in percentage points; logs not built (0.1pp rounding, see loader)
+mechanisms:  [deterministic]   # delta is a pp shift; count mechanisms are undefined for a rate
+
+schedule:    data/raw/sports_gambling_legalization_dates.csv
+treat_def:   online_start_date # launch-indexed: outcomes are horizons 6..18 after online launch
+exclude_states: [NV]           # always-treated since 1949. WA/MN/HI/MS/ID eviction exclusions are
+                               # eviction-series decisions; the mortgage series is whole-state CFPB.
+
+sample:        [S2]
+designs:       [D1]
+shapes:        [step]
+control_group: notyettreated
+template:      panel
+est_anticipation: 0
+
+estimators:    [twfe, lpdid]
+lpdid_wild:    true
+lpdid_anchor:  event_clean
+lpdid_pmd:     3
+lpdid_hmin:    6
+lpdid_post:    18
+lpdid_weights: ewatt
+eligibility:          presence
+min_horizons:         7
+splice_buffer_months: 0
+
+effect_grid: [0]               # size gate only
+n_reps:      2000              # MC SE ~0.005 at p = 0.05; classifies against the 0.075 line
+base_seed:   20260723
+mde_boot:    200
+alpha:       [0.1, 0.05, 0.01]
+min_pre:     3
+min_post:    12
+anticipation_months: 6
+
+covid_drop: ['2020-03-01', '2022-05-31']   # sample start 2022-06
+template_states: [DE, FL, KS, KY, MA, MD, ME, NC, OH, VT]
+
+scenarios:
+  - name: start202206
+    covid: post
+  - name: precovid
+    covid: pre

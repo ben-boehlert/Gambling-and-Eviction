@@ -22,6 +22,7 @@ suppressPackageStartupMessages({
   library(didimputation)
   library(glue)
 })
+source("utils/eviction_treatment_schedule.R")  # drop_pre_paspa_states(): NV never enters
 
 state_name_to_abb <- function(state_name) {
   state_name <- trimws(as.character(state_name))
@@ -73,7 +74,8 @@ treat_sched <- treat_raw %>%
 coverage <- mort_long %>% count(state_abb, name = "n_months")
 max_cov <- max(coverage$n_months)
 keep <- coverage %>% filter(n_months >= max_cov) %>% pull(state_abb)
-panel0 <- mort_long %>% filter(state_abb %in% keep)
+panel0 <- mort_long %>% filter(state_abb %in% keep) %>%
+  drop_pre_paspa_states("pretrends_mortgage_bjs")
 n_states_pre <- n_distinct(panel0$state_abb)
 common <- panel0 %>% count(month_date, name = "n") %>%
   filter(n == n_states_pre) %>% pull(month_date)

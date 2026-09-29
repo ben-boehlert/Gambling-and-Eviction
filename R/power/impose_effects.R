@@ -197,15 +197,17 @@ impose_effect <- function(panel, schedule,
                           # is a PERCENTAGE-POINT shift, not a proportional
                           # change. Guarded below.
                           outcome = c("y_log1p", "y_lograte", "y_asinh",
-                                      "y_pp"),
+                                      "y_pp", "y_log_pp"),
                           seed = 1L) {
   mechanism <- match.arg(mechanism)
   shape     <- match.arg(shape)
   outcome   <- match.arg(outcome)
   # A rate has no count to augment or thin. Fail loudly rather than silently
   # producing a count-mechanism draw off an all-NA filings_count column.
-  if (identical(outcome, "y_pp") && !identical(mechanism, "deterministic")) {
-    stop("outcome 'y_pp' is a rate; mechanism must be 'deterministic' ",
+  # y_log_pp (log of the mortgage rate, 2026-09-29): same rule; delta is then
+  # in log points.
+  if (outcome %in% c("y_pp", "y_log_pp") && !identical(mechanism, "deterministic")) {
+    stop("outcome '", outcome, "' is a rate; mechanism must be 'deterministic' ",
          "(got '", mechanism, "'). Count mechanisms are undefined for a rate.",
          call. = FALSE)
   }

@@ -1,0 +1,62 @@
+# 2026-09-29: LOG-outcome test on the SPLICED mortgage window (pre + post COVID;
+# drop 2020-03..2021-07 only; 15 switchers). Outcome y_log_pp = log(90+ rate),
+# new opt-in in load_blinded_panel.R; deterministic delta is in LOG POINTS.
+# Question: does the 0.1pp rounding (one tick ~17% at the 0.6pp median) make a
+# proportional spec unusable? Pre-COVID trend gaps shrink in logs (switchers vs
+# controls SMD -1.33 -> -0.61), which is the case for logs.
+# Level comparators: mortgage_lpdid_l618_pmd3_spliced_gate_v20260929 (gate) and
+# mortgage_twfe_spliced_mde_v20260929 (TWFE MDE). Same seeds and knobs.
+
+run_name: mortgage_log_spliced_v20260929
+
+level:       state_mortgage
+outcomes:    [y_pp]            # rate in percentage points; logs not built (0.1pp rounding, see loader)
+mechanisms:  [deterministic]   # delta is a pp shift; count mechanisms are undefined for a rate
+
+schedule:    data/raw/sports_gambling_legalization_dates.csv
+treat_def:   online_start_date # launch-indexed: outcomes are horizons 6..18 after online launch
+exclude_states: [NV]           # always-treated since 1949. WA/MN/HI/MS/ID eviction exclusions are
+                               # eviction-series decisions; the mortgage series is whole-state CFPB.
+
+sample:        [S2]
+designs:       [D1]
+shapes:        [step]
+control_group: notyettreated
+template:      panel
+est_anticipation: 0
+
+estimators:    [twfe, lpdid]
+lpdid_wild:    true
+lpdid_anchor:  event_clean
+lpdid_pmd:     3
+lpdid_hmin:    6
+lpdid_post:    18
+lpdid_weights: ewatt
+eligibility:          presence
+min_horizons:         7
+splice_buffer_months: 0
+
+effect_grid: [0]               # size gate only
+n_reps:      2000              # MC SE ~0.005 at p = 0.05; classifies against the 0.075 line
+base_seed:   20260723
+mde_boot:    200
+alpha:       [0.1, 0.05, 0.01]
+min_pre:     3
+min_post:    12
+anticipation_months: 6
+
+covid_drop: ['2020-03-01', '2021-07-31']
+template_states: [AR, DE, FL, KS, KY, LA, MA, MD, ME, NC, NJ, NY, OH, VT, WV]
+
+scenarios:
+  - name: spliced_log_gate
+    covid: drop
+    outcome: y_log_pp
+    effect_grid: [0]
+    n_reps: 2000
+  - name: spliced_log_mde_twfe
+    covid: drop
+    outcome: y_log_pp
+    estimators: [twfe]
+    effect_grid: [0, 0.03, 0.06, 0.09, 0.12, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50, 0.60, 0.80]
+    n_reps: 500

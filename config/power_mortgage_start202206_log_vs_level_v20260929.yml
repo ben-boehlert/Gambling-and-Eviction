@@ -1,0 +1,69 @@
+# 2026-09-29: LOG vs LEVEL on the JUNE-2022 mortgage window (10 switchers).
+# Log size gates for both placement arms (level gates: mortgage_lpdid_l618_pmd3_
+# start202206_gate_v20260929), plus level AND log MDEs on the pre-COVID arm --
+# identical placements and seeds, so the two MDEs are a like-for-like comparison.
+# y_log_pp delta is in log points; y_pp delta in percentage points.
+# The real-era arm is not given MDEs: it places only 6 of 10 switchers.
+
+run_name: mortgage_start202206_log_vs_level_v20260929
+
+level:       state_mortgage
+outcomes:    [y_pp]            # rate in percentage points; logs not built (0.1pp rounding, see loader)
+mechanisms:  [deterministic]   # delta is a pp shift; count mechanisms are undefined for a rate
+
+schedule:    data/raw/sports_gambling_legalization_dates.csv
+treat_def:   online_start_date # launch-indexed: outcomes are horizons 6..18 after online launch
+exclude_states: [NV]           # always-treated since 1949. WA/MN/HI/MS/ID eviction exclusions are
+                               # eviction-series decisions; the mortgage series is whole-state CFPB.
+
+sample:        [S2]
+designs:       [D1]
+shapes:        [step]
+control_group: notyettreated
+template:      panel
+est_anticipation: 0
+
+estimators:    [twfe, lpdid]
+lpdid_wild:    true
+lpdid_anchor:  event_clean
+lpdid_pmd:     3
+lpdid_hmin:    6
+lpdid_post:    18
+lpdid_weights: ewatt
+eligibility:          presence
+min_horizons:         7
+splice_buffer_months: 0
+
+effect_grid: [0]               # size gate only
+n_reps:      2000              # MC SE ~0.005 at p = 0.05; classifies against the 0.075 line
+base_seed:   20260723
+mde_boot:    200
+alpha:       [0.1, 0.05, 0.01]
+min_pre:     3
+min_post:    12
+anticipation_months: 6
+
+covid_drop: ['2020-03-01', '2022-05-31']   # sample start 2022-06
+template_states: [DE, FL, KS, KY, MA, MD, ME, NC, OH, VT]
+
+scenarios:
+  - name: precovid_log_gate
+    covid: pre
+    outcome: y_log_pp
+    effect_grid: [0]
+    n_reps: 2000
+  - name: start202206_log_gate
+    covid: post
+    outcome: y_log_pp
+    effect_grid: [0]
+    n_reps: 2000
+  - name: precovid_pp_mde
+    covid: pre
+    outcome: y_pp
+    effect_grid: [0, 0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.14, 0.16, 0.18, 0.20, 0.25, 0.30, 0.40]
+    n_reps: 500
+  - name: precovid_log_mde
+    covid: pre
+    outcome: y_log_pp
+    effect_grid: [0, 0.03, 0.06, 0.09, 0.12, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50, 0.60, 0.80]
+    n_reps: 500

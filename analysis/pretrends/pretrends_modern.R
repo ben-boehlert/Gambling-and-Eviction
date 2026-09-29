@@ -31,6 +31,7 @@ suppressPackageStartupMessages({
   library(HonestDiD)
   library(pretrends)
 })
+source("utils/eviction_treatment_schedule.R")  # drop_pre_paspa_states(): NV never enters
 
 # Load MASS last to avoid conflicts
 library(MASS)
@@ -385,6 +386,7 @@ build_panel_with_spec <- function(panel_raw, gambling_dates, spec, activity_date
     character()
   }
 
+  panel <- drop_pre_paspa_states(panel, "pretrends_modern")
   if (length(exclude_vec) > 0) {
     panel <- panel %>% filter(!state_abb %in% exclude_vec)
   }
