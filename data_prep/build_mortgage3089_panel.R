@@ -19,8 +19,13 @@ suppressPackageStartupMessages({
 })
 source("utils/eviction_treatment_schedule.R")
 
-IN  <- "data/raw/StateMortgagesPercent-30-89DaysLate-thru-2025-03.csv"
-OUT <- "data/processed/mortgage3089_treatment_panel.csv"
+# MORT_FILE / OUT_FILE env (2026-10-09): defaults unchanged (30-89). Set
+#   MORT_FILE=data/raw/StateMortgagesPercent-90-plusDaysLate-thru-2025-03.csv
+#   OUT_FILE=data/processed/mortgage_treatment_panel.csv
+# to rebuild the 90+ panel on the CURRENT schedule (the 2026-01-23 build of that
+# file predates the 2026-08-10 schedule repair and lacks DE FL KY ME NC VT MO).
+IN  <- Sys.getenv("MORT_FILE", "data/raw/StateMortgagesPercent-30-89DaysLate-thru-2025-03.csv")
+OUT <- Sys.getenv("OUT_FILE",  "data/processed/mortgage3089_treatment_panel.csv")
 
 mw <- read_csv(IN, show_col_types = FALSE) %>% filter(RegionType == "State")
 mc <- grep("^\\d{4}-\\d{2}$", names(mw), value = TRUE)

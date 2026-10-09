@@ -2220,3 +2220,1025 @@ Full memo: `quality_reports/session_2026-09-14_panel_audit_and_design_review.md`
 **Status:**
 - Done: swap documented, panel fixed and committed
 - Pending: Ben to review the uncommitted remainder (R/power, configs, ESTIMATOR_MATRIX.md, ets_county_month.csv); v20260914 configs still carry stale 40-state headers
+
+## 2026-09-16 13:45 — County arm renter weights, exact weighted WCR, four size gates
+
+**Operations:**
+- `R/power/run_estimators.R`: new knob `lpdid_unit_weights` (none|renters); `.re_lpdid_weights()` takes unit weights (a-weighted Dbar); new exact weighted wild engine `.re_lpdid_wcr_weighted()` (cell FE re-estimated per draw, G×G per-draw algebra, enumeration rule + two-tailed p as boottest, CI by inversion); wild row dispatches to it when unit weights are on
+- `R/power/run_scenario_grid.R`: knob plumbed (grid, conditional hash — hashed only when non-default, so all existing ids unchanged — and spec)
+- Tests: +7 in `tests/testthat/test-estimators.R` (112/112 pass), +1 in `test-grid.R` (only the pre-existing exclude_states failure remains)
+- New: `analysis/diagnostics/county_vs_state_dispersion_decomposition.R` (+ `output/county_vs_state_dispersion/`), configs `power_lpdid_clean_gate_county_ewatt_pmd6_wild_rw_v20260914{,_w126}.yml`, `power_lpdid_clean_gate_ewatt_pmd6_v20260914_w126.yml`, `docs/findings-archive/2026-09-16_county-arm-renter-weights.md` (+ INDEX)
+- Runs (all local, 0 failure rows): county rw wild gate 2,000×2; state p42 comparator 1,000×2; state (12,6) twin 1,000×2; county rw (12,6) twin 1,000×1. Dev-probe dir `output_blinded_power/_smoke_rw_county` (4 reps) is noise
+- Updated: FINDINGS §2/§5, ESTIMATOR_MATRIX §2 + gap 2, RUN_LEDGER (5 rows; unweighted county wild gate marked SUPERSEDED-before-running), CLAUDE.md knob line, research journal
+
+**Decisions:**
+- County arm runs renter-weighted only — unweighted county ewatt weights states by LSC county count (KS 1 vs KY 120), a vendor footprint, not an estimand
+- Weighted wild implemented exactly (FE re-estimated per draw) rather than the hold-FE-fixed shortcut of `ddd_wild.R`: the shortcut differs when FE span clusters (2/256 draws reordered on the toy) — flag for the DDD arm, whose header claims equivalence with boottest fe=
+- State arm left unweighted (pre-registered); a renter-weighted state run is one flag away
+
+**Results:**
+- County-count reweighting was the entire county SD advantage (dispersion decomposition: county-count-weighted 0.92×, equal-state county means 1.20× the state panel)
+- Same window (12,6): county unweighted SD 0.030, county rw 0.037, state 0.034 — no precision gain from county; county rw analytic 0.051 / SE/SD 0.99 / coverage 0.949 / null +0.0008 (best-calibrated analytic cell), wild 0.020 conservative
+- (18,0) gate: county rw wild 0.011 PASS (conservative), analytic 0.066, null −0.0005, SD 0.050; postcovid FAILS (wild 0.106, 5T/7C)
+- **(18,0) eligibility window nearly doubles the state SD (0.034 → 0.063) at identical 24T/11C; the rebuild itself lowered it (0.039 → 0.034)** — open PAP decision before any MDE re-registration
+
+**Commits:**
+- `9ab8741` LP-DiD analytic df uses stack-contributing clusters (+ test) — pre-change snapshot; everything above is uncommitted
+
+**Status:**
+- Done: knob, engine, tests, four gates, docs
+- Pending: Ben's decisions on (a) the (18,0) vs (12,6) eligibility rule, (b) whether the county arm's MDE rides on the conservative wild arm or the near-nominal analytic arm; county-rw MDE run; DDD wild header claim to re-check; stale (12,6) header comment in the original county wild config; commit
+
+## 2026-09-16 14:20 — Eligibility-window placement probe
+
+**Operations:**
+- New: `analysis/diagnostics/eligibility_window_placement_probe.R` (+ `output/eligibility_window_probe/`); ledger §4 row; FINDINGS §5 bullet expanded; archive addendum
+
+**Results:**
+- (18,0) vs (12,6) on the same panel: contributing switchers 16.3 vs 11.8, thin (≤3 horizons) 4.9 vs 1.7, usable horizons 119 vs 114, SD 0.060 vs 0.033. The added contributors' outcome months sit at the COVID edges (2020-01/02, 2021-08..10) or series ends.
+- Neither rule guarantees the estimator's inputs (span check vs presence); the fix is estimator-side (minimum-horizons filter or splice-adjacent exclusion) — Ben's decision
+
+**Commits:** none
+
+**Status:** Pending: eligibility-rule decision; consider an `lpdid_min_horizons` knob
+
+## 2026-09-16 — Missing-county importance diagnostic
+
+**Operations:**
+- Ran `analysis/diagnostics/missing_county_importance.R`, producing `data/processed/missing_county_time_structure.csv`, `missing_county_filings_benchmark.csv`, `missing_county_filings_top.csv`, `missing_county_addability.csv`
+- Recorded results in `docs/findings-archive/2026-09-16_missing-county-importance.md`, `RUN_LEDGER.md`, and `FINDINGS.md`
+
+**Decisions:**
+- Documentation-only pass — no R script or CSV was modified, nothing was committed
+
+**Results:**
+- 86% of excluded-county feed filings (1,137,768 total) sit in counties missing <=12 months, mostly 2023-24 trailing dropouts in TX/FL/GA/TN; a 2023-11 basket-window end readmits 71.5% of that mass
+- Absent-from-feed mass is FL 50.4% / GA 90.0% / TX 39.0% / CO 24.4% of state filings (annual benchmark), with no acquired source for the big absent counties (Denver, Broward, Orange, Fulton, DeKalb, Gwinnett, Dallas, Bexar)
+- Of 1,498 missing county records, 35 addable by relaxing the basket rule, 181 more appear in `ets_county_month.csv`, 86% have no known source
+
+**Commits:**
+- None (documentation only, per instruction not to commit)
+
+**Status:**
+- Done: archive note, ledger row, FINDINGS bullet, session report
+- Pending: basket-window-end decision (2024-12 vs 2023-11); FL and Denver county acquisition; `ACS=TRUE` re-run for true state renter shares
+
+## 2026-09-16 16:50 — Inclusion rule implemented; first K=7 gates are design-infeasible at the real dates
+
+**Operations:**
+- New `R/power/inclusion_rule.R`; presence eligibility + cohort dropping + `template_states` in `make_pseudo_schedules.R`; `lpdid_min_horizons` / `lpdid_excluded_months` in `.re_lpdid`; knobs `eligibility`, `min_horizons`, `splice_buffer_months`, `template_states` in `run_scenario_grid.R` (hashed only when non-default); `MIN_HORIZONS` / `SPLICE_BUFFER` parity in `analysis/main/lpdid_statepanel.R` (not run)
+- Tests: `test-inclusion-rule.R` (new, 18), schedules +3, estimators +2, grid +1 — all pass except the pre-existing exclude_states failure
+- New diagnostics: `analysis/diagnostics/inclusion_rule_real_switchers.R` (10 of 26 launched states pass: AR KS MA MD ME NC OH KY DE VT), feasibility sweep 30/30
+- Runs: state k7 gate 1,000×2 complete; county k7 rw gate spliced complete, postcovid interrupted at 375/2,000 (worker killed externally); dev dirs `_smoke_k7_state`, `_smoke_k7_county`
+- Docs: ledger (4 rows), FINDINGS §5 (rule decided + standing trap + options A/B/C), archive addendum 2, CLAUDE.md knobs, journal
+
+**Decisions:**
+- Rule (Ben): K = 7 usable outcome months, 3-month splice buffer excluded as outcomes, strict 6-month baseline; one rule for placement, estimator, and real-data script
+- Template restricted to the real rule-passing switchers via a coverage-only audit (the blinded panel cannot evaluate real switchers at their own launches)
+
+**Results:**
+- State k7 spliced: SD(att) 0.215, wild 0.043, null +0.008 — NOT a gate: 36/40 reps pseudo-treat the same 8 never-treated states (AK GA MN MO OK SC TX UT) at real 2022–2024 dates where they are also the whole control pool (untreated coverage 28 states in 2019 → 8 in 2024)
+- County k7 spliced: wild 0.049, SD 0.2460, 7T/19C — same pathology
+- Standing trap: a pseudo-treatment design cannot reproduce the real post-COVID design at its own dates
+
+**Commits:** none (working tree)
+
+**Status:**
+- Pending: Ben chooses A (rule + template slid pre-COVID, random feasible anchor, era inflation) / B (shrink template to the post-COVID pool) / C (post-COVID design un-simulable); then re-run gates and queue MDEs (Della); placement memoization (perf); DDD wild header claim
+
+## 2026-09-17 — Value censor (UT, CO), LSC QA column, hybrid-provenance relabel
+
+**Operations:**
+- New diagnostic `analysis/diagnostics/covid_window_variance_profile.R` (blind-safe placebo dispersion by COVID-window end); outputs in `output/inclusion_rule/`
+- `data_prep/rebuild_state_month_panel.R`: carries `lsc_pct_of_hist_avg` + `lsc_pct_coverage`; adds `VALUE_CENSOR` (UT 2023-11/12, CO 2023-11); adds `HYBRID_SOURCE` relabel (NC 36 rows, ME 23 rows); adds plausibility QA block; header rewritten to state the source file is a hybrid
+- Panel rebuilt: 4,304 → **4,301 rows, 42 states**. Snapshot `data/raw/deprecated/state_month_panel_with_treatment_pre_value_censor_2026-09-17.csv`
+- `docs/DATA_CURRENCY.md` regenerated; `CLAUDE.md`, `docs/STATE_SOURCES.md`, `RUN_LEDGER.md` (boundary 9 + diagnostic row), `docs/findings-archive/` (memo + INDEX) updated
+- Two memories written: county-download-is-hybrid-not-lsc, lsc-ships-a-plausibility-column
+
+**Decisions:**
+- Censor UT 2023-11/12 and CO 2023-11 — confirmed at county level and identical in a fresh 2026-09-17 LSC pull, so upstream, not ingest
+- Flag rather than censor VA 2022-01/02 and NY 2022-01 — genuine post-moratorium recovery
+- Do NOT re-ingest the fresh LSC download — it is a strict subset; re-downloading deletes NC 2023-07→2026-06 and ME 2024-01→2025-11
+- Relabel `panel_source` rather than only documenting — the mislabel was the proximate cause of the repeated misreading
+
+**Results:**
+- UT's two months sat in the baselines of NC, DE and VT: long-difference SDs 0.329/0.316/0.316 → **0.054/0.083/0.083**; pooled SE **0.0731 → 0.0455 (−38%)**
+- Censoring two state-months bought ~8x what moving the COVID drop window does (the three windows now sit at 0.0438 / 0.0455 / 0.0443)
+- Baseline is the noisier half despite averaging 6 months against 13 → variation is persistent state drift, not monthly noise
+- Corrections made this session: NC was NOT retracted by LSC (hybrid file, already documented); the buffer width is near-inert (one state, WV, at buffer 0 only); K=7 and splice exclusion WERE Ben's decision (2026-09-16 18:28), the 3-month buffer width was not
+- Tests: inclusion-rule 18/18, schedules 26/26
+
+**Commits:**
+- none — working tree still uncommitted past `9ab8741`
+
+**Status:**
+- Done: censors, QA column, provenance relabel, docs, memo, ledger boundary 9
+- Pending: **A/B/C anchor decision still open** — LP-DiD re-run blocked on it, and now also needs a fresh `run_name` for the 2026-09-17 panel vintage
+
+## 2026-09-17 (cont.) — Two-band plausibility censor
+
+**Operations:**
+- `data_prep/rebuild_state_month_panel.R`: added `.local_level()` (leave-one-out rolling median x seasonal factor) and an iterative two-band censor; new QA file `data/processed/state_panel_plausibility_censor.csv`
+- Panel 4,301 → **4,291 rows, 42 states**; DATA_CURRENCY regenerated; CLAUDE.md, RUN_LEDGER boundary 9 + diagnostic row, memo §5b updated
+
+**Decisions:**
+- Bands (Ben): interior 50–150%, terminal 70–130% — tighter at series end
+- Applied to the state-relative measure, not the raw LSC percentage. Raw bands deleted AR's entire post-2022 series (level shift, median reading 171); same-month-across-years deleted AR in both directions and flagged NY every July (season). Level x season isolates the local break.
+- MN 2025-09 censored under the band rather than flagged, per the band decision
+
+**Results:**
+- 10 rows removed across 6 states: CT 2025-07; DE 2025-08/09; GA 2023-05; MN 2022-01, 2024-01, 2025-09; MS 2019-07, 2022-07; OH 2025-06
+- Switcher set unchanged at 10; pooled placebo SE 0.0455 → **0.0417** (0.0731 → 0.0417 across the whole session, −43%)
+- Across COVID windows now 0.0409 / 0.0417 / 0.0431 — window choice nearly irrelevant to precision
+- **DE now has exactly K=7 usable outcome months** — one more censored DE month drops it from the set
+- Mechanism corrections: OH 2025-06 is Hamilton County alone, not a whole-state partial; MN 2025-07 is 1 basket county of 22 (McLeod), not 11 of 60, and nothing backfilled into September
+
+**Status:**
+- Done: band censor, QA files, docs, ledger, memo
+- Pending: A/B/C anchor decision; LP-DiD re-run needs a fresh `run_name` for the 4,291-row vintage
+
+## 2026-09-17 (cont. 2) — Breadth-aware band; monthly-change distribution
+
+**Operations:**
+- New diagnostic `analysis/diagnostics/monthly_change_distribution.R` → `figures/monthly_change_distribution.png`, `output/inclusion_rule/monthly_change_quantiles.csv`
+- `rebuild_state_month_panel.R`: band width is now K x each state's OWN robust dispersion (K=7.0 interior / 4.2 terminal); COVID exemption extended to 2022-06; censor QA file gains `s_state`, `z`, `band`
+- Panel 4,301 → **4,294 rows, 42 states**; DATA_CURRENCY regenerated; CLAUDE.md, RUN_LEDGER boundary 9 + diagnostic row, memo updated
+
+**Decisions:**
+- Breadth-aware band (Ben) — per-state dispersion spans 4.1 (PA) to 17.0 (MS); 8 of 10 fixed-band removals were thin-basket states
+- K calibrated so median dispersion reproduces the 50–150 / 70–130 bands exactly
+- COVID exemption to 2022-06 — the shorter window flagged 11 states in 2022 Q1 (a moratorium unwind)
+
+**Results:**
+- Monthly-change distribution (ex-COVID, >=100 filings, constant composition): state p99 +48.4%, 0.91% exceed +50%; **broad-basket states only (>=10 counties): p99 +38.8%, 0.41% exceed +50%** — over half the fat tail was thin-series noise
+- Strong asymmetry: at +/-50%, 0.90% up vs 0.12% down; excess kurtosis 6.3 (state), 25.2 (county)
+- Under a core-fitted normal +50% would be 1-in-29,507 in broad-basket states vs 1-in-243 observed — 120x fatter
+- Extreme up-moves PERSIST (level 1.64x at t, 1.51x at t+1), so they are level shifts, not reverting reporting spikes
+- Censored 7: CO 2023-10, CT 2025-07, DE 2025-09, GA 2023-05, MN 2024-01, MN 2025-09 (z +11.2), OH 2025-06. MS and DE 2025-08 correctly spared; DE holds 8 horizons
+- Pooled placebo SE 0.0731 → **0.0463** (the earlier 0.0417 was partly spurious — it censored real post-moratorium months)
+
+**Status:**
+- Done: breadth-aware band, change-distribution diagnostic, docs
+- Pending: A/B/C anchor decision; LP-DiD re-run needs a fresh `run_name` for the 4,294-row vintage
+- Noted, not fixed: AR's inclusion-rule baseline [2021-09, 2022-02] sits inside the moratorium unwind
+
+## 2026-09-17 (cont. 3) — Splice-clean baseline; AR out
+
+**Operations:**
+- `R/power/inclusion_rule.R`: `baseline_clean` (default TRUE) — baseline must contain no splice-excluded month
+- `R/power/run_estimators.R` `.re_lpdid`: excluded months set NA in `Y` before the baseline is formed (`lpdid_baseline_clean`)
+- `R/power/run_scenario_grid.R`: config knob `baseline_clean`, hashed wherever `splice_buffer_months > 0` (every k7 id changes; no other id moves)
+- `analysis/main/lpdid_statepanel.R`: `baseline_at()` parity, env `BASELINE_CLEAN`
+- Both `_k7` configs: `template_states` drops AR (9 cohorts)
+- 3 new tests in `test-inclusion-rule.R`; memo `docs/findings-archive/2026-09-17_splice-clean-baseline.md`; FINDINGS §5, RUN_LEDGER, CLAUDE.md, INDEX updated
+
+**Decisions:**
+- Baseline held to the same splice standard as the outcome (Ben) — a month too close to the splice to measure an outcome is too close to anchor one
+
+**Results:**
+- Switcher set 10 → **9: KS MA MD ME NC OH KY VT DE**. AR is the only state affected
+- Pooled placebo SE 0.0463 → **0.0443**; every remaining switcher is below the break-even threshold (max 0.167 vs 0.181)
+- COVID-window choice now irrelevant: 0.0443 / 0.0443 / 0.0447 across the three candidate ends
+- **Correction:** AR 2021-09 is NOT an anomaly. Its 164%-of-historical-average reading is an artifact of LSC's FIXED pre-2020 denominator (verified: Pulaski September = 168.8 in every year 2016–2025). Against its own neighbours it is +17%, broad-based across 9 of 12 basket counties. AR is excluded on the rule, not the data
+- Tests: inclusion-rule 27/27, schedules 26/26, estimators full pass, grid = only the pre-existing `exclude_states` failure
+- Process: a `str.replace` injected the estimator patch into the LDAM builder too, breaking 5 assertions; isolated by re-running with the patch removed, fixed by deleting the duplicate
+
+**Status:**
+- Done: splice-clean baseline across module, estimator, grid, real-data script, configs, tests, docs
+- Pending: A/B/C anchor decision; LP-DiD re-run needs a fresh `run_name` for the 4,294-row vintage (k7 ids already change on their own via `baseline_clean`)
+
+## 2026-09-17 (cont. 4) — Maine LSC corruption found and repaired
+
+**Operations:**
+- Diagnosed: ME's LSC history carried the PREVIOUS year's values in Jun–Dec of every year 2016–2023 (0 of 49 Jun–Dec months matched the live file; 37 pairs matched at a 12-month lag exactly). Only affected state.
+- Repaired `data/raw/monthly_county_data_download.csv` from the 2026-09-17 live download: ME 2016-01..2023-05 replaced (89/89 now match), 2023-06..2023-12 dropped (LSC zeros; repo values corrupted), 2024-01+ court tail untouched. 124,325 → 124,213 rows; non-ME rows byte-identical.
+- Panel rebuilt: 4,294 → **4,287 rows, 42 states**. Both `_k7` configs drop ME from `template_states`.
+- `.read_state_panel()`'s bare `filter(state_abb != "ME")` documented in place (no behaviour change).
+- Memo `docs/findings-archive/2026-09-17_maine-lsc-corruption-and-repair.md`; RUN_LEDGER boundary 10; FINDINGS, CLAUDE.md, INDEX, DATA_CURRENCY updated.
+- Backups: `data/raw/deprecated/monthly_county_data_download_pre_me_repair_2026-09-17.csv`, `..._state_month_panel_with_treatment_pre_me_repair_2026-09-17.csv`
+
+**Decisions:**
+- Drop ME 2023-06..2023-12 rather than keep either vintage — LSC publishes zeros, the repo held corrupted prior-year figures
+- Keep the loader's ME filter for now — removing it takes the blinded panel 39 → 40 states, a vintage boundary that should be deliberate
+
+**Results:**
+- Switcher set 9 → **8: KS MA MD NC OH KY VT DE** (ME's baseline [2023-05, 2023-10] is now a gap — the data decides, not a judgement call)
+- Pooled placebo SE 0.0443 → **0.0483**, the cost of a lost cluster
+- The D1 template and the real switcher set now match exactly at 8 — ME was the one switcher absent from the framework panel
+- **Boundary 10 moves the COUNTY arm as well as the state arm**
+- Correction to my own earlier read: I called the ME filter arbitrary and recommended removing it. It was correct; only its documentation was missing
+- Standing caution recorded: the 2026-09-14 provenance correction compared county-file vintages BY KEY and missed that 53% of ME's shared keys carried different values
+
+**Status:**
+- Done: ME repair, panel rebuild, configs, loader comment, memo, ledger boundary 10, docs
+- Pending: A/B/C anchor decision; LP-DiD re-run needs a fresh `run_name` for the 4,287-row vintage
+- Open for Ben: whether to remove the loader's ME filter (39 → 40 blinded states); whether ME's 2023-06..12 can be recovered from Maine Judicial Branch extended backwards
+
+## 2026-09-17 (cont. 5) — Maine made LSC-only; court parse diagnosed as fiscal-year shift
+
+**Operations:**
+- Diagnosed the displaced source correctly: it is `me_fed_state_month_courtsource.csv` (Maine Judicial Branch parse, 119/119 match to the old repo rows), NOT an LSC vintage. Signature is a fiscal-year mislabel — Jun–Dec displaced 12 months, Jan–May never (0 of 40)
+- Corrected the memo and ledger, which had blamed LSC
+- Per Ben: dropped ME's court tail (2024-01..2025-11, 368 county-rows). ME is now 89 clean LSC months, 2016-01..2023-05, no gaps
+- County file 124,213 → **123,845 rows**; panel 4,287 → **4,264 rows, 42 states**; DATA_CURRENCY regenerated
+
+**Decisions:**
+- Maine is LSC-only — the discarded months are all post-launch, and a launched state failing the rule is never a switcher and never a control, so nothing analytical is lost
+
+**Results:**
+- Switcher set unchanged at **8: KS MA MD NC OH KY VT DE**; pooled placebo SE unchanged at **0.0483**
+- ME's entire untreated window (2016-01..2023-04) is now covered with no gap
+- The 2026-07-23 repair script's header had recorded the divergence and attributed it to a "staler MEJIS snapshot"; agreeing early in the year and diverging later is the fiscal-year signature, not staleness
+
+**Status:**
+- Done: ME LSC-only, panel rebuild, docs, ledger boundary 10 corrected
+- Open for Ben: (1) remove the loader's ME filter? ME would add 88 untreated months (50 pre-COVID), taking the blinded panel 39 → 40 — a vintage boundary; (2) re-parse `fed-monthly15yr-report.pdf` with the correct fiscal-year mapping if Maine's post-2023 months are wanted back
+- Pending: A/B/C anchor decision; LP-DiD re-run needs a fresh `run_name` for the 4,264-row vintage
+
+## 2026-09-17 (cont. 6) — Maine re-parsed (FY fix); ME restored; excluded states assessed
+
+**Operations:**
+- New `data_prep/add_me_to_state_panel.R`: relabels the Maine Judicial Branch parse's Jun–Dec months back 12 months, splices live LSC (≤2023-05) + corrected court (2023-06..2025-05) = 113 months, no gaps. Audit file `data/raw/monthly_expansion/me_fed_state_month_fyfixed.csv`
+- ME added to `KEEP_OLD`; ME removed from `HYBRID_SOURCE`; **`filter(state_abb != "ME")` removed from `.read_state_panel()`** → blinded panel 39 → 40 states
+- Both `_k7` configs: `template_states` back to 9 with ME. Panel **4,288 rows, 42 states**. Rebuild verified idempotent (two consecutive runs, same row count)
+
+**Results:**
+- Relabel validation vs live LSC, 89 overlapping months: unfixed 27 exact / mean |diff| 49.81; **Jun–Dec relabel 64 exact / 0.92**; Jul–Dec relabel 11.15 → June is the boundary
+- **ME is a switcher again at exactly K=7** (7 usable horizons, sd_ld 0.087). Switcher set **9: KS MA MD ME NC OH KY VT DE**; pooled placebo SE 0.0483 → **0.0442**
+- All 9 template cohorts now exist in the framework panel — the simulated and real designs match exactly for the first time
+- **No free data in the fresh LSC download.** The 10 states where LSC extends past the panel are basket-incompleteness refusals or censored terminal months (verified: AZ loses Maricopa 7,944 → 841; FL 5 of 6; GA 1 of 2). The guards are working
+- Excluded-state assessment: ID never-legalized, 44 counties statewide to 2026-06, would add a late-period control (8 → 9 at 2024-06); HI never-legalized but LSC's own series ends 2022-09; MS one county and treated 2018-08; **NM and NY have ZERO untreated months** and cannot be fixed without pre-2018 / pre-2019 data
+
+**Status:**
+- Done: ME FY re-parse, splice, KEEP_OLD, loader filter removal, configs, docs
+- Open for Ben: revisit `exclude_states: [NV, ID, HI, MS]` — the ID entry predates the 2026-09-14 swap from Twin Falls (1 county) to the statewide 44-county series, the same stale-exclusion pattern as the ME filter
+- Pending: A/B/C anchor decision; fresh `run_name` for the 4,288-row / 40-state vintage
+
+## 2026-09-17 (cont. 7) — Idaho un-excluded then restored; NY source scouted
+
+**Operations:**
+- Removed ID from `exclude_states` in both `_k7` configs and the two live diagnostics; measured; **restored it the same session**
+- Configs now carry the full rationale for each of NV/ID/HI/MS
+
+**Results:**
+- Including ID gives every switcher +1 control but RAISES the pooled placebo SE **0.0442 → 0.0504 (+14%)**
+- Cause: ID is a genuine outlier, not just an extra cluster. Its own long difference at MD's calendar position is **+0.318, two SDs above the mean of the other eight controls** and the most extreme of any — consistent with CLAUDE.md's standing note that Idaho is "the single most extreme state in 100% of pre-era variance placements"
+- Correction: I removed the exclusion believing Twin Falls was its only basis. It was not — the data-quality basis is separate, predates the county issue, and still holds on the statewide series. Restoring a documented prior decision, not picking controls by SD
+- Note: the `c("NV","ID","HI","MS")` exclusion is hardcoded in ~12 diagnostic scripts; only the two feeding current numbers were touched. Worth centralising in `utils/eviction_treatment_schedule.R` alongside the universe helpers
+
+**NY pre-2019 source (scouted, not acquired):**
+- NY OCA "Customized Statewide Landlord and Tenant Data Extract" (UCMS-LC) covers **all eviction cases filed from 2016 to present** in all NY **city courts** plus Nassau and Suffolk — it does NOT cover town/village courts (rural)
+- Public routes: Housing Data Coalition ETL (github.com/housing-data-coalition/oca, CSVs, weekly); NYU Furman Center publishes ZIP-level monthly for each city plus Nassau/Suffolk
+- **The constraint is the seam, not availability.** The repo's NY starts 2019-01 precisely because the pre-2019 block was a different basket. Splicing OCA onto LSC-2019+ recreates that. The clean route is to rebuild NY **entirely** from OCA 2016–present as one consistent source, accepting a city-court basket
+
+## 2026-09-17 (cont. 8) — Idaho verified and un-excluded (final position)
+
+**Operations:**
+- Audited the statewide Idaho A12 series for a Maine-style artifact; none found
+- **ID removed from `exclude_states`** in both `_k7` configs (with the full audit in the config headers) and from the two live diagnostics
+- CLAUDE.md's Idaho note re-scoped to the retired Twin Falls basket; RUN_LEDGER gains an `idaho_statewide_verification` row; FINDINGS updated
+
+**Results:**
+- A12 statewide vs LSC's own Idaho total: **r = 0.918**, mean |diff| 7.55 filings on ~250/month, 51% exact — ordinary revision noise, not displacement
+- **41–43 of 44 counties report every year** — no composition-driven level shift
+- 58% of the growth is Ada County (Boise) and it is a **ramp, not a step**: 40–78 (2021) → 58–97 → 70–149 → 103–167 (2024) → easing
+- Idaho's trend is 6th of 13 never-treated controls (9.6%/yr vs 7.2% median) — not an extreme state
+- Control pool **8 → 9 at 2024-06, 7 → 8 at 2025-06**; pooled placebo SE 0.0442 → **0.0504**
+- Position changed three times this session; the final one is the only one based on auditing the data rather than inheriting a comment. The +14% SE is accepted deliberately: excluding a control on its realized outcome movement is selecting controls on the outcome
+
+**Status:**
+- Done: ID verified and included; ME repaired and restored; switcher set **9 (KS MA MD ME NC OH KY VT DE)**; panel 4,288 rows / 42 states; blinded panel 40 states
+- Pending: **A/B/C anchor decision** — the only thing still blocking the LP-DiD re-run; needs a fresh `run_name` for this vintage
+
+## 2026-09-17 (cont. 9) — "Fewer counties, longer series?" audited
+
+**Question (Ben):** take a narrower NY basket to gain pre-2019 history rather than exclude NY.
+
+**Findings:**
+- **NY: impossible within LSC.** LSC's New York begins **2019-01** — no county has data before that, so no basket choice reaches the pre-2019 untreated window. NY needs the OCA extract (2016+, city courts + Nassau/Suffolk) or nothing
+- **Audit of all 42 states:** only ONE has a panel start later than its county source — **Idaho** (source 2016-01, panel 2021-01, 60 months lost), because ID is sourced from the A12 statewide series, whose dashboard is a rolling 5-year window
+- **The Idaho trade is real but not free.** A 2-county LSC basket (Ada + Twin Falls) reaches 2016-08 and splices cleanly to the A12 county file — the SAME two counties agree across sources at r = 0.9555, **median ratio exactly 1.000**, mean |diff| 3.21 over 53 overlap months — giving a 119-month series with **43 pre-COVID months** vs the current 66 months with zero
+- **But the narrow basket is the MORE extreme one:** trend 13.6%/yr vs 9.6% statewide, and long difference at MD's window **+0.526 vs +0.316** (other controls ≈ −0.01). Ada/Boise is both the largest county and the growth driver, so keeping only it amplifies exactly the behaviour that makes Idaho costly as a control. Coverage falls to 43% of statewide filings
+- 1-county baskets are useless here for comparison: Twin Falls alone is 5% coverage, r = 0.387 with statewide
+
+**Decision:** keep the 44-county A12 series for now. **Revisit if option A is chosen** — 43 pre-COVID Idaho months are worth more under a pre-COVID template placement than under B or C.
+
+## 2026-09-17 (cont. 10) — NY OCA: the two court universes, quantified
+
+**The distinction that matters (verified on nycourts.gov):**
+- **Statewide LT Eviction Dashboard** — Jan 2019 to present, **ALL housing courts including town & village**. This is what LSC CCDI republishes (its NY source is `ww2.nycourts.gov/lt-evictions-33576`) and therefore what is in the panel today. It explains exactly why the panel's NY starts 2019-01
+- **OCA case-level de-identified XML (UCMS-LC)** — 2016 to present, **local civil courts EXCLUDING town & village**. This is the HDC/Furman route
+
+So extending NY back to 2016 means switching to a **narrower court universe**, not just an earlier start — a genuine basket change of the same class as Idaho's 44 → 2 counties, and it must be applied to the WHOLE NY series, not spliced.
+
+**Size of the trade (measured on the panel's own NY):** NYC's 5 boroughs are **63%** of NY filings; NYC + Nassau/Suffolk **70%**; the remaining 30% is upstate, a mix of city courts (inside OCA) and town/village courts (outside). OCA's coverage therefore sits between 70% and 100% — likely ~85–90%, since upstate city courts (Buffalo, Rochester, Syracuse, Albany, Yonkers) carry most upstate urban filings.
+
+**Much better trade than Idaho's:** lose ~10–15% of filings to gain ~36 untreated months on a 62-county, ~17k-filings/month state, versus Idaho's lose-57%-to-gain-43-months.
+
+**But conditional on the same decision.** NY cannot be a switcher under the inclusion rule — it launched 2022-01, so its baseline [2021-07, 2021-12] sits in the COVID gap (it is already in the dropped list with AZ CT LA MI TN VA CO). The pre-2019 months would make NY a large **pre-COVID control**, which is valuable under **option A** and worth nothing under B or C.
+
+**Recommendation:** worth acquiring if A is chosen; do not spend effort on it otherwise.
+
+## 2026-09-17 (cont. 11) — Could a shorter baseline recover the five gap-contaminated states?
+
+**Ceiling is THREE, not five.** The first clean pre-launch month after the gap is **2021-11** (COVID drop ends 2021-07, splice buffer covers 2021-08..10). AZ (launch 2021-09) and CT (2021-10) launch BEFORE it, so no clean baseline month exists for them at ANY length. Recoverable: AR at PMD <= 4, LA and NY at PMD <= 2.
+
+**Measured cost (placebo, blind-safe):**
+
+| PMD | switchers | med SD baseline | med SD long-diff | pooled SE |
+|---|---|---|---|---|
+| 6 (current) | 9 | 0.103 | 0.140 | 0.0504 |
+| 4 | 10 (+AR) | 0.123 | 0.150 | **0.0491** |
+| 3 | 10 (+AR) | 0.126 | 0.146 | 0.0496 |
+| 2 | 12 (+AR LA NY) | 0.138 | 0.161 | 0.0519 |
+
+At PMD=2 the noisier baseline exactly cancels the three extra clusters — point-estimate precision ends up WORSE than PMD=6. PMD=4 is a marginal win (one state, -2.6%).
+
+**Not captured by the table:** 12 vs 9 clusters is a 33% increase in the quantity that drives the SE *estimate* (df, wild bootstrap), which is the binding constraint in this design. That is a real argument for PMD=2 that the pooled SE cannot see.
+
+**The hazard to name:** PMD=6 is part of the estimand ("effect relative to a 6-month pre-launch baseline"), decided deliberately. Choosing PMD by how many states it admits is fitting the rule to the states — the exact reversal Ben objected to on 2026-09-16. A state-specific PMD would be worse still: the estimand would differ across switchers. Any change should be argued from what the design needs, with the admitted-state count as a consequence.
+
+## 2026-09-17 (cont. 12) — Option A implemented; smoke gate says the degeneracy is GONE
+
+**Operations:**
+- `anchor_rule` knob added to `make_pseudo_schedule()` (default `random_feasible`, `max_placed` reverts), wired through `run_scenario_grid` and hashed ONLY under `eligibility: presence`
+- Fresh `run_name` on both k7 gates: `..._v20260917_k7` (4,288-row / 40-state vintage)
+- **CLAUDE.md's documented run command was broken** — it named `run_from_config()`, which does not exist, and sourced only one of nine required modules. Corrected in place
+- Smoke gate: 40 reps, state, k7_spliced scenario → `output_blinded_power/_smoke_optA_state/`
+
+**Key results (40 reps — indicative, MC SE on a 0.05 rate is ±0.034):**
+
+| | 2026-09-16 | now |
+|---|---|---|
+| SD(att) | 0.215 | **0.112** |
+| reps with \|att\| > 0.5 | a pile at +1.06 | **0** |
+| control clusters | 0–5 | **28** |
+| converged | — | 40/40 |
+
+- `anchor_rule` makes NO difference: `candidates` was already `sample(0:slack)` and `max_placed` stopped at the first full placement, so it was already a uniform draw over full-template anchors. The change formalises it
+- **The degeneracy was largely the Maine exclusion.** With ME restored to the framework panel the 9-cohort template can fill, and 40% of reps now land pre-COVID where the control pool is up to 21 deep
+- **New issue visible:** LP-DiD analytic `se_sd_ratio` **0.591** — the analytic SE understates the sampling spread by ~40%; size 0.15 at α=0.05, coverage 0.85. The **wild bootstrap is nominal (0.05)**. TWFE is well-scaled (se_sd_ratio 0.965) but size 0.15 analytic / 0.10 wild
+- **Likely cause, and the next decision:** placements are now a MIXTURE — ~40% pre-COVID, ~60% real-era. SD(att) then mixes between-placement variance with sampling variance at a given design. Option A as originally specified was the template slid into the pre-COVID era *always*, not a mixture. Whether to restrict the anchor to pre-COVID or accept the mixture is now the open question — and it is a much narrower one than A/B/C
+
+**Status:** ready to run the full 1,000-rep gates. Pending: pre-COVID-only vs mixture anchor.
+
+## 2026-09-17 (cont. 13) — k7 MDE run: wild MDEs located (spliced still grid-capped)
+
+**Run:** `lpdid_clean_mde_ewatt_pmd6_v20260917_k7`, 300 reps x 14 deltas (0..0.60) x {twfe,lpdid}, 2 scenarios, 33,600 rows, 0 failures.
+
+**Recentered wild LP-DiD MDE (the pre-registered figure):**
+- **k7_postcovid: 0.311 [0.292–0.326]** — citable; wild size 0.063, SE/SD 0.882
+- **k7_spliced: 0.583 [0.524–0.600]** — CI upper bound IS the grid ceiling, so NOT reliably located; grid needs extending past 0.60. Spliced analytic also fails size (0.180, SE/SD 0.511)
+
+Raw wild: postcovid 0.305; spliced never_crosses_target. Size-adjusted wild: postcovid 0.320; spliced never crosses.
+
+**Against the 2026-08-28 headline (0.127 recentered wild, 12 switchers incl. 6 partial):** today's post-COVID arm is 0.311 — about 2.4x worse. The K=7 rule removed exactly the six partial switchers (NH 2 usable months, WV 4, FL 5, plus IN DE VT AR) that the August design counted. That is the rule's cost, as anticipated when it was chosen ("accept whatever SD falls out").
+
+**Attribution is NOT clean yet** — four things differ from August: reps (300 vs 1,000), placement rule (presence + 40/60 anchor mixture vs the legacy span box), panel vintage (twice), and the inclusion rule. A matched K=7-vs-span-box run on one panel at one rep count is needed before attributing the degradation to the rule.
+
+**Process note:** effect_grid IS hashed into the scenario id, so extending the grid forced a full recompute and left 9-delta partials under the OLD id in the same directory. Read oc_summary by scenario_id, never by scenario name.
+
+## 2026-09-17 (cont. 14) — SE "mess" diagnosed: sim post-COVID arms are non-representable; real-design SE is stable
+
+**Operations:**
+- Verified the framework end-to-end: serial (workers=1) == parallel (workers=4) bit-for-bit on a 300-rep scratch run; a standalone reproduction of every rep matches the grid to 1e-17 once `pseudo_launch` (event − 12 under shift12) is attached; the same schedule gives identical att/SE on the spliced and post-COVID panels (the 21 pre-COVID controls are inert for post-COVID placements)
+- Regenerated every rep's anchor for `lpdid_clean_mde_ewatt_pmd6_v20260917_k7` and decomposed null SD(att) within vs between anchor
+- Added `OUT_DIR` env override to `analysis/main/lpdid_statepanel.R` (default unchanged) so probes stop clobbering LIVE results; four blind SE probes to scratch ({ID out, ID in} × {no cap, MAX_DATE=2025-09-30})
+- Scratch sim runs moved to `output_blinded_power/deprecated/_par_test_w{1,4}`
+
+**Results (design diagnostics only; no ATT shown):**
+- Spliced arm SE/SD 0.50 decomposes: pre-COVID anchors (launches 2016-07..11, n=132) **SE/SD 0.96, mean att 0.000, SD 0.041** — calibrated. Post-COVID anchors (launches 2022-05..11, n=168): SD 0.167 = within 0.106 + between 0.129, mean att −0.064; the two latest anchors carry −0.20 / −0.27 offsets
+- Cause: at real-era anchors the 16 never-treated states must serve as both pseudo-switchers (9) and controls (7); the late cohorts' 2025-10+ months face a 4-state pool (ID MO NM WA). This is the pseudo-design, not the estimator — the post-COVID sim MDEs (0.311 / 0.583) describe that design, not the real one
+- Real design clean-control pool: 14–15 through 2025-09, **4 from 2025-10** (ID MO NM WA), 1 in 2026-06. Only NC's window (2025-03..2026-03) reaches into it
+- Real-data SE, 9 switchers: noID/nocap 0.0539 (wild-equiv 0.0626); ID/nocap 0.0529 (0.0588); noID/cap 0.0540 (0.0606); ID/cap 0.0546 (0.0613). Capping at 2025-09 costs 6 of 93 cells and no precision
+- Inconsistency found: `lpdid_statepanel.R` default `EXCLUDE_STATES` still holds ID; the k7 sim configs include ID (final position, cont. 8)
+
+**Status:**
+- Settled by the evidence: the anchor question — pre-COVID-only (`covid: pre` exists in the loader); the mixture arm is meaningless
+- Pending: re-run the k7 MDE grid as a `k7_precovid` scenario; align `EXCLUDE_STATES` default with the ID decision; decide on the 2025-09 outcome cap (or a ≥N-controls-per-month rule); RUN_LEDGER rows for these diagnostics
+
+## 2026-09-17 (cont. 15) — LSC site extension: 18 states extended to 2026-06; TX OCA pulled but not merged
+
+**Operations:**
+- Checked TX/MN/OK/SC/GA court routes against the May-2026 investigations: MN, OK, SC, GA publish no monthly eviction breakout (LSC is their source); TX OCA does
+- Pulled Texas OCA landlord/tenant monthly (data.texas.gov `8qme-eqs9`, 254 counties, 2023-01..2026-06; the 2018–2022 companion `t2fh-6f7n` is annual) → `data/raw/monthly_expansion/tx_raw/`, `tx_lt_county_month.csv`. **Not merged**: on the 8 LSC basket counties the basket-sum ratio OCA/LSC is 0.94 median drifting to 0.81 in 2025-05..08 (r 0.83; Galveston r 0.27) — a splice would inject a level shift
+- Found the real lever: LSC's bulk download ends 2025-09 for every state; its per-county pages carry static JSON to 2026-06. New `data_prep/pull_lsc_site_county_month.R` (1,461 pages, ~1 min, cache gitignored) and `data_prep/append_lsc_site_months.R` (append-only, revision audit, backup with MD5 check)
+- County file 123,845 → 130,927 rows (7,082 appended, 0 changed); panel rebuilt 4,288 → **4,429 rows, 42 states, all prior rows unchanged**; DATA_CURRENCY regenerated; RUN_LEDGER boundary 11; CLAUDE.md hybrid box + vintage list; DATA_PROVENANCE §1 update; `.gitignore` for the page cache
+- Backups: `data/raw/deprecated/monthly_county_data_download_pre_lsc_site_2026-09-17.csv`, `..._state_month_panel_with_treatment_pre_lsc_site_2026-09-17.csv`
+
+**Results (design diagnostics only):**
+- 18 states extend: CT +11, DE/MN/WV +10, AK AR IN KY NY OK PA SC TN VT +9, UT VA +8, TX +3, MT +2; terminal censor removed UT 2026-06
+- Never-treated clean-control pool from 2025-10: **4 → 11** (9 through 2026-05). DE and VT windows now 13/13 (were 8, 9); switcher set unchanged at 9
+- Real design, blind: analytic SE 0.0539 → **0.0505**; wild-equiv 0.0626 → **0.0555**; MDE₈₀ 0.175 → **0.155** (ID-in 0.0497 / 0.0552 / 0.155)
+- LSC revisions to shared history NOT applied: 1,112 keys (MN 590, CT 193, NY 169), median |rel| 4.5% → `data/processed/lsc_site_revisions_2026-09-17.csv`
+
+**Status:**
+- Done: LSC-site extension end to end; TX OCA staged
+- Pending: fresh `run_name` on the k7 configs for the 4,429-row vintage + the `k7_precovid` scenario; decide on LSC revisions (MN especially); decide whether TX becomes OCA-statewide from 2023-01; `EXCLUDE_STATES` default vs the ID decision
+
+## 2026-09-18 — Power on the boundary-11 vintage
+
+**Operations:**
+- New config `config/power_lpdid_clean_mde_ewatt_pmd6_v20260918_k7.yml` (run_name v20260918; `k7_precovid` with `covid: pre` replaces the mixture arm; `k7_postcovid` kept) — ran 300 × 14 × {twfe, lpdid} × 2 in 16 min, 0 failures → `output_blinded_power/lpdid_clean_mde_ewatt_pmd6_v20260918_k7/`
+- Real-data blind probe at BOOT_REPS=9999 (ID in) to scratch
+- RUN_LEDGER sims row; FINDINGS §2 paragraph
+
+**Results (design diagnostics only):**
+- k7_precovid: LP-DiD size 0.050 / 0.040 wild, SE/SD 0.987, null bias 1e-5, mean att = δ; recentered wild MDE 0.122 [0.117–0.125]; 9T/27C
+- k7_postcovid: size 0.070 / 0.057 wild, SE/SD 0.912, wild MDE 0.267 (was 0.311); 6T/10C — non-representable
+- Real design: 9 switchers, 19 controls, 97 cells; analytic SE 0.0497, wild-equiv 0.0551 → MDE₈₀ 0.139 / 0.154 (15–17% of filings)
+
+**Status:**
+- Pending: RI re-run on the new panel; LSC revisions decision; `EXCLUDE_STATES` default vs ID; commit
+
+## 2026-09-18 (cont.) — Do pre-COVID cohorts help? Blind probe of launch-indexed windows
+
+**Operations:** three scratch runs of `analysis/main/lpdid_statepanel.R` (`TREAT_DEF=raw`, PMD 6, K=7, buffer 3, baseline_clean, ewatt, ID in, B=1999; `OUT_DIR` scratch; SE only)
+
+**Results (design diagnostics only):**
+- Launch-indexed 0–12: 12 switchers / 33 controls, SE 0.0294, wild-equiv 0.0329, MDE₈₀ 0.092. 0–18: 0.0325 / 0.0351 / 0.098. 0–24: 0.035 / 0.0382 / 0.107
+- Era split: **pre-COVID cohorts = 2 switchers only** (wild interval degenerate at 2 treated clusters); post-COVID cohorts alone = 10 switchers / 23 controls, SE 0.0346 / 0.0403, MDE 0.113
+- So the gain over the 12–24 design (9 sw, SE 0.0497 / 0.0551, MDE 0.154) comes from the WINDOW (earlier calendar months, deeper not-yet-treated pool, FL admitted), not from adding pre-COVID states. Different estimand: includes the buildup months the 12–24 window was chosen to exclude
+- Only prior attempt: `output/deprecated/lpdid_statepanel/` (2026-08-20/21, 13 switchers incl. 3 pre-COVID) — CONTAMINATED (cellsize weights)
+
+## 2026-09-18 (cont. 2) — Outcome-window grid, blind
+
+**Operations:** seven more scratch runs of `lpdid_statepanel.R` (`TREAT_DEF=raw`, launch-indexed windows; PMD 6, K=7, buffer 3, ewatt, ID in, B=1999; SE only)
+
+**Results (switchers / controls / wild-equiv SE / MDE₈₀):** 0–12: 12/33/0.0329/0.092 · 3–15: 11/33/0.0388/0.109 · 6–12: 11/32/0.0378/0.106 (K=4 identical) · 6–18: 11/32/0.0407/0.114 · 6–24: 11/32/0.0437/0.122 · 9–21: 11/31/0.0429/0.120 · 12–24: 9/19/0.0543/0.152 (reproduces the shift12/event_clean 0.0497 analytic — parity check)
+- The cliff is between 9–21 and 12–24: FL (5 usable months at 12–24) and WV (4) drop out, and WV's pre-COVID cells take the pre-COVID not-yet-treated controls with them (31 → 19)
+- Handle ramp (`data/processed/cohort_ramp_lags.csv`): the 12-month maturity prior is the all-state median (lag50 8, lag75 18), driven by slow 2018–21 launchers. **The nine switchers ramp fast: lag50 = 0 for 7 of 9 (KS, MD = 5); lag75 = 6 (DE VT NC), 10–11 (OH MA KY ME), 14–15 (KS MD).** Caveat: late launchers' peaks are measured on short series and may still be rising
+- Window choice is a PAP estimand decision for Ben/Carl; nothing changed in configs
+
+## 2026-09-18 (cont. 3) — Sample-start month × 3-month baseline: who gets in, and at what cost
+
+**Operations:** switcher sets by start month via `R/power/inclusion_rule.R` (pmd 3, K=7, 12–24 window, no buffer); blind SE for each via `lpdid_statepanel.R` (`PMD=3 SPLICE_BUFFER=0 DROP_END=<start−1d> MIN_DATE=2020-03-01`, ewatt, ID in, B=1999; scratch). Also the 3-month cross-state dispersion table (steady state 0.17).
+
+**Results (post-COVID cohorts only; switchers / controls / wild-equiv SE / MDE₈₀):**
+- start 2021-08..10: +NY LA AR → 12 / 21 / 0.0863 / 0.242
+- start 2021-11..12: +AR → 10 / 20 / 0.0476 / 0.133
+- start 2022-01..06: current nine → 9 / 19 / 0.0543 / 0.152
+- start 2022-07..08: −KS → 8 / 18 / 0.0432 / 0.121
+- start 2022-11: −KS MD OH → 6 / 14 / 0.050 / 0.140; start 2023-06: KY ME DE VT NC → 5 / 14 / 0.0458 / 0.128
+- (start 2021-06: +AZ CT NY LA AR and NH as a COVID-straddler, 0.097; 2021-07: 0.106)
+- **Adding NY and LA makes the design far worse (MDE 0.15 → 0.24)**; AR alone helps slightly; dropping KS helps more than adding anyone. Consistent with the 2026-09-14 drift finding (NY +0.85, LA +0.46)
+
+## 2026-09-18 (cont. 4) — 3- vs 6-month baseline on the boundary-11 panel (blind, matched)
+
+**Operations:** eight scratch runs of `lpdid_statepanel.R` (drop to 2021-07, buffer 3, K=7, ewatt, ID in, B=1999), PMD ∈ {6,4,3,2}, windows 12–24 and 6–18, with and without AR. A first batch was INVALID (zsh did not word-split an unquoted env string, so every run silently used the default 0–18 window — caught because the two windows returned identical rows); re-run with explicit args; the 12–24/PMD6 row reproduces 0.0497.
+
+**Results (switchers / wild-equiv SE / MDE₈₀):**
+- 12–24: PMD6 9 / 0.0549 / 0.154 · PMD4 10 (+AR) / 0.0502 / 0.141 · PMD3 10 (+AR) / 0.0476 / 0.133 · PMD3 same nine / 0.0520 / 0.146 · PMD2 12 (+AR NY LA) / 0.0763 / 0.214
+- 6–18: PMD6 11 / 0.0397 / 0.111 · PMD3 12 (+AR) / 0.0353 / 0.099 · PMD3 without AR / 0.0365 / 0.102
+- Decomposition at 12–24: shorter baseline on the SAME nine −5%; admitting AR a further −8%. The 2026-09-17 placebo table (pre-extension) had PMD3 as a wash (0.0496 vs 0.0504); on the real design and current panel it is a ~13% gain
+- Inclusion rule sets: PMD6 nine; PMD4/3 +AR; PMD2 +AR NY LA
+
+## 2026-09-18 (cont. 5) — 4-month baseline probes (blind)
+
+**Operations:**
+- Three blind `analysis/main/lpdid_statepanel.R` probes at PMD=4 (scratch OUT_DIR, B=1999, buffer 3, K=7, ewatt, ID in); SE diagnostics only.
+
+**Results (switchers / controls / analytic SE / wild-equiv SE / MDE80):**
+- 12–24 PMD 4, AR excluded: 9 / 19 / 0.0509 / 0.0547 / 0.153 (vs PMD 6 0.0549/0.154; PMD 3 same-nine 0.0520/0.146)
+- 6–18 PMD 4 (+AR): 12 / 33 / 0.0352 / 0.0387 / 0.108
+- 6–18 PMD 4, AR excluded: 11 / 31 / 0.0371 / 0.0405 / 0.113
+- Reading: on a fixed state set PMD 4 ≈ PMD 6 (within 1–2%); PMD 4's gain at 12–24 (0.154 → 0.141) is essentially all Arkansas.
+
+**Status:**
+- Done: PMD 4 rows added to the baseline comparison. Pending: baseline-length decision (Ben/Carl); no config changed.
+
+## 2026-09-18 (cont. 6) — Estimator comparison at a March 2022 start (blinded, exploratory)
+
+**Operations:**
+- New config `config/power_estcompare_start202203_v20260918_k7.yml` (copy of the v20260918 k7 config; covid_drop to 2021-11-30 + buffer 3, post placement, estimators twfe/lpdid/did2s/bjs/sunab, 6 deltas, 300 reps). Ran locally, 6 workers, ~9 min. Output `output_blinded_power/estcompare_start202203_v20260918_k7/`. Ledger row added (EXPLORATORY).
+- First config attempt was malformed (regex hit a header comment); killed before any output, regenerated.
+
+**Results (delta=0, 5% size / SE-SD):** TWFE 0.047, wild 0.040 / 1.02; LP-DiD 0.080 / 0.91; did2s 0.120 / 0.85; SunAb 0.267 / 0.63; BJS 0.297 / 0.53. Placement only 6 treated / 10 controls (non-representable post arm). Wild MDE: TWFE 0.143, LP-DiD 0.247.
+
+**Status:**
+- Done: did2s/BJS/SunAb fail size on the new panel with the later start. Pending: estimator decision stays with Ben/Carl; no headline config changed.
+
+## 2026-09-18 (cont. 7) — imp_jack arm; sample-start sweep at PMD 6 (blind)
+
+**Operations:**
+- `R/power/run_estimators.R`: new `.re_imp_jack` (CV3 delete-one-state jackknife) for did2s / bjs / sunab, opt-in `imp_jack` knob plumbed through `R/power/config.R` and `R/power/run_scenario_grid.R` (hashed only when TRUE and one of those estimators runs). New test in `tests/testthat/test-estimators.R` (27/27 pass). `test-grid.R:505` (exclude_states cluster count 24 vs 25) fails — looks panel-dependent, not investigated.
+- Launched `config/power_estcompare_jack_start202203_v20260918_k7.yml` (300 reps, paired with the non-jack comparison).
+- Blind real-design probes, PMD 6 / 12–24 / K=7, sample start swept (DROP_END = start-1d, buffer 0, B=1999).
+
+**Results (start: switchers / controls / cells / analytic SE / wild-equiv SE / MDE80):**
+- 2021-11, 2022-01, 2022-03: 9 / 19 / 97 / 0.0497 / 0.055–0.056 / 0.153–0.158 (identical cells; wild differences are bootstrap noise)
+- 2022-05: 8 (−KS) / 18 / 84 / 0.0429 / 0.0452 / 0.127
+- 2022-07: 7 (−KS, MD) / 15 / 71 / 0.0457 / 0.0518 / 0.145
+
+**Status:**
+- Done: start date is non-binding for the six-month design anywhere from Nov 2021 to Mar 2022. Pending: jackknife sim results; start/baseline wording for Carl.
+
+## 2026-09-18 (cont. 8) — sample-start sweep at PMD 3 (blind); recovery figure read
+
+**Results (PMD 3 / 12–24 / K=7, start: switchers / controls / cells / analytic SE / wild-equiv SE / MDE80):**
+- 2021-10: 12 (+AR NY LA) / 21 / 123 / 0.0759 / 0.0861 / 0.241
+- 2021-11, 2021-12: 10 (+AR) / 20 / 110 / 0.0446 / 0.046–0.048 / 0.129–0.134
+- 2022-01, 2022-03, 2022-06: 9 / 19 / 97 / 0.0478 / 0.053–0.054 / 0.148–0.150 (identical cells)
+- 2022-07, 2022-08: 8 (−KS) / 18 / 84 / 0.0404 / 0.041–0.044 / 0.115–0.123
+- Ben's `figures/combined_filings_2020_2023.png`: combined filings keep rising through mid-2022 and plateau from ~Jul 2022; no stabilization in late 2021 / early 2022. Consistent with the earlier dispersion table (1.8x 2021H2, ~1.4x 2022H1, ~1.2x 2022Q3).
+
+**Status:**
+- Pending: start-date / baseline decision (Ben/Carl). A mid-2022 start keeps all nine only under PMD 3 (latest free start 2022-06); PMD 6 loses KS after 2022-03 and MD after 2022-05.
+
+## 2026-09-18 (cont. 9) — partial switchers under a 2022 start; 6–18 window at the new starts (blind)
+
+**Results:**
+- Old partials (NH IN WV AR) are not recoverable under a 2022 start: NH/IN/WV launched 2018–19 (baseline and window pre-2022), AR's baseline (2021-09..2022-02) precedes the start. DE/VT already recovered by the LSC-site extension.
+- FL (launch 2023-12, baseline OK) fails only on data: fixed basket ends 2025-04 because Pinellas (14.6% of 2024 basket filings) stops 2025-03 on the LSC site; the other 5 basket counties (Brevard, Duval, Hillsborough, Lake, Manatee) run to 2026-06. 12–24: 5/13 usable. Under 6–18 FL qualifies as is.
+- Launch-indexed probes (raw, B=1999; switchers / controls / cells / analytic SE / wild-equiv / MDE80): 6–18 PMD6 start 2022-03: 10 (+FL) / 20 / 115 / 0.0411 / 0.0455 / 0.127; 6–18 PMD3 start 2022-06: 10 / 20 / 115 / 0.0380 / 0.0408 / 0.114; 6–24 PMD3 start 2022-06: 10 / 20 / 156 / 0.0406 / 0.0459 / 0.129; parity 12–24 PMD6 start 2022-03: 9 / 19 / 97 / 0.0497 / 0.0550 / 0.154.
+
+**Status:**
+- Pending (Ben/Carl): outcome window was never decided (open since cont. 2); FL 5-county basket is a data decision (new vintage boundary) — not made.
+
+## 2026-09-18 (cont. 10) — jackknife estimator comparison finished
+
+**Results (`output_blinded_power/estcompare_jack_start202203_v20260918_k7/`, 300 reps, delta=0 size / SE-SD / MDE80):**
+- did2s jack 0.077 / 1.15 / 0.173; bjs jack identical (same point estimate); sunab jack 0.020 / 1.28 / 0.288. Analytic arms: did2s 0.117, sunab 0.310, bjs 0.340.
+- Same draws: TWFE wild 0.073 / 0.90 / 0.149; LP-DiD wild 0.063 / 0.85 / 0.256. This draw set runs hot for every estimator (not paired with the earlier comparison — imp_jack is hashed into the scenario id, so seeds differ; MC error at 300 reps ~ +-0.025).
+- R exited 139 in `parallel::stopCluster` during future cleanup, after all batches + summary files were written; outputs complete, 0 failure rows.
+
+**Status:**
+- Done: jackknife repairs did2s/BJS size to TWFE-wild parity but at a worse MDE; no case for switching estimator. Ledger row added (EXPLORATORY).
+
+## 2026-09-18 (cont. 11) — blinded sim at 6–18 / pmd 3 / start 2022-06
+
+**Operations:**
+- `R/power/make_pseudo_schedules.R`: presence rule's outcome window now = launch lag + (lpdid_hmin .. lpdid_post) via new `hmin`/`hpost` args (shift12 x 0..12 still gives 12..24; existing configs unchanged); `R/power/run_scenario_grid.R` passes them.
+- New configs `config/power_lpdid_l618_pmd3_start202206_v20260918_k7.yml` (300 x 14 deltas, pre + post arms) and `..._gate_...yml` (2,000 reps, delta 0, pre arm). Smoke run moved to `output_blinded_power/deprecated/_smoke_l618_2026-09-18`. Ledger rows added.
+
+**Results:**
+- Pre arm (10T/26C): LP-DiD wild size 0.067 @300 -> **0.0585 @2,000** (analytic 0.072), SE/SD 0.925, null center −0.0007, wild MDE 0.097 [0.093–0.103]. TWFE wild 0.053, SE/SD 0.95, MDE 0.095.
+- Post arm (6T/9C, non-representable): LP-DiD wild 0.093, SE/SD 0.78, MDE 0.183.
+- Real-design blind MDE 0.114 (2.8 x wild SE); scaled by 1/0.925 -> ~0.123.
+- Inclusion under start 2022-06 / pmd 3: 6–18 -> 10 pass, only MO fails K (0 months; launched 2025-12); FL has 11/13. 12–24 -> FL (5) fails K, ME exactly 7, KY 12. AZ CT NY LA AR fail on baseline (pre-start), not on K.
+
+**Status:**
+- Pending: window/baseline/start decision (Ben/Carl); if adopted, FINDINGS §2 + ESTIMATOR_MATRIX update and a 2,000-rep MDE run.
+
+## 2026-09-18 (cont. 12) — Pinellas / dropout-county what-if (blind; canonical panel untouched)
+
+**Operations:**
+- `analysis/main/lpdid_statepanel.R`: `PANEL_FILE` env override (default = canonical panel) for scratch what-if panels.
+- Scratch panels (scratchpad only): FL 5-county basket (drop Pinellas 12103; 126 months to 2026-06), GA 1-county (drop Columbia 13073; 122 months to 2026-02, 2026-03 at 52% of hist. avg left out). Probes: pmd 3, start 2022-06, K=7, B=4999.
+- Found: Pinellas 2025-04 = 101 filings (22% of hist. avg) sits inside FL's current final panel month -> FL 2025-04 understated ~13%; state-level plausibility band did not catch it.
+- 20% dropout-county rule would add 33 state-months gross (FL 14, GA 11 + 1 interior, TX 6, ND 1); GA 2026-03 (52%) and ND 2025-06 (46%) look partial; TX 2026-02..04 read 171–197%.
+
+**Results (switchers / controls / cells / analytic SE / wild-equiv SE / MDE80):**
+- 6–18: base 10/20/115/0.0380/0.0407/0.114; +FL 10/20/117/0.0377/0.0407/0.114; +GA 0.0381/0.0412/0.115; +both 0.0378/0.0416/0.117 — no gain (differences inside bootstrap noise).
+- 12–24: base 9/19/97/0.0478/0.0534/0.150; +FL 10/19/110/0.0441/0.0485/0.136; +GA 9/19/97/0.0474/0.0522/0.146; +both 10/19/110/0.0436/0.0475/0.133.
+
+**Status:**
+- Pending (Ben): A threshold rule / B FL-only / C censor FL 2025-04. No panel change made.
+
+## 2026-09-18 (cont. 13) — panel artifact scan for the 6–18 design (delegated) + blind probes
+
+**Operations:**
+- sonnet-executor wrote/ran `analysis/diagnostics/panel_artifact_scan_l618.R` -> `output/panel_artifact_scan_l618/` (13 aggregate CSVs; no estimator run, no data modified).
+- Reviewed: the worker's #1 finding (MT Roosevelt Co. spikes) is NOT in the panel — Roosevelt is not a fixed-basket county; panel MT values exclude it. Re-ranked anomalies restricted to true basket counties, as % of the panel state-month: MT Yellowstone 2024-09 (+35% understated), ND Cass 2024-02 (−32%), MT Gallatin 2023-12 (−16%), FL Pinellas 2025-04 (+13.7%), **SC Greenville 2023-11 (102 filings, 7.8% of hist. avg; SC understated 13.5%) and 2023-12 (10.8%)**, ND Burleigh 2023-01/2023-08 (~−11%).
+- Blind probes (6–18, pmd 3, start 2022-06, B=4999; analytic SE / wild-equiv / MDE80): base 0.0380/0.0407/0.114; drop WA 0.0351/0.0393/0.110; drop MT 0.0392/0.0428/0.120; drop ND 0.0398/0.0424/0.119; drop AK 0.0391/0.0428/0.120; drop GA 0.0392/0.0428/0.120; drop MT+WA 0.0366/0.0408/0.114; drop MT WA ND AK 0.0401/0.0439/0.123; censor the 5 worst state-months 0.0389/0.0429/0.120; correct them to expected 0.0379/0.0410/0.115.
+
+**Status:**
+- Done: no artifact or gap is costing measurable power; noisy small controls are net helpful; WA (single county, +0.20 drift) is the only control whose removal tightens the SE (−3% wild). Pending (Ben): whether to censor/flag SC 2023-11/12 and FL 2025-04 for accuracy.
+
+## 2026-09-18 15:19 — 2022-06 start vs Roth (2022) and Ghanem et al. (2026)
+
+**Operations:**
+- Read (via subagents) `roth-2022-pretest-with-caution-...pdf` and `ghanem-et-al-2026-when-should-pre-trends-be-parallel.pdf`; verified `output/cross_state_dispersion/dispersion_by_month.csv`, `settle_months.csv`, and the state filter in `analysis/diagnostics/cross_state_dispersion_recovery.R`. No code or data changed; no runs.
+
+**Results:**
+- Neither paper licenses a dispersion-based start date. Roth's distortion runs through Cov(selection statistic, post estimator): a sign-symmetric second-moment rule fixed before outcomes is largely outside it, but the current statistic pools treated states' post-launch months (no treatment filter), so it is not outcome-blind.
+- Ghanem et al. conditions are conditional-mean (time-homogeneity / martingale), not dispersion; usable hook is "unrestricted structural breaks" => pre-trends uninformative, which supports excluding the moratorium era on institutional grounds.
+- growth_sd 2022-06 = 0.172 vs pre-COVID p90 0.164; script's own 6-consecutive-month criterion settles 2023-11/12, not 2022-06. level_sd is normalized to each state's 2023 mean, so its convergence is partly mechanical.
+
+**Status:**
+- Done: methodological read. Pending (Ben's call): recompute dispersion on untreated months only; write the start-date rule into the PAP; 2022-03 / 2022-09 robustness starts.
+
+## 2026-09-18 15:43 — GSW selection x mean-reversion diagnostic (blinded)
+
+**Operations:**
+- New: `analysis/diagnostics/gsw_selection_meanreversion.R` -> `output/gsw_selection_meanreversion/{by_base_month.csv,state_dev_by_base_month.csv,figures/}`. Untreated state-months only (anticipation 6), NV excluded via helpers; no treatment effect estimated.
+- First logged runs of `analysis/diagnostics/moratorium_vs_adoption.R` and `timing_covid_recovery_test.R` (console logs in the same output dir). 3 EXPLORATORY rows appended to `RUN_LEDGER.md`.
+- Read (subagent) Ghanem/Sant'Anna/Wuthrich long paper arXiv 2203.09001v15 for templates, covariates (App. D), bias benchmarking (s4.3).
+
+**Results (design diagnostics only):**
+- Mean-reversion slope of the untreated long difference on COVID displacement is about -0.5 to -0.8 at every base month 2021-08..2023-06; CI excludes 0 only through 2022-02 (n_reg 9-13). It does not vanish after 2022-06.
+- Selection gap (later-launchers minus never-launchers, mean displacement) flips sign ~2022-02 and is -0.12 to -0.19 over 2022-05..2022-10 (p 0.09-0.22). At b=2022-06: gap -0.165 x slope -0.70 => implied null bias ~ +0.11 log pts, very imprecise (n=10), same order as the headline MDE.
+- 11 states (CO HI ID LA MA MI MO NH NM NY WI) have no 2017-19 norm and drop out.
+- `timing_covid_recovery_test.R` includes NV in its never-treated set (not fixed; flagged in ledger).
+
+**Status:**
+- Done: diagnostic built and run. Pending (Ben): pre-COVID benchmark for the slope; state moratorium-end / ERA covariates (not in repo); decide whether the PAP names selection-on-fixed-effects with conditional PT or adds a lagged-displacement control.
+
+## 2026-09-18 15:48 — Leave-one-state-out on the GSW diagnostic
+
+**Operations:**
+- Inline LOO (no new files) on `analysis/diagnostics/gsw_selection_meanreversion.R` inputs at b = 2022-02, 2022-06, 2022-08.
+
+**Results (design diagnostics only):**
+- Selection gap is outlier-driven at both dates. 2022-02: mean gap +0.017 is MD (-1.00, later) cancelling WA (-0.97) and MN (-0.71) (never); median gap +0.13; LOO -0.040..+0.095. 2022-06: mean gap -0.165, drop MD -> -0.089, median gap -0.026.
+- MD displacement is persistent (-1.00 -> -0.84), i.e. level-shift-like; WA (Tacoma single county) closes fast (-0.97 -> -0.44 -> -0.27), i.e. true rebound.
+- Mean-reversion slope negative under every single-state drop, but magnitude leans on WA: 2022-06 -0.70 -> -0.32 without WA; 2022-02 -0.80 -> -0.58.
+- Rough implied null bias at 2022-06 without MD and WA: about +0.03 (vs +0.11 with them).
+
+**Status:**
+- Pending (Ben): decide handling of MD and WA in this diagnostic; robust (median/rank) version if it goes in the PAP.
+
+## 2026-09-18 15:52 — Level-step profile by boundary month; June 2022 not special
+
+**Operations:**
+- Inline tabulation (no new files) of `output/interior_level_shift/steps_all_candidates.csv` (from `analysis/diagnostics/interior_level_shift_check.R`, 2026-09-17 audit; descriptive, no treatment timing).
+
+**Results (design diagnostics only):**
+- The "2022-02..2022-05, 16 states" cluster is left-censored: windows cannot straddle the COVID drop (ends 2021-07), so 2022-02 is the first boundary the 6-vs-6 detector can evaluate. The step did not start in 2022-02.
+- Flagged states by boundary: 16/16/16/12 (2022-02..05), 7 (2022-06), 4, 3, 2 (2022-07..09), 2-4 through 2023-02, 0-1 from 2023-03. Median 6v6 log change: 0.22 (2022-02), 0.17 (2022-06), 0.11 (2022-08), 0.07 (2022-09), ~0.08 to 2023-03, ~0 from 2023-06. Pre-COVID benchmark median 0.005 (max 0.062).
+- Cross-state SD of the 6v6 change (the part time FE cannot absorb): 0.24 (2022-02), 0.158 (2022-06), 0.12 (2022-08) then flat 0.10-0.12 through 2023-06; pre-COVID 0.061 (max 0.075); back to ~0.08 only by 2023-11.
+- Flagged at/after 2022-06 include template switchers MA (through 2022-12; launch 2023-03, so its baseline sits in its own rise), ME and VT (2022-11..2023-02).
+- Retracts the earlier draft PAP sentence that the sample begins "in the first month after" a Feb-May 2022 level shift.
+
+**Status:**
+- Pending (Ben/Carl): start-date wording for the PAP; whether MA's baseline needs a note.
+
+## 2026-09-18 15:58 — Step / long-difference dispersion redone for a 3-month baseline, untreated months
+
+**Operations:**
+- Inline recomputation (no new files) reusing the deseasonalization in `analysis/diagnostics/interior_level_shift_check.R` and the launch table/untreated rule (anticipation 6, NV out) from `analysis/diagnostics/gsw_selection_meanreversion.R`. Two statistics by pseudo-launch month L: 3v3 median step, and the design long difference mean(y[L+12..L+24], >=7 months) - mean(y[L-3..L-1]).
+
+**Results (design diagnostics only; untreated state-months, n 13-26 states):**
+- 3v3 step cross-state SD: windows removed by a 2022-06 start (L 2021-11..2022-06) 0.12-0.20; mixed L 2022-07 0.166, 2022-08 0.082; fully in-sample (L >= 2022-09, first baseline Jun-Aug 2022) 0.07-0.12; pre-COVID median 0.062, max 0.091.
+- Design long-difference SD: excluded L (2021-11..2022-08) 0.19-0.29; usable L 2022-09..2022-12 0.14-0.17; 2023-01..04 rises to 0.17-0.26 (n=14, robust SD 0.12-0.17 there, so outlier-driven); pre-COVID 0.112 (max 0.119).
+- Robust (MAD) SD of the long difference does NOT show a clean decline in the untreated sample: 0.23-0.37 for L 2022-06..09 vs 0.107 pre-COVID; all-states version 0.14-0.24 vs 0.098.
+- With PMD 3 and a 2022-06 start, the first usable launch month is 2022-09 (= KS's launch).
+
+**Status:**
+- Pending (Ben): whether to save this as a script + ledger row for citation in the PAP.
+
+## 2026-09-18 16:31 — 3-month-baseline cutoff evidence with WA excluded
+
+**Operations:**
+- Two inline checks (no new files), same construction as the previous entry. (1) Listed the states in the untreated long difference: for L >= 2022-09 it is 13-14 never-launchers plus MO (launch 2025-12); no treated months. WA (+0.40/+0.38/+0.81 at L 2022-09/12, 2023-03) and MN (-0.33/-0.20/-0.34) are the tails. (2) Recomputed by launch month L with NV and WA excluded.
+
+**Results (design diagnostics only; untreated state-months, WA out):**
+- 3v3 step SD: L 2021-11..2022-07 = 0.11-0.21 (2022-07 = 0.165); L >= 2022-08 = 0.06-0.10. Pre-COVID median 0.057, max 0.084.
+- Long-difference SD (mean y[L+12..L+24] minus mean y[L-3..L-1]): L 2021-11..2022-08 = 0.15-0.22; L 2022-09..2023-09 = 0.11-0.16; pre-COVID median 0.104, max 0.119. Dropping the single most extreme remaining state (MN): 0.09-0.12 vs pre-COVID 0.086.
+- The step break falls between L 2022-07 and 2022-08. A 2022-06 start (first L 2022-09) sits one month inside the clean side; a 2022-05 start is nearly as clean, a 2022-04 start is not. Earlier starts gain no switchers (9 at 2022-01/03/06); 2022-07 loses KS. June 2022 stays.
+- Flagged for Ben: draft PAP sentence says "after June 2022", which reads as a July start and would drop KS; sample start is 2022-06.
+
+**Status:**
+- Pending (Ben): WA exclusion decision and wording; save as script + ledger row if the numbers go in the PAP.
+
+## 2026-09-18 16:47 — Cutoff evidence redone for the 6–18 outcome window
+
+**Operations:**
+- Inline recomputation (no new files), same construction as the previous two entries, with the long difference redefined as mean(y[L+6..L+18]) − mean(y[L−3..L−1]), >=7 of 13 forward months untreated. NV and WA excluded. The 3v3 step statistic is unchanged (baseline-side only).
+
+**Results (design diagnostics only; untreated state-months):**
+- 6–18 long-difference SD: pre-COVID median 0.081 (max 0.097; drop-one 0.065, n=26). Excluded launch months L 2021-11..2022-07 = 0.138–0.244. Retained L >= 2022-08 = 0.102–0.146; first usable L under a 2022-06 start = 2022-09 at 0.119 (1.47x pre-COVID). Worst state is MN at nearly every L (ID 2023-06..11, MT 2024-01+).
+- The 6–18 long difference declines smoothly across 2022 — no sharp break. The break at L 2022-07/2022-08 is in the 3v3 step (0.165 -> 0.082), i.e. on the baseline side, which is what the start date directly governs.
+- Switcher counts (repo sweep, SESSION_REPORT cont. 9/11): 6–18 pmd3 start 2022-06 = 10 switchers (FL joins), blind MDE 0.114; 6–18 pmd6 start 2022-03 = 10, MDE 0.127. 2022-07/08 starts still lose KS (launch 2022-09, baseline Jun–Aug 2022). June 2022 remains the latest start losing nobody, and beats the 2022-03 alternative on MDE.
+- Under 6–18 the earliest switcher's outcome window (KS) is 2023-03..2024-03, inside the period where residual differential drift is 0.10–0.12.
+
+**Status:**
+- Pending (Ben): WA exclusion ground (institutional, not outcome-based); save as script + ledger row if the numbers go in the PAP.
+
+## 2026-09-18 16:55 — CORRECTION: the 2022-07/08 step "break" was Hawaii; balanced profile moves the break to 2022-06
+
+**Operations:**
+- Inline decomposition (no new files) of the 3v3 step SD at L 2022-07 vs 2022-08, then recomputation on a balanced state set.
+
+**Results (design diagnostics only):**
+- The 0.165 -> 0.082 drop is composition, not timing. HI (step +0.780) is present at L 2022-07 and absent at 2022-08; MA (+0.106) also exits. On the 20 states common to both months the SD is 0.071 (Jul) vs 0.082 (Aug) — August is slightly HIGHER. Retracts the "break between 2022-07 and 2022-08" reported earlier this session.
+- Balanced set (14 states present at all L 2021-11..2023-06: AK ID MN MO MS MT NC ND NM OK SC TX UT WI; drops DE FL GA HI KS KY MA MD ME OH VT): SD by L = 0.090, 0.075, 0.134, 0.219, 0.223, 0.171, 0.125, 0.084, 0.079, 0.091, 0.077, 0.070, 0.057, 0.097, 0.060, 0.075, 0.098, 0.076, 0.066, 0.088. Pre-COVID benchmark on the same 14 states: median 0.065, max 0.095.
+- On the balanced set the elevated block is L 2022-01..2022-05 (0.125-0.223) and everything from L 2022-06 on is 0.057-0.098, i.e. at or near the pre-COVID max. The break is between L 2022-05 and 2022-06, and it is sharper than the unbalanced series showed.
+- Also: L 2021-11/12 read LOW (0.090/0.075) on the balanced set because their 3-month baselines (Aug-Oct / Sep-Nov 2021) sit before the rebound, not because those months are clean.
+- Net effect on the cutoff: a 2022-06 start (first usable L 2022-09 under pmd 3) still sits inside the clean block, with two months of slack.
+
+**Status:**
+- Pending (Ben): the PAP paragraph's step numbers must come from the balanced set; unbalanced figures are not citable.
+
+## 2026-09-18 17:00 — Documentation sweep: pending design switch written into the docs
+
+**Operations:**
+- Read 10 prior session transcripts (June-2022 cutoff, differential trends, LP-DiD sims rerun, post-3/22 and post-5/22 Dube, eviction totals graph, Goodman-Bacon, TWFE power, eviction data artifacts) via three Sonnet subagents over text extracts in the session scratchpad.
+- `FINDINGS.md` — new §2 block "⚠ PENDING DESIGN SWITCH — launch-indexed 6–18 window, 3-month baseline, June 2022 start"; §1 pointer to it; three new §3 pretrends bullets (pre-window differential-trends null, its leave-one-out/weighting influence analysis, the noise-vs-heterogeneity decomposition, the dplyr `treated` data-masking trap); two new §5 bullets (TWFE weight diagnostic, eviction-count artifact discriminator); 13 new §6 open questions.
+- `CLAUDE.md` — pending-design-switch note under the PAP decision rule; `template_states` line now records the 10-state variant with FL; the Goodman-Bacon to-do rewritten to what was actually run and what remains.
+- `ESTIMATOR_MATRIX.md` — new §1 subsection: state-level estimator comparison at a 2022-03 start, with the jackknife arm.
+- `RUN_LEDGER.md` — two new flagged inconsistencies (unscripted TWFE weight diagnostic; June-2022 justification has no run of its own). Run rows were already current.
+
+**Decisions:**
+- Recorded the 6–18 / pmd 3 / 2022-06 design as RECOMMENDED, NOT ADOPTED throughout — no config default touched, since Ben and Carl have not chosen the window or the baseline.
+- Recorded as DECIDED: Washington stays in the control pool with a pre-specified leave-one-out check; LP-DiD stays headline with TWFE+wild as the conventional benchmark and did2s/BJS/SunAb as jackknife-corrected robustness only.
+
+**Results:**
+- Pending design: 10 switchers (FL enters), real-data MDE ≈ 11.4–12% against 15.4% for the live 12–24 / pmd 6 design; blinded LP-DiD wild size 0.0585, SE/SD 0.925.
+- Documented the honest caveat that June 2022 is not special on the interior level-shift measure (the cleaner break is Aug/Sep 2022) and that the dispersion script's own strict rule is not met until 2023-11.
+
+**Commits:**
+- none (working tree still uncommitted past `9ab8741`)
+
+**Status:**
+- Done: documentation reflects the recent sessions' decisions and open items.
+- Pending: Ben/Carl choose window + baseline; script the June-2022 justification and the TWFE weight diagnostic; the artifact censor decisions (OH 2025-06, MN 2025-09, UT interior hole, SC/MT/ND, HI, RI).
+
+## 2026-09-21 12:00 — PAP power paragraph; application-era TWFE power sim re-run on the current panel
+
+**Operations:**
+- Created `analysis/main/prep_twfe_power_rerun_inputs.R` (reshapes the current state panel into the legacy sim's two input files; drops NV via `PRE_PASPA_SPORTS_BETTING`; asserts panel `treat_start` == repaired online schedule) and `scripts/run_twfe_power_rerun_v20260921.sh` (runs the unedited legacy sim in `iid_month` and `ar1` modes).
+- Ran it: 2,000 sims × 8 effects × 2 modes → `output/twfe_power_rerun_v20260921/{inputs,iid_month,ar1}/`. A 100-rep smoke output was moved to the session scratchpad, not deleted.
+- Read (no new runs) TWFE rows of `output_blinded_power/lpdid_clean_mde_ewatt_pmd6_v20260918_k7/`, `lpdid_l618_pmd3_start202206_{,gate_}v20260918_k7/`.
+- `RUN_LEDGER.md` §1: new row `twfe_power_rerun_v20260921` (EXPLORATORY). `FINDINGS.md` §6: re-run item marked done with results.
+
+**Decisions:**
+- Recommended to Ben (not yet accepted): the PAP power paragraph should register the *procedure* — MDE = 2.8 × the real design's blinded SE, recomputed at lock — with the sims cited only for size and SE/SD calibration; drop the 5% TWFE text.
+
+**Results:**
+- Legacy sim on the boundary-11 panel (41 states, 26 switchers / 15 never-treated, NV out): `iid_month` MDE ≈ 3% (SD 0.0099, size 0.0445); `ar1` with ρ = 0.721 MDE ≈ 6.5–7% (SD 0.0226, size 0.0505; power 0.5715 at 5%, 0.918 at 8%).
+- The application's ~5% came from `ERR_MODE=iid_month`, which redraws shocks independently each month; that is not Black et al. (2022), who impose effects on real untreated data (checked against the copy in `Literature/`).
+- ρ by era, untreated residuals only: pre-2020-03 0.722; 2021-06..2022-05 0.719; 2022-06+ 0.756 (whole-panel FE) / 0.425 (FE refit on that window).
+- Blinded-framework TWFE wild MDE (pre-COVID template, recentered): 0.105 current 12–24/pmd6; 0.096 pending 6–18/pmd3/2022-06 (gate size 0.053, SE/SD 0.953).
+
+**Commits:**
+- none (working tree still uncommitted past `9ab8741`)
+
+**Status:**
+- Done: §6 TWFE re-run item; ledger + findings updated.
+- Pending: Ben/Carl choose window + baseline, then finalize the PAP power paragraph; no real-data blinded SE probe exists for TWFE (script not written); AR(1)-vs-blinded-framework SD gap not decomposed.
+
+## 2026-09-21 13:00 — Updated TWFE power sim (donor-path noise), delegated build + two Opus reviews
+
+**Operations:**
+- Plan + reviewer amendments: `quality_reports/plans/2026-09-21_twfe_donorpath_power_sim.md`.
+- Sonnet executor wrote `analysis/main/power_simulation_twfe_donorpath.R` (pass 1), `analysis/main/power_simulation_twfe_donorpath_v2.R` (pass 2), launchers `scripts/run_twfe_power_donorpath_v20260921{,b}.sh`; outputs `output/twfe_power_donorpath_v20260921/` and `…v20260921b/`.
+- Opus reviewer: (1) method review of the spec — sound with required changes; (2) read-only health check + line-by-line code review of the running pass 2.
+- Orchestrator scratch probes (session scratchpad, not in repo): era-by-era ρ; per-state in-window residual SD / ρ / drift; WA+MN donor exclusion; SE calibration from saved sims.
+- `RUN_LEDGER.md` §1 row added; `FINDINGS.md` §6 TWFE item extended. Stopped four orphaned `until pgrep` wait loops (three were matching each other's command lines and would never have exited).
+
+**Decisions:**
+- Ben: persistence must come from the analysis panel, not 2012–2026 → `start202206` is the primary scenario.
+- Open (Ben): unscaled 0.148 as headline with S1 0.107 as sensitivity, or co-equal rows.
+- Not adopted: dropping WA/MN from the control pool — contradicts the 2026-09-18 WA decision; recorded as a probe only.
+
+**Results:**
+- June-2022 naive TWFE, pass 2: MDE 0.148 nominal / 0.154 size-exact (analytic), 0.154 / 0.155 (wild); size 0.064 / 0.054; leave-one-donor-out 0.122–0.159 (jackknife SE 0.034); S1 rescaled 0.107 / 0.111; in-window AR(1) 0.063; `full` 0.121.
+- ρ is flat by era (0.72–0.77 against whole-panel FE; 0.38 pre-COVID vs 0.43 post-2022-06 with FE refit in equal windows); stabilisation shows in residual SD (0.48 COVID → 0.20 → 0.12 vs 0.10 pre-COVID).
+- Code-review defects: wild arm unseeded; keep-already-treated row vacuous; donor paths are shrunk FE residuals (~5% low). Pass 3 dispatched.
+
+**Commits:**
+- none (working tree still uncommitted past `9ab8741`)
+
+**Status:**
+- Done: passes 1–2, both reviews, ledger + findings.
+- Pending: pass 3 results; Ben's headline choice; PAP power paragraph still waits on the window/baseline decision.
+
+## 2026-09-21 15:00 — Donor-path TWFE pass 3; WA / MN exclusion probes (TWFE and blind LP-DiD)
+
+**Operations:**
+- Fresh Sonnet executor ran pass 3: edited `analysis/main/power_simulation_twfe_donorpath_v2.R` (wild arm seeded via dqrng, `EXCLUDE_STATES`, `DF_CORRECT`, failed-wild diagnostics, check C6); new `scripts/run_twfe_power_donorpath_v20260921c.sh`; outputs `output/twfe_power_donorpath_v20260921c/start202206/`. Debug smoke output moved to `deprecated/smoketest_pass3_debug/`.
+- Orchestrator scratch work (session scratchpad, not in repo): four blind `analysis/main/lpdid_statepanel.R` probes (6–18 / pmd 3 / DROP_END 2022-05-31 / K 7 / B 1,999; stdout to unread logs, only SE / CI width / counts extracted); TWFE donor probes for a 2022-01 start and for lending-pool vs panel exclusions; WA series by policy period; MN LSC-vs-Eviction-Lab comparison and LSC revision audit by state.
+- Verified externally: WA Eviction Resolution Pilot Program dates; MMB (May 2026) expungement passages (PDF pp. 27, 39, 43) and Minn. Stat. 484.014.
+- `RUN_LEDGER.md` §1 pass-3 row; `FINDINGS.md` §6 TWFE item extended with the WA/MN probe and reasons.
+
+**Decisions:**
+- None adopted. Ben raised WA's pre-filing program and MN's expungement problem as exclusion grounds; FINDINGS §2 ("Washington stays") and every exclusion list are unchanged pending his call and a possible all-state screen.
+
+**Results:**
+- Pass 3 `all_states` reproduces pass 2 exactly (0.148 / 0.154). WA+MN excluded entirely: TWFE 0.092 / 0.096 size-exact, wild 0.098 / 0.102, df-corrected 0.098 / 0.101; leave-one-donor-out 0.070 (ID) – 0.097 (AK).
+- Blind LP-DiD real design: wild MDE 0.112 (all) → 0.108 (MN out) → 0.112 (WA out) → 0.104 (both out); analytic SE 0.0380 → 0.0326. Baseline reproduces FINDINGS §2 (0.0380, 10 / 20 / 115).
+- Extending the window back to 2022-01 leaves the TWFE MDE unchanged (0.138 → 0.137); Jan–May 2022 residual SD 0.160 vs 0.119 after.
+- MN: LSC / Eviction Lab ratio on the same counties 1.90 (2016) → 1.15 (2026), opposite in direction to the DATA_PROVENANCE 2026-09-03 note.
+- Process error (orchestrator): a queued "third pass" message to a finished executor never ran, and status updates claimed it was running; re-dispatched to a fresh agent. Spec error (orchestrator): the Q3 `yhat <- 0` fix is not FE-invariant; that row remains uncitable.
+
+**Commits:**
+- none (working tree still uncommitted past `9ab8741`)
+
+**Status:**
+- Done: pass 3, probes, ledger + findings.
+- Pending (Ben): adopt WA / MN exclusion or screen all states first; if adopted — FINDINGS §2 edit, `exclude_states` in the two l618 configs under a fresh run_name, 2,000-rep blinded gate; MN Judicial Branch aggregate-count request; reconcile the DATA_PROVENANCE MN note; Q3 row fix (yhat = 0 for ALL states in that run).
+
+## 2026-09-21 15:40 — Donor-path sim: full-panel regression fixed; Rhode Island sensitivity (scratch)
+
+**Operations:**
+- `analysis/main/power_simulation_twfe_donorpath_v2.R` (orchestrator edit, ~line 199-206): pass 3 had broken `SCENARIO=full` (rows with non-finite `yhat` were no longer dropped, so `residuals(fe_fit)` misaligned with `base_fe` after fixest's singleton drop — crash). Fix: `base_fe <- base_fe[fixest::obs(fe_fit), ]`; and when any `yhat` is non-finite, `yhat <- 0` for ALL rows (zero for only some rows is not in the id + t span — the cause of the Q3 row's C3/C6 failure).
+- Regression check: primary `start202206` all-states, 500 sims, identical to the pass-3 output sim for sim (max |att diff| 0, max |se diff| 0).
+- Scratch runs (session scratchpad, not ledger runs): `full` with and without RI, 2,000 sims, analytic only, coverage threshold 0.60.
+
+**Results:**
+- `full`, RI in: 41 states (26 / 15), 3,787 rows, size 0.054, MDE 0.125 (0.126 size-exact). RI out: 40 states (25 / 15), 3,670 rows, size 0.0485, MDE 0.127 (0.127). Difference is inside Monte Carlo noise.
+- RI is absent from the `start202206` panel (launched 2019-09, dropped as already-treated), so it cannot affect any June-2022 number.
+- `full` base is 0.125 here vs 0.121 in pass 2 because MD's 41 single-state months (2012–2015) are now kept instead of dropped.
+
+**Status:**
+- Pending: the Q3 keep-already-treated row has not been re-run with the corrected `yhat` handling.
+
+## 2026-09-21 16:10 — Defaults: June-2022 scenario, MN + WA excluded, Idaho included
+
+**Operations:**
+- `utils/eviction_treatment_schedule.R`: new `DATA_QUALITY_EXCLUDED_STATES <- c("MN", "WA")` with both reasons and the MN re-entry rule.
+- `analysis/main/power_simulation_twfe_donorpath_v2.R`: `EXCLUDE_STATES` defaults to that constant (`none` keeps everyone); default `OUT_DIR` → `output/twfe_power_donorpath_default/start202206_no_mn_wa`. `scripts/run_twfe_power_donorpath_v20260921c.sh`: all-states runs now pass `EXCLUDE_STATES=none`.
+- `analysis/main/lpdid_statepanel.R`: default `EXCLUDE_STATES` `NV,ID,HI,MS` → `NV,HI,MS,MN,WA` (Idaho included, closing the FINDINGS §6 housekeeping item; MN, WA excluded); header comment updated.
+- New configs (fresh run names): `config/power_lpdid_l618_pmd3_start202206_noMNWA_{,gate_}v20260921_k7.yml`; blinded gate + MDE runs launched (6 workers).
+- `FINDINGS.md` §2: DECIDED 2026-09-21 entry (WA/MN excluded; 2026-09-18 "Washington stays" marked superseded); Idaho RESOLVED entry (2026-08-28 "Idaho gap" marked superseded); §6 housekeeping item struck. `CLAUDE.md`: exclusion note + Idaho line. Project memory: `wa_mn_excluded_june2022_design.md`.
+
+**Decisions:**
+- Ben: June 2022 onward is the scenario; MN and WA excluded by default; Idaho included. Historical configs, `lpdid_statepanel_parity/` and diagnostic scripts that hard-code `NV, ID, HI, MS` left unchanged as run records.
+- Not decided: outcome window (6–18 vs 12–24) and baseline (3 vs 6) — FINDINGS still says RECOMMENDED, NOT ADOPTED.
+
+**Results (verification, blind):**
+- Bare default run of the TWFE sim reproduces pass-3 `no_wa_mn` sim for sim (500 sims, max diff 0).
+- `lpdid_statepanel.R` with no `EXCLUDE_STATES` set, at 6–18 / pmd 3 / 2022-06 / K 7: analytic SE 0.0326, 10 switchers / 18 controls / 115 cells — identical to the explicit-list probe; Idaho present as a control. Wild-equivalent SE 0.0359 this run vs 0.0371 in the earlier probe (B = 1,999; bootstrap noise).
+
+**Commits:**
+- none (working tree still uncommitted past `9ab8741`)
+
+**Status:**
+- Pending: blinded gate + MDE results on the reduced pool → ledger rows; Q3 keep-already-treated row re-run; all-state policy / record-completeness screen; MN Judicial Branch data request; DATA_PROVENANCE MN note reconciliation.
+
+## 2026-09-21 15:30 — Idaho Ada/Canyon decomposition (competing-policy diagnostic)
+
+**Operations:**
+- New: `analysis/diagnostics/idaho_ada_canyon_decomposition.R` (outcome-only, blind-safe; ID is a never-legalizer, control-pool only)
+- Outputs: `output/idaho_ada_canyon/{growth_decomposition_2021_2025,trend_and_volatility_by_group,segment_means_by_marker,expiry_test_2023_11,per_county_trend,group_month_series}.csv`; `figures/idaho_ada_canyon_{levels,indexed}.{png,pdf}`
+- Verified at run time that `data/raw/idaho/id_county_month_a12.csv` sums to the LIVE panel's ID rows bit-for-bit (boundary 11, 4,429 rows; 66 ID months, none censored)
+
+**Decisions:**
+- Ran on the current panel vintage rather than the county file alone — the script asserts the reconciliation and aborts if it ever breaks
+- Markers (2022-12 / 2023-04 / 2023-06-07 / 2023-11) carried as user-supplied and labelled as such in the script header and figures; nothing downstream depends on them
+- **No design change.** Dropping Ada+Canyon would flatten ID's control series but is selection on the realized outcome — the act the 2026-09-17 ID decision refused
+
+**Results:**
+- Ada+Canyon: 45% of 2021 filings, **79% of 2021→2025 growth** (Ada 53.5, Canyon 25.5, other 42 21.0)
+- Trend %/yr: Ada 16.9, Canyon 17.8, **other 42 = 3.7**, statewide 10.7; from 2022-06 the other 42 are **0.9 (SE 1.6)**, indistinguishable from zero
+- **The accelerate-after-expiry prior is refuted and reversed**: Ada mean YoY 37.8% pre-2023-11 → **3.5% post** (−34.3pp); Ada annual filings 1,608 (2024) → 1,342 (2025). The episode runs 2022-12..2023-10, peaking at 54.8% YoY in 2023-07..10
+- Not masked by offsetting county moves: of 7 counties averaging ≥2 filings/mo, only Kootenai (10.2%/yr) exceeds 8, and it is 8.4% of filings
+- **Cuts against a single-county-program story:** Canyon tracks Ada (17.8 vs 16.9%/yr, same 2022-12 jump) and Canyon is Nampa/Caldwell, not Ada County. Ada+Canyon = the Boise MSA
+
+**Commits:**
+- none (working tree still uncommitted past `9ab8741`)
+
+**Status:**
+- Done: diagnostic built, run, logged (`RUN_LEDGER.md` §4 row `idaho_ada_canyon_decomposition`, LIVE)
+- Pending: source the Ada/Boise program and its dates — that is what would convert a basket change from outcome-selection into a policy-based exclusion; until then ID stays whole
+
+## 2026-09-21 15:50 — Reduced-pool blinded gate, Idaho checks, handoff written
+
+**Operations:**
+- Blinded gate finished: `output_blinded_power/lpdid_l618_pmd3_start202206_noMNWA_gate_v20260921_k7/` (ledger row added). MDE grid `…noMNWA_v20260921_k7` still running at handoff (only `partials/`).
+- Scratch, blind (SE only): leave-one-control-out probes of the real LP-DiD design — 9 of 12 done (OK, UT, MO pending); a first attempt was INVALID (zsh did not word-split the state list, so one run dropped six states) and was discarded. Idaho series checks from `data/raw/idaho/id_county_month_a12.csv`; Idaho figure.
+- Wrote `quality_reports/handoff_2026-09-21_twfe_power_and_state_exclusions.md`; copied probe scripts + the Idaho figure to `quality_reports/handoff_2026-09-21_scratch/` (no LP-DiD outputs copied — they contain real estimates).
+
+**Results:**
+- Gate, MN + WA excluded: LP-DiD wild size 0.0425 (was 0.0585), analytic 0.0480 now passes (was 0.072), SE/SD 0.958 (was 0.925), SD 0.0329; TWFE wild 0.0485, SE/SD 0.976. Real-design MDE after correction ≈ 0.095 analytic / 0.105–0.108 wild.
+- Leave-one-control-out: Idaho is the only control whose removal lowers the SE (0.0326 → 0.0301); TX SC AK GA WI MT NM ND raise it 1–5%. Idaho = 0.3% of sample filings, 2.4% of covered renters, 4.8–9.1% of equal weight; its +49% 2022→2024 rise is Ada and Canyon counties (+83% each), other 38 counties flat, all 44 counties reporting throughout.
+
+**Decisions:**
+- Recommended (not acted on): keep Idaho; offer a renter-weighted robustness row.
+
+**Commits:**
+- none (working tree still uncommitted past `9ab8741`)
+
+**Status:**
+- Pending: MDE-grid ledger row; remaining three LOO probes; items 1–7 in the handoff.
+
+- (15:55 addendum) Leave-one-control-out complete, 12 of 12: Idaho 0.0301; TX 0.0329, SC 0.0330, UT 0.0330, AK 0.0330, OK 0.0331, GA 0.0331, WI 0.0332, MT 0.0335, NM 0.0335, MO 0.0335, ND 0.0341 (baseline 0.0326). Handoff updated. Blinded MDE grid still running.
+
+## 2026-09-22 14:30 — Randomization inference on the post-June-2022 LP-DiD design
+
+**Operations:**
+- New: `analysis/diagnostics/lpdid_ri_post2022.R` — RI driver for the 6–18 / pmd 3 / 2022-06 design, driving `analysis/main/lpdid_statepanel.R` through its `TREAT_FILE` hook. 1,000 permutations × 7 workers, 92.1 min, 1,000/1,000 usable.
+- Outputs: `output/lpdid_ri_post2022/{ri_null_draws.csv,ri_summary.csv}`.
+- Parity check first: blind real-design run at l618 settings reproduced FINDINGS §2 exactly (SE 0.03257, 10 switchers / 18 controls / 115 cells).
+- `RUN_LEDGER.md` §4 row `lpdid_ri_post2022` (EXPLORATORY).
+
+**Decisions:**
+- Drove the real-data script rather than a standalone `.re_lpdid` harness — a standalone harness could not reproduce the 18-control universe, which comes out of LP-DiD's own not-yet-launched control rule rather than a pre-filter.
+- Permuted the full observed date set across the eligible pool (not just post-2022 dates), so already-treated status is randomized too.
+
+**Results:**
+- **SE/SD = 0.956 over 1,000 draws** (null SD 0.0452, MAD-SD 0.0453, mean SE 0.0432) vs the blinded precovid arm's 0.958 — the analytic SE IS calibrated in the real post-2022 era; the precovid correction transfers.
+- Stable by stratum: 8 switchers 1.001, 9 switchers 0.924, 10 switchers 0.951, ≥110 cells 0.938. Analytic rejection at 5% = 0.063 (0.068 on ≥9-switcher draws).
+- Kills the era explanation for the blinded `postcovid` arm's SE/SD 0.67 — that arm's problem is 6 placed clusters, not post-2022 data.
+- The 2026-09-18 RI upper bound of 1.37× analytic does NOT reproduce here: ratio 1.047.
+- NEW OPEN ITEM: the real design's SE 0.0326 sits at the 13th–15th percentile of permutation SEs even among comparable draws (10 switchers, ≥110 cells: median SE 0.0415–0.0424). Design-based RI MDE₈₀ 0.114–0.126 vs conditional MDE 0.096.
+
+**Commits:**
+- none (working tree still uncommitted past `9ab8741`)
+
+**Status:**
+- Done: RI harness, run, ledger row.
+- Pending: FINDINGS §2 update; ledger rows for `lpdid_l618_pmd3_start202206_noMNWA_v20260921_k7` and `…_county_rw_v20260921_k7`; Ben/Carl decision on design-based vs conditional MDE; the era-vs-clusters template sweep (step 1) is now largely moot but would confirm the cluster-count story directly.
+
+- (14:55 addendum) **MDE reconciled.** The level-based RI MDE (0.114–0.126) was the wrong construction — it discards the realized assignment's precision. Studentised permutation: 95th percentile of |t| = 2.185 (10-switcher draws) / 2.226 (all draws) → MDE₈₀ 0.099–0.101 on the design's own SE, against the SE/SD-corrected conditional 0.095. Headline reading: **~10%**; the uncorrected 2.8 × SE = 0.091 is too optimistic. Ledger row corrected in place.
+
+## 2026-09-23 — Simulation code review (Opus 5.5-era focus)
+
+**Operations:**
+- Read-only review: main session on `analysis/diagnostics/lpdid_ri_post2022.R`; three opus-reviewer passes on `R/power/`, the TWFE donor-path sim, `lpdid_statepanel.R`, `power_simulation_cs.R`, the v20260921 configs.
+- Report: `quality_reports/reviews/2026-09-23_simulation_code_review.md`. No code edited, no runs.
+
+**Results:**
+- RI driver permutes over the wrong pool (31 dates incl. 5 out-of-panel launchers, over 41 states incl. HI MS MN WA): permuted worlds median 8 switchers / 15 controls / 101 cells vs real 10 / 18 / 115. The 09-22 "real SE at 13–15th pct" open item is this artifact; the RI row needs a re-run.
+- Live bias: count_nb over-injects ~2–3% of δ (MDEs slightly optimistic). Cross-config seed pairing is false as documented. The TWFE donor-path sim keeps HI/MS, unlike LP-DiD. The real-data wild bootstrap is unseeded.
+- Latent: hash omits covid_drop/panel files; legacy residualize_outcome() silently no-ops (confirmed); plus others in report §C.
+
+**Status:**
+- Pending (Ben): which fixes to apply; whether the RI row stays quotable before a re-run.
+
+## 2026-09-23 — Review fixes, corrected RI, power-lever probes, control-state sourcing
+
+**Operations:**
+- Commits: `589e2c2` checkpoint (code as of 09-23); `be5a740` review fixes (`DESIGN_EXCLUDED_STATES`, seeded wild in `lpdid_statepanel.R`, run fingerprint + placement-window hash in `run_scenario_grid.R`, `residualize_outcome()` fix, renter-NA fix, tests); `8ed69d8` RI pool fix; `49a4b5a` four power-lever gate configs + `scripts/run_power_levers_v20260923.sh`.
+- Runs: `twfe_power_donorpath_v20260923`; `lpdid_ri_post2022_v20260923` (1,000 perms, 100 min); four `lpdid_l618_start202206_gate_*_v20260923_k7` gates. Ledger rows added; 09-22 RI row superseded.
+- Data sourcing: `quality_reports/data_sourcing_AL_CA_NE_SD_2026-09-23.md` (AL dashboard checked in the browser).
+
+**Results:**
+- TWFE on LP-DiD's state set: MDE 0.092 / 0.097 analytic, 0.094 wild (was 0.092 / 0.096, 0.098 / 0.102).
+- Corrected RI: MDE ~0.100–0.103 (unchanged headline); analytic over-rejects (0.070–0.073), SE/SD 0.907–0.934; the real SE still sits at the 15th–18th percentile (not a pool artifact; my review note corrected).
+- Levers: renter weights cut the null SD 19% (analytic invalid, wild OK); vwatt, pmd 6 and pmd 6/min 3 give nothing or worse.
+- No monthly public data for AL, CA, NE or SD; NE semi-annual only.
+
+**Status:**
+- Pending (Ben): count_nb over-injection and seed pairing decisions; whether to pursue a renter-weighted estimand (needs `lpdid_statepanel.R` code and pre-registration); NE/AL records requests; FINDINGS §2 RI entry; doc files left uncommitted (they carry earlier uncommitted edits).
+- (addendum) Renter weights: `lpdid_statepanel.R` `UNIT_WEIGHTS=renters` (`55c75b2`; default byte-identical); MDE grid `lpdid_l618_start202206_mde_renters_v20260923_k7`: wild MDE 0.074–0.082 vs 0.094–0.096 equal-weight (precovid template); real design wild-equivalent SE 0.0366 → 0.0283 (MDE ≈ 0.103 → 0.079). Weights = covered-area renters; NC 32% of switcher weight.
+- (addendum) Weighted TWFE (`1b278e7`, `twfe_unit_weights: renters`): gate fails in both templates (precovid wild 0.0715, analytic 0.087; postcovid wild 0.0745); size-adjusted wild MDE 0.102 vs 0.109 precovid, 0.142 vs 0.143 postcovid. Not a TWFE lever. The legacy AR(1) sim (5.5–6%) was not weighted: its noise is pooled across states per month, so weighting cannot help there by construction.
+- (addendum) Application-era AR(1) TWFE sim: added opt-in `UNIT_WEIGHTS`; unweighted reproduces `twfe_power_rerun_noMNWA_v20260922` exactly; renter-weighted MDE ≈ 8.5% (SD +57%, size 0.0805) — worse by construction (state-homoskedastic errors). Flagged: the application paragraph's stated settings do not match the run behind 5.5–6%.
+- (addendum) Noise-fix runs `twfe_power_noise_fixes_v20260923` (`7654bcb`): state-specific noise sd and dropping COVID months from estimation do NOT raise the application AR(1) MDE — base 0.055–0.059, both fixes 0.045–0.052; renter weights 0.115–0.128 (NY dominates). Corrected my earlier claim that these features made the sim optimistic.
+- (addendum) Paragraph's window [2020-03, 2022-06): pool-only run gives MDE 0.051–0.055 / grid 6% — the paragraph's 5.5–6% holds under its own stated setup; also dropping the window from estimation gives 0.041–0.045, plus state-sd 0.034–0.035. NY's 0.436 residual sd was its late-2021 moratorium months leaking into the pool. Only remaining paragraph mismatch: 2,867 state-months vs 4,085.
+- (addendum) COVID window ending Aug 2021 vs May 2022 (AR(1) application sim): pool-only 0.054–0.056 vs 0.051–0.055 (both 6% on the grid); with the window also dropped 0.047–0.049 vs 0.041–0.045; + state sd 0.043–0.047 vs 0.034–0.035. Launcher `81b0f03`.
+
+## 2026-09-29 19:05 — CFPL Bartik replication; split to Labor-Demand-and-Eviction
+
+**Operations:**
+- Rebuilt Gabriel–Iacoviello–Lutz county Bartik from public CBP/QCEW/CES: `data_prep/bartik/build_bartik_cfpl_replication.R` → `data/processed/bartik/` (RUN_LEDGER `cfpl_bartik_replication`, EXPLORATORY)
+- Created the sibling repo `~/Documents/GitHub Doc/Labor-Demand-and-Eviction` (design memo v3.1, builds 00–06, gate, power comparison; commits 6395e26→6426d67, not pushed)
+- Memo copies moved to `quality_reports/specs/deprecated/` (MOVES.md); handoff at `quality_reports/handoff_2026-09-29_bartik_labor_demand.md`
+- Sonnet agents re-pinned to `claude-sonnet-5-5`; the model-routing skill was updated (backup in its `deprecated/2026-09-29/`)
+
+**Decisions:**
+- Bartik→eviction is a separate paper with visible results, kept out of the gambling PAP (Ben)
+- Fixed base-year shares (2000 / 2015); filings only; gate thresholds adopted (option A); Opus 5.5 for builds (Ben)
+
+**Results:**
+- CBP Bartik reproduces Lutz at cor 0.994; QCEW 0.916 (unresolved)
+- Gate: the non-housing reduced form passes in all eras; the IV is credible only in Era 1; tradable fails (a). Best Era 1 detectable elasticity about 1.0 naive / 1.3 IV-adjusted
+
+**Commits:**
+- (gambling repo) none this session; new-repo commits listed in the handoff
+
+**Status:**
+- Done: replication, new repo builds, gate, power comparison
+- Pending: the balanced-2004–14 / unbalanced-methods run (Opus, in progress); memo v4 package decision; NAICS 493/485 shock fixes; ERA control
+
+## 2026-09-30 — Bartik→eviction paper: literature pull for the main estimate (PAUSED)
+
+**Operations:**
+- Three Sonnet 5.5 researchers + one general-purpose reader (alphaXiv connector): methods (BHJ/AKM/GPSS, DiD Digest, 2025–26 arXiv), applied Bartik-downstream design table, causes-of-eviction, papers on disk (partial). Saved to `../Labor-Demand-and-Eviction/docs/design/lit/` (4 files).
+- Pause note `../Labor-Demand-and-Eviction/docs/progress/2026-09-30_lit_pull_paused.md`; handoff §1 updated; memory pointer updated.
+
+**Decisions:**
+- Ben clarified the estimand: reduced form of a labor-demand shock on filings, mechanism unspecified, max power, pre-trends/placebos. Recommended (pending Ben): reduced form headline, IV as Era 1 companion.
+
+**Results:**
+- Literature supports the reduced form as the main object; no published county-level labor-demand → eviction estimate found. Long differences and CZ aggregation already tested and worse here.
+
+**Commits:**
+- new repo `8981c3b` (lit files + pause note); nothing pushed.
+
+**Status:**
+- Paused by Ben (usage). Resume from the pause note §4.
+
+## 2026-10-09 — Mortgage arm readiness check; 30–89 day TWFE pre-trends with the locked controls
+
+**Operations:**
+- Readiness audit of the mortgage design against FINDINGS §2, RUN_LEDGER §5, configs and pipeline knobs (no code run)
+- New script `analysis/pretrends/pretrends_mortgage_twfe_controls.R`: TWFE event-study pre-trends on a state-month mortgage panel, 2019 covariates as X × month FE, pre-period coefficients only (PAP blindness)
+- Six runs → `output/pretrends_mortgage3089_twfe_controls/` (spliced ± controls, pre-COVID-only ± controls, June-2022 start + controls, 90+ comparator); combined `pre_tests_all_runs.csv`, `pre_coefs_all_runs.png`
+- RUN_LEDGER.md §5 row + FINDINGS.md §2 mortgage paragraph updated
+
+**Decisions:**
+- `COVARIATES=none` sentinel (an empty env var reads as unset); joint Wald reported with the clustered-V condition number and a Holm min-p because the Wald explodes on near-singular V with few identifying switchers
+
+**Results:**
+- Mortgage design NOT ready: outcome (90+ vs 30–89), scale, window and WA/MN rule undecided; blinded framework and real-data LP-DiD have no covariate support; 2026-09-29 mortgage work (4 ledger rows, scripts, outputs) still uncommitted
+- 30–89 spliced TWFE with controls: switchers' rate +0.03..+0.07 log pts above the e = −1 reference at e −23..−6, ≈ 0 at −5..−2 (Holm 0.025, slope −0.54%/mo p = 0.04); controls trim ~15%. Absent pre-COVID (Holm 1.0), present from June 2022 → recovery-era reshuffling of the 2022–24 launchers. 90+ shows none
+
+**Commits:**
+- none
+
+**Status:**
+- Done: readiness audit; pre-trends run and logged
+- Pending: Ben's four mortgage decisions; commit of the 09-29 + today's mortgage work; covariate support in the blinded framework / lpdid_statepanel.R; wild-bootstrap joint pre-test if the TWFE pre-trends are to be cited
+- 2026-10-09 addendum: `analysis/diagnostics/mortgage3089_pretrend_state_decomp.R` → `output/mortgage3089_pretrend_state_decomp/` (leave-one-out + per-state pre-paths); ledger row + FINDINGS §2 updated. Pre-trend is group-wide among the post-COVID launchers, not one or two states
+- 2026-10-09 addendum 2: `analysis/diagnostics/mortgage3089_pretrend_restart_month.R` → `output/mortgage3089_pretrend_restart_month/` (restart-month sweep, 8 restarts × spliced/post-only); ledger + FINDINGS §2 updated. Pre-trend magnitude invariant to the restart month
+- 2026-10-09 addendum 3: `analysis/diagnostics/mortgage3089_pretrend_clean_controls.R` → `output/mortgage3089_pretrend_clean_controls/` (never-treated-only pre-trends: pre-launch-only TWFE + Sun-Abraham); ledger + FINDINGS §2 updated. Spliced pattern weakens and loses significance; June-2022 cohort pattern strengthens (SA 0.104 ± 0.039, Holm 0.012)
+- 2026-10-09 addendum 4: `analysis/diagnostics/mortgage3089_pretrend_state_seasonal_fe.R` → `output/mortgage3089_pretrend_state_seasonal_fe/`; aggregate figures `figures/mortgage/mortgage3089_aggregate_over_time{,_sa}.png` (+ SA csv); ledger + FINDINGS §2 updated
+- 2026-10-09 addendum 5: `analysis/diagnostics/mortgage_pretrend_salvage_checks.R` → `output/mortgage_pretrend_salvage_checks/` (90+ swap, recovery covariates: neither removes the June-2022 pre-launch decline); ledger + FINDINGS §2 updated with a standing design trap
+- 2026-10-09 addendum 6 (CORRECTION): the 90+ panel `data/processed/mortgage_treatment_panel.csv` carried a pre-repair schedule (4 of 10 June-2022 switchers); rebuilt on the current schedule (rates bit-identical; old file → `data/processed/deprecated/`), all 90+ pre-trend runs redone, ledger rows + FINDINGS corrected, note at `docs/findings-archive/2026-10-09_stale-90plus-panel-correction.md`. Corrected result: 90+ shows no pre-trend on any window; the June-2022 pre-launch decline is 30–89 only. Figure `figures/mortgage/mortgage90plus_pretrends.png`
+- 2026-10-09 addendum 7: 90+ seasonally adjusted aggregate figure `figures/mortgage/mortgage90plus_aggregate_over_time_sa.png` (+ `.csv`)
+- 2026-10-09 addendum 8: simple two-panel pre-trends figure for the spliced TWFE, both outcomes: `figures/mortgage/mortgage_pretrends_twfe_spliced_simple.png`
+- 2026-10-09 addendum 9: `analysis/diagnostics/mortgage3089_pretrend_anatomy.R` → `output/mortgage3089_pretrend_anatomy/` (permutation placebo, levels, weights, judicial split, extra covariates, calendar gap); ledger + FINDINGS §2 updated. Headline: 30–89 pre-launch decline is small-state and disappears under mortgage weighting; Holm per-coefficient tests anti-conservative (28% placebo false positives)
+- 2026-10-09 addendum 10: `UNIT_WEIGHTS=mortgaged_units` knob added to both pre-trends scripts; all specs re-run weighted, both outcomes (ledger row `pretrends_mortgage_weighted`); figures `figures/mortgage/mortgage_pretrends_twfe_spliced_weighted.png`, `mortgage_pretrends_clean_controls_weighted.png`. 30–89 pre-launch decline gone under weighting; 90+ flat
+- 2026-10-09 addendum 11: `analysis/diagnostics/mortgage_pretrend_linear_slope.R` → `output/mortgage_pretrend_linear_slope/` (single linear pre-trend slope per spec + implied h6–18 bias); ledger + FINDINGS §2 updated

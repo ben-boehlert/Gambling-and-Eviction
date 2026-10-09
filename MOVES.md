@@ -170,3 +170,27 @@ Nothing was deleted. Reversal is `mv` back.
 |---|---|---|
 | `config/power_lpdid_shift12_clean_gate_county_ewatt_pmd6_timing.yml` | `config/deprecated/power_lpdid_shift12_clean_gate_county_ewatt_pmd6_timing.yml` | 5-rep timing probe used only to size the real run; superseded by `config/power_lpdid_shift12_clean_gate_county_ewatt_pmd6.yml` |
 | `output_blinded_power/lpdid_shift12_clean_county_ewatt_pmd6_timing/` | `output_blinded_power/deprecated/lpdid_shift12_clean_county_ewatt_pmd6_timing/` | its output; 5 reps, never citable |
+
+## 2026-09-14 — WA + MI panel addition and trailing-partial censor
+
+| Old path | New path | Why |
+|---|---|---|
+| `data/raw/state_month_panel_with_treatment.csv` (40-state post-Oregon vintage) | `data/raw/deprecated/state_month_panel_with_treatment_pre_wa_mi_2026-09-14.csv` (copy; canonical replaced in place) | vintage boundary 8: adds WA (Tacoma/Pierce, 113 months, never-treated control) and MI (JDW statewide, 68 of 89 months) → 42 states, and censors the trailing partial month of LA/MA/MO/NM. Pre-existing rows are unchanged apart from those four removals; see [`docs/findings-archive/2026-09-14_wa-mi-panel-addition.md`](docs/findings-archive/2026-09-14_wa-mi-panel-addition.md) |
+
+## 2026-09-14 — clean-design window audit supersedes the hand-clocked sweep
+
+| Old path | New path | Why |
+|---|---|---|
+| `analysis/diagnostics/covid_end_monthly_sweep.R` | `analysis/diagnostics/deprecated/covid_end_monthly_sweep.R` | Superseded by `analysis/diagnostics/clean_design_window_audit.R`. The deprecated script hardcoded month offsets (first on the shift12 clock, which placed both windows 12 months too late, then patched to the launch clock) and inherited `n_norm >= 2`, which silently dropped LA/NH/NY from the drift metric — exactly the states an earlier boundary admits, so the cost of moving the boundary read as zero when it was merely unmeasured. The replacement derives the windows from `config/power_lpdid_clean_gate_ewatt_pmd6_v20260914.yml` and asserts them. |
+
+## 2026-09-29 — Bartik–eviction design memo split to its own repo
+
+| Old path | New path | Why |
+|---|---|---|
+| `quality_reports/specs/2026-09-29_bartik_eviction_design_memo.md` (v3.1) | `quality_reports/specs/deprecated/2026-09-29_bartik_eviction_design_memo_v3.1.md` | The labor-demand/eviction paper moved to `~/Documents/GitHub Doc/Labor-Demand-and-Eviction` (initial commit `6395e26`); the live memo is `docs/design/design_memo.md` there. v1–v3 were already in the same `deprecated/` folder. `data_prep/bartik/build_bartik_cfpl_replication.R` stays here because RUN_LEDGER row `cfpl_bartik_replication` points to it. |
+
+## 2026-10-09 — Stale 90+ mortgage panel replaced
+
+| Old path | New path | Why |
+|---|---|---|
+| `data/processed/mortgage_treatment_panel.csv` (2026-01-23 build) | `data/processed/deprecated/mortgage_treatment_panel_pre-schedule-repair_2026-01-23.csv` | Treatment column predated the 2026-08-10 schedule repair (DE FL KY ME NC VT MO missing). Rebuilt in place on the current schedule by `data_prep/build_mortgage3089_panel.R` with `MORT_FILE`/`OUT_FILE`; rates bit-identical. See `docs/findings-archive/2026-10-09_stale-90plus-panel-correction.md`. |

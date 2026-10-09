@@ -1,0 +1,2 @@
+run,outcome,covariates,unit_weights,n_obs,n_states,n_months,n_switchers,n_switchers_with_pre_window,n_never_treated,min_date,max_date,drop_start,drop_end
+start202206_controls_wmort,log_delinquency_rate,judicial_only+unemp_2019+hpi_growth_2016q4_2019q4+age65_pct,mortgaged_units,1700,50,34,31,11,19,2022-06-01,2025-03-01,2020-03-01,2022-05-31

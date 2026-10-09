@@ -245,3 +245,143 @@ aggregation. Spliced + complete-periods = D1-infeasible.
 **Score:** N/A (diagnostics + data build, no estimation)
 **Verdict:** Panel rebuilt to a new 2026-09-14 vintage and Oregon added (switchers 13 -> 16, 40 states); three COVID-window alternatives tested and all rejected; eligibility window found mis-specified with 8 of 24 D1 cohort slots structurally impossible; 4 latent bugs fixed. 11 of my own intermediate conclusions were overturned and are logged — including the session's opening finding about which missing states are viable.
 **Report:** quality_reports/session_2026-09-14_panel_audit_and_design_review.md
+
+### 2026-09-14 — session: WA + MI panel addition
+**Phase:** Execution (data build)
+**Target:** `data/raw/state_month_panel_with_treatment.csv`
+**Score:** N/A (panel construction + diagnostics, no estimation)
+**Verdict:** Panel 40 → 42 states (WA = Tacoma/Pierce, never-treated control, 113 clean months; MI = JDW statewide, 68 of 89 months, NOT a clean-anchor switcher on either headline treat_def). Found and fixed a live defect: five extract-sourced series carried a partial final month, three of which were producing spurious non-COVID level breaks. County and state declared co-equal main specs; county arm untouched since neither new state is in LSC.
+**Report:** docs/findings-archive/2026-09-14_wa-mi-panel-addition.md
+
+### 2026-09-16 11:05 — sonnet-researcher
+**Phase:** Peer Review (implementation audit)
+**Target:** R/power LP-DiD engine + month restrictions under config/power_lpdid_clean_gate_ewatt_pmd6_v20260914.yml
+**Score:** N/A
+**Verdict:** 14-question line-cited code map; no contradictions with FINDINGS §5.
+**Report:** quality_reports/lpdid_sim_implementation_review_2026-09-16.md
+
+### 2026-09-16 11:05 — opus-reviewer
+**Phase:** Peer Review (implementation audit)
+**Target:** .re_lpdid() event_clean / ewatt / wild vs PI memo + Dube et al. (JAE 2025)
+**Score:** A,B,C,F,G(√w) CORRECT; E,D,G(df),I CONCERN; H design decision
+**Verdict:** Estimator and windows implemented as specified; recentering covers only α=0.05; analytic df counts all panel states; anticipation floor vs baseline placement is an unresolved estimand choice.
+**Report:** quality_reports/lpdid_sim_implementation_review_2026-09-16.md
+
+### 2026-09-16 11:54 — sonnet-executor
+**Phase:** Execution (fix from implementation review item G)
+**Target:** R/power/run_estimators.R .re_lpdid() analytic df; tests/testthat/test-estimators.R
+**Score:** PASS (test-estimators 18/18, test-oc pass; test-grid has a pre-existing unrelated failure)
+**Verdict:** Analytic t df now = contributing clusters − 1; regression test added; wild rows unchanged.
+**Report:** docs/findings-archive/2026-09-16_lpdid-analytic-df-correction.md
+
+### 2026-09-16 12:06 — orchestrator (Fable) diagnosis
+**Phase:** Execution (debugging)
+**Target:** tests/testthat/test-grid.R "exclude_states drops the states from the simulated panel"
+**Score:** N/A (diagnosis only, no fix applied)
+**Verdict:** Test reads an unconverged placement row; national template saturates the rebuilt panel (base 3/100 seeds fail, exclude-TX 43/100); bisect flips at fad95a6; headline configs (template: panel) unaffected.
+**Report:** docs/findings-archive/2026-09-16_test-grid-exclude-states-failure.md
+
+### 2026-09-16 12:20 — orchestrator (Fable) design diagnosis
+**Phase:** Strategy (design review, blind-safe)
+**Target:** county vs state LP-DiD arm; `analysis/diagnostics/county_vs_state_dispersion_decomposition.R`
+**Score:** N/A (diagnostic)
+**Verdict:** County arm's 24% tighter SD is implicit LSC-county-count reweighting of states (C 0.92x), not information (equal-state county means are 1.20x noisier); unweighted county ewatt is not a pre-registrable estimand.
+**Report:** docs/findings-archive/2026-09-16_county-arm-renter-weights.md
+
+### 2026-09-16 12:34 — coder (Fable) implementation
+**Phase:** Execution
+**Target:** R/power/run_estimators.R (`lpdid_unit_weights`, `.re_lpdid_wcr_weighted`), R/power/run_scenario_grid.R (knob + conditional hash), tests, config `power_lpdid_clean_gate_county_ewatt_pmd6_wild_rw_v20260914.yml`
+**Score:** PASS (test-estimators 112/112; test-grid new knob test passes, 1 pre-existing unrelated failure)
+**Verdict:** Renter weights added; exact weighted WCR reproduces boottest fe= (constant w) and dummy-expanded WLS (varying w) p-values to 1e-8. County rw gate (2,000 x 2) and post-rebuild state comparator (1,000 x 2) launched locally.
+**Report:** docs/findings-archive/2026-09-16_county-arm-renter-weights.md
+
+### 2026-09-16 13:30 — orchestrator (Fable) run results
+**Phase:** Execution (blinded size gates)
+**Target:** `lpdid_clean_gate_county_ewatt_pmd6_wild_rw_v20260914`, `lpdid_clean_gate_ewatt_pmd6_v20260914`, `_w126` twins
+**Score:** PASS (0 failure rows in all runs)
+**Verdict:** County renter-weighted wild gate passes size (0.011, conservative), null center −0.0005, SD 0.050; postcovid fails. State p42 comparator SD 0.063 under (18,0) vs 0.034 under (12,6) — the eligibility window, not the rebuild, is the noise source. FINDINGS §2/§5, ESTIMATOR_MATRIX §2, RUN_LEDGER updated.
+**Report:** docs/findings-archive/2026-09-16_county-arm-renter-weights.md
+
+### 2026-09-16 14:47 — coder (Fable) inclusion rule
+**Phase:** Execution (design rule → code)
+**Target:** R/power/inclusion_rule.R (new), make_pseudo_schedules.R (presence eligibility, cohort dropping, template_states), run_estimators.R (lpdid_min_horizons / excluded months), run_scenario_grid.R (knobs + hashes), analysis/main/lpdid_statepanel.R (MIN_HORIZONS / SPLICE_BUFFER parity), tests (+3 files), configs `_k7`
+**Score:** PASS (inclusion-rule 18/18, schedules 26/26, estimators 120/120, grid: only the pre-existing exclude_states failure)
+**Verdict:** Ben's rule (K = 7, 3-month splice buffer) implemented once and applied in placement, estimation, and the real-data script. 10 of 26 launched states qualify. Both k7 gates launched (state 1,000×2; county rw 2,000×2).
+**Report:** docs/findings-archive/2026-09-16_county-arm-renter-weights.md (addendum pending results)
+
+### 2026-09-16 17:05 — orchestrator (Fable) handoff
+**Phase:** Execution → decision pending
+**Target:** quality_reports/handoff_2026-09-16_county_arm_and_inclusion_rule.md
+**Score:** N/A
+**Verdict:** Session closed for context reset. Open decision: option A/B/C for placing the inclusion-rule design on the blinded panel (FINDINGS §5). Nothing committed past 9ab8741.
+**Report:** quality_reports/handoff_2026-09-16_county_arm_and_inclusion_rule.md
+
+### 2026-09-18 17:00 — Documentation sweep (orchestrator + 3 Sonnet readers)
+**Phase:** Strategy / Execution (PAP design)
+**Target:** FINDINGS.md, CLAUDE.md, ESTIMATOR_MATRIX.md, RUN_LEDGER.md
+**Score:** N/A (documentation, no artifact scored)
+**Verdict:** The 6–18 month outcome window, 3-month baseline and June 2022 sample start are now written into the docs as a RECOMMENDED-NOT-ADOPTED design switch, with the evidence, the honest caveats, and the decision Ben and Carl still owe. Estimator comparison (did2s/BJS/SunAb fail size; jackknife repairs it but erases their power advantage) recorded in ESTIMATOR_MATRIX §1. Two documentation gaps flagged in RUN_LEDGER: the TWFE weight diagnostic and the June-2022 justification both lack a committed script.
+**Report:** SESSION_REPORT.md, entry 2026-09-18 17:00
+
+### 2026-09-21 12:00 — Coder (simplified mode, no critic)
+**Phase:** Execution (PAP power section)
+**Target:** scripts/run_twfe_power_rerun_v20260921.sh, analysis/main/prep_twfe_power_rerun_inputs.R
+**Score:** N/A
+**Verdict:** Application-era naive TWFE power sim re-run on the boundary-11 panel, NV out, repaired schedule: MDE ≈ 3% under its original iid-by-month shocks, ≈ 6.5–7% under AR(1) (ρ = 0.721). The application's 5% was an artifact of erasing serial correlation and is not the Black et al. method; do not cite. EXPLORATORY.
+**Report:** RUN_LEDGER.md §1 row `twfe_power_rerun_v20260921`; SESSION_REPORT.md entry 2026-09-21 12:00
+
+### 2026-09-21 15:30 — Coder (simplified mode, no critic)
+**Phase:** Execution (design diagnostic)
+**Target:** analysis/diagnostics/idaho_ada_canyon_decomposition.R
+**Score:** N/A
+**Verdict:** Idaho's statewide drift is overwhelmingly Ada+Canyon (79% of 2021→2025 growth on 45% of the 2021 base; other 42 counties trend 3.7%/yr full-span and 0.9%/yr from 2022-06). But the accelerate-after-expiry prior is refuted and reversed: Ada's mean YoY growth falls 37.8% → 3.5% across the 2023-11 marker. The episode is bounded 2022-12..2023-10. Canyon tracking Ada argues Boise MSA, not an Ada-County-specific program. No design change; dropping the two counties would be selection on the realized outcome.
+**Report:** RUN_LEDGER.md §4 row `idaho_ada_canyon_decomposition`; SESSION_REPORT.md entry 2026-09-21 15:30
+
+### 2026-09-22 14:30 — coder (diagnostic)
+**Phase:** Execution
+**Target:** `analysis/diagnostics/lpdid_ri_post2022.R` — RI calibration of the post-June-2022 LP-DiD analytic SE
+**Score:** N/A (diagnostic run)
+**Verdict:** SE/SD 0.956 over 1,000 permutations; the analytic SE is calibrated in the real post-2022 era and the blinded precovid correction transfers. The `postcovid` arm's 0.67 is a 6-cluster artifact, not an era effect.
+**Report:** `output/lpdid_ri_post2022/ri_summary.csv`; RUN_LEDGER.md §4
+
+### 2026-09-29 — coder (Opus 5.5 executor)
+**Phase:** Execution
+**Target:** data_prep/bartik/build_bartik_cfpl_replication.R (CFPL Bartik replication)
+**Score:** N/A (V1 check: reconciliation to Lutz's values)
+**Verdict:** CBP bartik cor 0.994 (not exact; residual from suppressed-cell fill); QCEW bartik.qcew cor 0.916 (unresolved). Stats re-verified in main session.
+**Report:** quality_reports/plans/2026-09-29_bartik_replication_cfpl.md
+
+### 2026-09-29 — strategist-critic (round 1)
+**Phase:** Strategy
+**Target:** quality_reports/specs/2026-09-29_bartik_eviction_design_memo.md (v1; separate labor-demand/eviction paper)
+**Score:** 68/100
+**Verdict:** Revise: incomplete-shares control, no pre-period, LP shock persistence, AKM clustering, monthly zero-row misread. Data claims re-verified; v2 written.
+**Report:** inline in session; v1 preserved in quality_reports/specs/deprecated/
+
+### 2026-09-29 — strategist-critic (rounds 2–3)
+**Phase:** Strategy
+**Target:** quality_reports/specs/2026-09-29_bartik_eviction_design_memo.md (v2 → v3 → v3.1)
+**Score:** 78/100 (v2), 81/100 (v3, PASS)
+**Verdict:** Pass. Must-fix items applied in v3.1: gate (a) at NAICS-3 plus a max-weight cap, AKM0-based MDE, directional stacked housing-switch test, unconditional shock balance, raw-g sign split. Gate numbers still PROPOSED pending Ben.
+**Report:** inline in session; prior versions in quality_reports/specs/deprecated/
+
+### 2026-09-29 19:05 — coder (Opus 5.5) + opus-reviewer, Labor-Demand-and-Eviction repo
+**Phase:** Execution (pre-estimation)
+**Target:** ../Labor-Demand-and-Eviction: builds 02–06, analysis/code/01_gate.R, 02_power_comparison.R
+**Score:** gate PASS (non-housing RF, all eras); opus-reviewer: no verdict flips, 7 fixes applied (2b57d4a)
+**Verdict:** Era 1 is the credible headline (elasticity MDE about 1.0–1.3); Era 2 fails conditional balance; tradable switch inoperative
+**Report:** quality_reports/handoff_2026-09-29_bartik_labor_demand.md
+
+### 2026-10-09 — Main session (Fable 5.1) + 6 sonnet-researcher extractions
+**Phase:** Discovery (literature)
+**Target:** Hull (2026) TWFE-vs-modern reanalysis, applied as a printed-estimate comparison to the six sports-betting papers in `Literature/`
+**Score:** N/A (EXPLORATORY extraction)
+**Verdict:** 64 TWFE-vs-modern pairs across Baker, Guo, McCarthy, Arnesen (Hollenbeck and Goss & Mangrum print none): 1 sign reversal (null vs null), 13 independent-SE significant gaps, 10 of them a Baker clustering artifact; SE ratios 0.5–4.3, not comparable across papers. No paper varies the sample window, so nothing on COVID. ETWFE explained from Wooldridge (2021 WP) and Goss & Mangrum §4.2.
+**Report:** `quality_reports/hull_style_gambling_lit_comparison_2026-10-09.md`, `quality_reports/hull_style_gambling_lit_pairs_2026-10-09.csv`, `analysis/exploratory/hull_style_lit_pairs.R`
+
+### 2026-10-09 — main session (Fable 5.1)
+**Phase:** Strategy (mortgage arm pre-analysis)
+**Target:** `analysis/pretrends/pretrends_mortgage_twfe_controls.R`, `output/pretrends_mortgage3089_twfe_controls/`
+**Score:** N/A
+**Verdict:** 30–89 day TWFE pre-trends with the locked 2019 controls show a relative decline into launch on the spliced window, driven by post-COVID launchers; absent pre-COVID; controls do not remove it. Mortgage design still awaits four decisions and covariate support in the LP-DiD pipeline.
+**Report:** RUN_LEDGER.md §5 row `pretrends_mortgage3089_twfe_controls`; FINDINGS.md §2

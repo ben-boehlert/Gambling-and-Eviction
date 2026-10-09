@@ -1,0 +1,334 @@
+series,month_date,rate,rate_sa
+20 never-treated states: mean,2016-01-01,1.265,1.183241881173328
+20 never-treated states: mean,2016-02-01,1.33,1.2436238381454165
+20 never-treated states: mean,2016-03-01,1.175,1.1801059751118887
+20 never-treated states: mean,2016-04-01,1.095,1.1561150245085283
+20 never-treated states: mean,2016-05-01,1.1,1.163051225094179
+20 never-treated states: mean,2016-06-01,1.06,1.0984760103252613
+20 never-treated states: mean,2016-07-01,1.045,1.089766879478757
+20 never-treated states: mean,2016-08-01,1.065,1.0973035618021776
+20 never-treated states: mean,2016-09-01,1.05,1.0538636661496297
+20 never-treated states: mean,2016-10-01,1.075,1.0623980170586556
+20 never-treated states: mean,2016-11-01,1.075,1.0513601973280244
+20 never-treated states: mean,2016-12-01,1.085,1.024322973146849
+20 never-treated states: mean,2017-01-01,1.095,1.0242291382488493
+20 never-treated states: mean,2017-02-01,1.06,0.991158848446723
+20 never-treated states: mean,2017-03-01,0.985,0.9892803280725194
+20 never-treated states: mean,2017-04-01,0.94,0.9924640393041246
+20 never-treated states: mean,2017-05-01,0.925,0.9780203483746504
+20 never-treated states: mean,2017-06-01,0.95,0.9844832168009416
+20 never-treated states: mean,2017-07-01,0.935,0.9750545763757299
+20 never-treated states: mean,2017-08-01,0.905,0.9324504445361228
+20 never-treated states: mean,2017-09-01,0.9349999999999999,0.9384405027141939
+20 never-treated states: mean,2017-10-01,0.925,0.9141564332830292
+20 never-treated states: mean,2017-11-01,0.9249999999999999,0.9046587744450444
+20 never-treated states: mean,2017-12-01,0.945,0.8921522669343523
+20 never-treated states: mean,2018-01-01,0.94,0.8792469314647655
+20 never-treated states: mean,2018-02-01,0.9199999999999999,0.8602510760103632
+20 never-treated states: mean,2018-03-01,0.865,0.8687588667844968
+20 never-treated states: mean,2018-04-01,0.825,0.8710455664105349
+20 never-treated states: mean,2018-05-01,0.81,0.8564286293875317
+20 never-treated states: mean,2018-06-01,0.8099999999999999,0.8394014795881712
+20 never-treated states: mean,2018-07-01,0.8,0.8342712952947422
+20 never-treated states: mean,2018-08-01,0.8,0.8242655863302744
+20 never-treated states: mean,2018-09-01,0.82,0.8230173392787582
+20 never-treated states: mean,2018-10-01,0.8,0.790621780136674
+20 never-treated states: mean,2018-11-01,0.79,0.7726274938503623
+20 never-treated states: mean,2018-12-01,0.8150000000000001,0.7694223254513198
+20 never-treated states: mean,2019-01-01,0.845,0.7903868692422626
+20 never-treated states: mean,2019-02-01,0.81,0.7573949690960807
+20 never-treated states: mean,2019-03-01,0.755,0.7582808606038093
+20 never-treated states: mean,2019-04-01,0.6950000000000001,0.7337899014003901
+20 never-treated states: mean,2019-05-01,0.68,0.7189771209673105
+20 never-treated states: mean,2019-06-01,0.71,0.7357716672933353
+20 never-treated states: mean,2019-07-01,0.6900000000000001,0.7195589921917152
+20 never-treated states: mean,2019-08-01,0.7,0.7212323880389899
+20 never-treated states: mean,2019-09-01,0.71,0.712612574253559
+20 never-treated states: mean,2019-10-01,0.73,0.7214423743747149
+20 never-treated states: mean,2019-11-01,0.735,0.7188369721266028
+20 never-treated states: mean,2019-12-01,0.76,0.7174981194392676
+20 never-treated states: mean,2020-01-01,0.81,0.7576489515813406
+20 never-treated states: mean,2020-02-01,0.77,0.719992748399978
+20 never-treated states: mean,2020-03-01,0.725,0.7281504952818036
+20 never-treated states: mean,2020-04-01,0.68,0.7179527092838349
+20 never-treated states: mean,2020-05-01,0.655,0.6925441385788065
+20 never-treated states: mean,2020-06-01,0.605,0.6269603643837576
+20 never-treated states: mean,2020-07-01,0.585,0.6100608846842801
+20 never-treated states: mean,2020-08-01,0.59,0.6078958699185772
+20 never-treated states: mean,2020-09-01,0.58,0.5821342155874143
+20 never-treated states: mean,2020-10-01,0.54,0.5336697015922549
+20 never-treated states: mean,2020-11-01,0.54,0.5281251223787287
+20 never-treated states: mean,2020-12-01,0.54,0.5098012953910586
+20 never-treated states: mean,2021-01-01,0.54,0.5050993010542271
+20 never-treated states: mean,2021-02-01,0.52,0.48622886904933577
+20 never-treated states: mean,2021-03-01,0.5,0.5021727553667611
+20 never-treated states: mean,2021-04-01,0.46499999999999997,0.49095295561321056
+20 never-treated states: mean,2021-05-01,0.45,0.4757936829930731
+20 never-treated states: mean,2021-06-01,0.445,0.4611526647120201
+20 never-treated states: mean,2021-07-01,0.475,0.49534858158125317
+20 never-treated states: mean,2021-08-01,0.48,0.49455935179816457
+20 never-treated states: mean,2021-09-01,0.47,0.4717294505622151
+20 never-treated states: mean,2021-10-01,0.47,0.4644902958302959
+20 never-treated states: mean,2021-11-01,0.49,0.4792246480844019
+20 never-treated states: mean,2021-12-01,0.51,0.48147900120266635
+20 never-treated states: mean,2022-01-01,0.495,0.4630076926330415
+20 never-treated states: mean,2022-02-01,0.5,0.4675277587012844
+20 never-treated states: mean,2022-03-01,0.44,0.44191202472274976
+20 never-treated states: mean,2022-04-01,0.49,0.5173482758074692
+20 never-treated states: mean,2022-05-01,0.45,0.4757936829930731
+20 never-treated states: mean,2022-06-01,0.455,0.4715156459415037
+20 never-treated states: mean,2022-07-01,0.45,0.46927760360329246
+20 never-treated states: mean,2022-08-01,0.46,0.47395271213990775
+20 never-treated states: mean,2022-09-01,0.455,0.4566742553315062
+20 never-treated states: mean,2022-10-01,0.45,0.44472475132687905
+20 never-treated states: mean,2022-11-01,0.47000000000000003,0.45966445836667125
+20 never-treated states: mean,2022-12-01,0.47000000000000003,0.4437159422848102
+20 never-treated states: mean,2023-01-01,0.515,0.4817150741535684
+20 never-treated states: mean,2023-02-01,0.5,0.4675277587012844
+20 never-treated states: mean,2023-03-01,0.48,0.4820858451520907
+20 never-treated states: mean,2023-04-01,0.48,0.5067901477297658
+20 never-treated states: mean,2023-05-01,0.465,0.4916534724261756
+20 never-treated states: mean,2023-06-01,0.46499999999999997,0.48187862717098723
+20 never-treated states: mean,2023-07-01,0.495,0.5162053639636217
+20 never-treated states: mean,2023-08-01,0.52,0.5357726311146783
+20 never-treated states: mean,2023-09-01,0.525,0.5269318330748148
+20 never-treated states: mean,2023-10-01,0.52,0.5139041570888381
+20 never-treated states: mean,2023-11-01,0.545,0.5330151698081614
+20 never-treated states: mean,2023-12-01,0.61,0.5758866484973069
+20 never-treated states: mean,2024-01-01,0.625,0.5846056725164664
+20 never-treated states: mean,2024-02-01,0.62,0.5797344207895926
+20 never-treated states: mean,2024-03-01,0.6,0.6026073064401133
+20 never-treated states: mean,2024-04-01,0.555,0.5859761083125418
+20 never-treated states: mean,2024-05-01,0.59,0.6238183843686959
+20 never-treated states: mean,2024-06-01,0.61,0.6321418549984994
+20 never-treated states: mean,2024-07-01,0.65,0.6778454274269781
+20 never-treated states: mean,2024-08-01,0.67,0.6903224285516047
+20 never-treated states: mean,2024-09-01,0.695,0.69755737902285
+20 never-treated states: mean,2024-10-01,0.705,0.6967354437454438
+20 never-treated states: mean,2024-11-01,0.705,0.6894966875500068
+20 never-treated states: mean,2024-12-01,0.75,0.7080573547098035
+20 never-treated states: mean,2025-01-01,0.81,0.7576489515813406
+20 never-treated states: mean,2025-02-01,0.785,0.7340185811610165
+20 never-treated states: mean,2025-03-01,0.725,0.7281504952818036
+All 50 states (NV out): mean,2016-01-01,1.552,1.461231880693979
+All 50 states (NV out): mean,2016-02-01,1.634,1.532672530709888
+All 50 states (NV out): mean,2016-03-01,1.46,1.4622670010282874
+All 50 states (NV out): mean,2016-04-01,1.354,1.4306874558743237
+All 50 states (NV out): mean,2016-05-01,1.36,1.4380233906608875
+All 50 states (NV out): mean,2016-06-01,1.306,1.3625228000931033
+All 50 states (NV out): mean,2016-07-01,1.302,1.354123158345088
+All 50 states (NV out): mean,2016-08-01,1.308,1.3379084724231305
+All 50 states (NV out): mean,2016-09-01,1.266,1.2751032805801408
+All 50 states (NV out): mean,2016-10-01,1.292,1.2722375905101708
+All 50 states (NV out): mean,2016-11-01,1.29,1.2582311520528693
+All 50 states (NV out): mean,2016-12-01,1.3,1.2252849667574217
+All 50 states (NV out): mean,2017-01-01,1.322,1.2446833416736085
+All 50 states (NV out): mean,2017-02-01,1.272,1.1931208439797907
+All 50 states (NV out): mean,2017-03-01,1.192,1.193850866592958
+All 50 states (NV out): mean,2017-04-01,1.13,1.1940006094076703
+All 50 states (NV out): mean,2017-05-01,1.106,1.1694513750521631
+All 50 states (NV out): mean,2017-06-01,1.12,1.1684728454090934
+All 50 states (NV out): mean,2017-07-01,1.096,1.1398763299126085
+All 50 states (NV out): mean,2017-08-01,1.076,1.1006036057548076
+All 50 states (NV out): mean,2017-09-01,1.092,1.0998521187942447
+All 50 states (NV out): mean,2017-10-01,1.082,1.065449746851397
+All 50 states (NV out): mean,2017-11-01,1.08,1.0534028249744953
+All 50 states (NV out): mean,2017-12-01,1.096,1.0330094796662572
+All 50 states (NV out): mean,2018-01-01,1.096,1.0319008642014182
+All 50 states (NV out): mean,2018-02-01,1.074,1.0073992031716157
+All 50 states (NV out): mean,2018-03-01,1.002,1.0035558459111944
+All 50 states (NV out): mean,2018-04-01,0.9480000000000001,1.0016925466535147
+All 50 states (NV out): mean,2018-05-01,0.924,0.97701000953725
+All 50 states (NV out): mean,2018-06-01,0.9259999999999999,0.9660766561150181
+All 50 states (NV out): mean,2018-07-01,0.928,0.9651507610938875
+All 50 states (NV out): mean,2018-08-01,0.92,0.9410365402364527
+All 50 states (NV out): mean,2018-09-01,0.93,0.9366872440280656
+All 50 states (NV out): mean,2018-10-01,0.924,0.9098665120986053
+All 50 states (NV out): mean,2018-11-01,0.908,0.885638671367446
+All 50 states (NV out): mean,2018-12-01,0.9400000000000001,0.8859752836553666
+All 50 states (NV out): mean,2019-01-01,0.9540000000000001,0.8982056792410155
+All 50 states (NV out): mean,2019-02-01,0.924,0.8667009904381499
+All 50 states (NV out): mean,2019-03-01,0.866,0.8673446732126691
+All 50 states (NV out): mean,2019-04-01,0.796,0.8410836151225713
+All 50 states (NV out): mean,2019-05-01,0.786,0.8310929301907777
+All 50 states (NV out): mean,2019-06-01,0.806,0.8408831369640439
+All 50 states (NV out): mean,2019-07-01,0.792,0.8237062530025419
+All 50 states (NV out): mean,2019-08-01,0.8200000000000001,0.8387499597759688
+All 50 states (NV out): mean,2019-09-01,0.832,0.8379825667003769
+All 50 states (NV out): mean,2019-10-01,0.86,0.8468454549835502
+All 50 states (NV out): mean,2019-11-01,0.864,0.8427222599795962
+All 50 states (NV out): mean,2019-12-01,0.888,0.8369638849850696
+All 50 states (NV out): mean,2020-01-01,0.914,0.8605450637592119
+All 50 states (NV out): mean,2020-02-01,0.876,0.8216775623634407
+All 50 states (NV out): mean,2020-03-01,0.828,0.8292856690763163
+All 50 states (NV out): mean,2020-04-01,0.754,0.7967048314100739
+All 50 states (NV out): mean,2020-05-01,0.73,0.7718802023400352
+All 50 states (NV out): mean,2020-06-01,0.69,0.7198627351181021
+All 50 states (NV out): mean,2020-07-01,0.674,0.700982341570345
+All 50 states (NV out): mean,2020-08-01,0.668,0.683274357476033
+All 50 states (NV out): mean,2020-09-01,0.658,0.6627314049144808
+All 50 states (NV out): mean,2020-10-01,0.612,0.6026388586627125
+All 50 states (NV out): mean,2020-11-01,0.604,0.5891252835968473
+All 50 states (NV out): mean,2020-12-01,0.612,0.5768264612734939
+All 50 states (NV out): mean,2021-01-01,0.616,0.5799734784197751
+All 50 states (NV out): mean,2021-02-01,0.596,0.5590408985943044
+All 50 states (NV out): mean,2021-03-01,0.568,0.5688819565644295
+All 50 states (NV out): mean,2021-04-01,0.542,0.5726976374327056
+All 50 states (NV out): mean,2021-05-01,0.514,0.5434882520586002
+All 50 states (NV out): mean,2021-06-01,0.504,0.5258127804340921
+All 50 states (NV out): mean,2021-07-01,0.536,0.5574577671835385
+All 50 states (NV out): mean,2021-08-01,0.538,0.5503018028774038
+All 50 states (NV out): mean,2021-09-01,0.532,0.5358253912074525
+All 50 states (NV out): mean,2021-10-01,0.536,0.5278013533385849
+All 50 states (NV out): mean,2021-11-01,0.538,0.5247506665150726
+All 50 states (NV out): mean,2021-12-01,0.5599999999999999,0.527815062603197
+All 50 states (NV out): mean,2022-01-01,0.5599999999999999,0.52724861674525
+All 50 states (NV out): mean,2022-02-01,0.556,0.5215213751987136
+All 50 states (NV out): mean,2022-03-01,0.514,0.5147981085811916
+All 50 states (NV out): mean,2022-04-01,0.558,0.5896038407517523
+All 50 states (NV out): mean,2022-05-01,0.512,0.5413735117782165
+All 50 states (NV out): mean,2022-06-01,0.51,0.5320724563916407
+All 50 states (NV out): mean,2022-07-01,0.512,0.5324969716380069
+All 50 states (NV out): mean,2022-08-01,0.52,0.5318902183945168
+All 50 states (NV out): mean,2022-09-01,0.516,0.5197103418478299
+All 50 states (NV out): mean,2022-10-01,0.528,0.519923721199203
+All 50 states (NV out): mean,2022-11-01,0.54,0.5267014124872477
+All 50 states (NV out): mean,2022-12-01,0.544,0.5127346322431058
+All 50 states (NV out): mean,2023-01-01,0.578,0.5441958937120617
+All 50 states (NV out): mean,2023-02-01,0.5599999999999999,0.5252733275382725
+All 50 states (NV out): mean,2023-03-01,0.54,0.5408384798323802
+All 50 states (NV out): mean,2023-04-01,0.542,0.5726976374327056
+All 50 states (NV out): mean,2023-05-01,0.516,0.5456029923389838
+All 50 states (NV out): mean,2023-06-01,0.512,0.534159015044157
+All 50 states (NV out): mean,2023-07-01,0.54,0.5616178997744604
+All 50 states (NV out): mean,2023-08-01,0.558,0.5707591189695006
+All 50 states (NV out): mean,2023-09-01,0.574,0.5781273957764619
+All 50 states (NV out): mean,2023-10-01,0.58,0.571128330105185
+All 50 states (NV out): mean,2023-11-01,0.596,0.5813222997081473
+All 50 states (NV out): mean,2023-12-01,0.66,0.622067752353768
+All 50 states (NV out): mean,2024-01-01,0.684,0.6439965247388413
+All 50 states (NV out): mean,2024-02-01,0.6859999999999999,0.6434598262343839
+All 50 states (NV out): mean,2024-03-01,0.658,0.6590217032031597
+All 50 states (NV out): mean,2024-04-01,0.626,0.6614552048577006
+All 50 states (NV out): mean,2024-05-01,0.64,0.6767168897227706
+All 50 states (NV out): mean,2024-06-01,0.654,0.6823046793728098
+All 50 states (NV out): mean,2024-07-01,0.702,0.7301032697067984
+All 50 states (NV out): mean,2024-08-01,0.716,0.7323719160970653
+All 50 states (NV out): mean,2024-09-01,0.744,0.7493497952224525
+All 50 states (NV out): mean,2024-10-01,0.746,0.7345891969973587
+All 50 states (NV out): mean,2024-11-01,0.754,0.7354312315099717
+All 50 states (NV out): mean,2024-12-01,0.81,0.7634467869796244
+All 50 states (NV out): mean,2025-01-01,0.874,0.8228844482774083
+All 50 states (NV out): mean,2025-02-01,0.842,0.7897859674771884
+All 50 states (NV out): mean,2025-03-01,0.78,0.7812111375356604
+"National (CFPB, loan-weighted)",2016-01-01,1.6,1.524798797095066
+"National (CFPB, loan-weighted)",2016-02-01,1.7,1.5718956140837648
+"National (CFPB, loan-weighted)",2016-03-01,1.5,1.5188906449217476
+"National (CFPB, loan-weighted)",2016-04-01,1.4,1.4907508306697215
+"National (CFPB, loan-weighted)",2016-05-01,1.4,1.469198043800403
+"National (CFPB, loan-weighted)",2016-06-01,1.4,1.447254134327725
+"National (CFPB, loan-weighted)",2016-07-01,1.3,1.3492162641421348
+"National (CFPB, loan-weighted)",2016-08-01,1.3,1.329064399875548
+"National (CFPB, loan-weighted)",2016-09-01,1.3,1.309213523407739
+"National (CFPB, loan-weighted)",2016-10-01,1.3,1.2902853434222483
+"National (CFPB, loan-weighted)",2016-11-01,1.3,1.2710136700835462
+"National (CFPB, loan-weighted)",2016-12-01,1.3,1.2162906615551865
+"National (CFPB, loan-weighted)",2017-01-01,1.3,1.238899022639741
+"National (CFPB, loan-weighted)",2017-02-01,1.3,1.2020378225346438
+"National (CFPB, loan-weighted)",2017-03-01,1.2,1.2151125159373979
+"National (CFPB, loan-weighted)",2017-04-01,1.1,1.1713042240976383
+"National (CFPB, loan-weighted)",2017-05-01,1.1,1.1543698915574598
+"National (CFPB, loan-weighted)",2017-06-01,1.1,1.1371282484003553
+"National (CFPB, loan-weighted)",2017-07-01,1.1,1.141644531197191
+"National (CFPB, loan-weighted)",2017-08-01,1.1,1.1245929537408486
+"National (CFPB, loan-weighted)",2017-09-01,1.1,1.1077960582680868
+"National (CFPB, loan-weighted)",2017-10-01,1.1,1.0917799059726718
+"National (CFPB, loan-weighted)",2017-11-01,1.1,1.0754731054553084
+"National (CFPB, loan-weighted)",2017-12-01,1.1,1.029169021315927
+"National (CFPB, loan-weighted)",2018-01-01,1.1,1.048299173002858
+"National (CFPB, loan-weighted)",2018-02-01,1.1,1.0171089267600832
+"National (CFPB, loan-weighted)",2018-03-01,1,1.012593763281165
+"National (CFPB, loan-weighted)",2018-04-01,0.9,0.9583398197162495
+"National (CFPB, loan-weighted)",2018-05-01,0.9,0.9444844567288306
+"National (CFPB, loan-weighted)",2018-06-01,0.9,0.9303776577821089
+"National (CFPB, loan-weighted)",2018-07-01,0.9,0.9340727982522472
+"National (CFPB, loan-weighted)",2018-08-01,0.9,0.9201215076061486
+"National (CFPB, loan-weighted)",2018-09-01,0.9,0.9063785931284347
+"National (CFPB, loan-weighted)",2018-10-01,0.9,0.893274468523095
+"National (CFPB, loan-weighted)",2018-11-01,0.9,0.8799325408270705
+"National (CFPB, loan-weighted)",2018-12-01,0.9,0.8420473810766675
+"National (CFPB, loan-weighted)",2019-01-01,0.9,0.8576993233659745
+"National (CFPB, loan-weighted)",2019-02-01,0.9,0.8321800309855226
+"National (CFPB, loan-weighted)",2019-03-01,0.8,0.810075010624932
+"National (CFPB, loan-weighted)",2019-04-01,0.8,0.8518576175255551
+"National (CFPB, loan-weighted)",2019-05-01,0.8,0.8395417393145161
+"National (CFPB, loan-weighted)",2019-06-01,0.8,0.8270023624729858
+"National (CFPB, loan-weighted)",2019-07-01,0.8,0.8302869317797753
+"National (CFPB, loan-weighted)",2019-08-01,0.8,0.8178857845387989
+"National (CFPB, loan-weighted)",2019-09-01,0.8,0.8056698605586087
+"National (CFPB, loan-weighted)",2019-10-01,0.8,0.7940217497983068
+"National (CFPB, loan-weighted)",2019-11-01,0.8,0.7821622585129515
+"National (CFPB, loan-weighted)",2019-12-01,0.9,0.8420473810766675
+"National (CFPB, loan-weighted)",2020-01-01,0.9,0.8576993233659745
+"National (CFPB, loan-weighted)",2020-02-01,0.9,0.8321800309855226
+"National (CFPB, loan-weighted)",2020-03-01,0.8,0.810075010624932
+"National (CFPB, loan-weighted)",2020-04-01,0.7,0.7453754153348606
+"National (CFPB, loan-weighted)",2020-05-01,0.7,0.7345990219002015
+"National (CFPB, loan-weighted)",2020-06-01,0.7,0.7236270671638624
+"National (CFPB, loan-weighted)",2020-07-01,0.7,0.7265010653073033
+"National (CFPB, loan-weighted)",2020-08-01,0.6,0.6134143384040991
+"National (CFPB, loan-weighted)",2020-09-01,0.6,0.6042523954189564
+"National (CFPB, loan-weighted)",2020-10-01,0.6,0.59551631234873
+"National (CFPB, loan-weighted)",2020-11-01,0.6,0.5866216938847136
+"National (CFPB, loan-weighted)",2020-12-01,0.6,0.5613649207177783
+"National (CFPB, loan-weighted)",2021-01-01,0.6,0.5717995489106497
+"National (CFPB, loan-weighted)",2021-02-01,0.6,0.5547866873236816
+"National (CFPB, loan-weighted)",2021-03-01,0.5,0.5062968816405825
+"National (CFPB, loan-weighted)",2021-04-01,0.5,0.532411010953472
+"National (CFPB, loan-weighted)",2021-05-01,0.5,0.5247135870715726
+"National (CFPB, loan-weighted)",2021-06-01,0.5,0.5168764765456161
+"National (CFPB, loan-weighted)",2021-07-01,0.5,0.5189293323623595
+"National (CFPB, loan-weighted)",2021-08-01,0.5,0.5111786153367492
+"National (CFPB, loan-weighted)",2021-09-01,0.5,0.5035436628491303
+"National (CFPB, loan-weighted)",2021-10-01,0.5,0.4962635936239417
+"National (CFPB, loan-weighted)",2021-11-01,0.5,0.48885141157059475
+"National (CFPB, loan-weighted)",2021-12-01,0.5,0.46780410059814864
+"National (CFPB, loan-weighted)",2022-01-01,0.5,0.4764996240922081
+"National (CFPB, loan-weighted)",2022-02-01,0.5,0.46232223943640144
+"National (CFPB, loan-weighted)",2022-03-01,0.5,0.5062968816405825
+"National (CFPB, loan-weighted)",2022-04-01,0.5,0.532411010953472
+"National (CFPB, loan-weighted)",2022-05-01,0.5,0.5247135870715726
+"National (CFPB, loan-weighted)",2022-06-01,0.5,0.5168764765456161
+"National (CFPB, loan-weighted)",2022-07-01,0.5,0.5189293323623595
+"National (CFPB, loan-weighted)",2022-08-01,0.5,0.5111786153367492
+"National (CFPB, loan-weighted)",2022-09-01,0.5,0.5035436628491303
+"National (CFPB, loan-weighted)",2022-10-01,0.5,0.4962635936239417
+"National (CFPB, loan-weighted)",2022-11-01,0.5,0.48885141157059475
+"National (CFPB, loan-weighted)",2022-12-01,0.5,0.46780410059814864
+"National (CFPB, loan-weighted)",2023-01-01,0.6,0.5717995489106497
+"National (CFPB, loan-weighted)",2023-02-01,0.5,0.46232223943640144
+"National (CFPB, loan-weighted)",2023-03-01,0.5,0.5062968816405825
+"National (CFPB, loan-weighted)",2023-04-01,0.5,0.532411010953472
+"National (CFPB, loan-weighted)",2023-05-01,0.5,0.5247135870715726
+"National (CFPB, loan-weighted)",2023-06-01,0.5,0.5168764765456161
+"National (CFPB, loan-weighted)",2023-07-01,0.5,0.5189293323623595
+"National (CFPB, loan-weighted)",2023-08-01,0.5,0.5111786153367492
+"National (CFPB, loan-weighted)",2023-09-01,0.6,0.6042523954189564
+"National (CFPB, loan-weighted)",2023-10-01,0.6,0.59551631234873
+"National (CFPB, loan-weighted)",2023-11-01,0.6,0.5866216938847136
+"National (CFPB, loan-weighted)",2023-12-01,0.6,0.5613649207177783
+"National (CFPB, loan-weighted)",2024-01-01,0.7,0.6670994737290913
+"National (CFPB, loan-weighted)",2024-02-01,0.7,0.6472511352109619
+"National (CFPB, loan-weighted)",2024-03-01,0.6,0.607556257968699
+"National (CFPB, loan-weighted)",2024-04-01,0.6,0.6388932131441664
+"National (CFPB, loan-weighted)",2024-05-01,0.6,0.629656304485887
+"National (CFPB, loan-weighted)",2024-06-01,0.6,0.6202517718547392
+"National (CFPB, loan-weighted)",2024-07-01,0.7,0.7265010653073033
+"National (CFPB, loan-weighted)",2024-08-01,0.7,0.7156500614714489
+"National (CFPB, loan-weighted)",2024-09-01,0.7,0.7049611279887825
+"National (CFPB, loan-weighted)",2024-10-01,0.7,0.6947690310735183
+"National (CFPB, loan-weighted)",2024-11-01,0.7,0.6843919761988325
+"National (CFPB, loan-weighted)",2024-12-01,0.8,0.7484865609570378
+"National (CFPB, loan-weighted)",2025-01-01,0.8,0.762399398547533
+"National (CFPB, loan-weighted)",2025-02-01,0.8,0.7397155830982423
+"National (CFPB, loan-weighted)",2025-03-01,0.8,0.810075010624932

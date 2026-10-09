@@ -1,0 +1,2 @@
+run,outcome,covariates,n_obs,n_states,n_months,n_switchers,n_switchers_with_pre_window,n_never_treated,min_date,max_date,drop_start,drop_end
+precovid_controls_90plus,log_delinquency_rate,judicial_only+unemp_2019+hpi_growth_2016q4_2019q4+age65_pct,2500,50,50,31,14,19,2016-01-01,2020-02-01,2020-03-01,2021-07-01
