@@ -18,6 +18,10 @@
 #
 # Run from the project root:
 #   Rscript analysis/diagnostics/judicial_regime_assessment.R
+# Opt-in log outcome (2026-10-09): Y_LOG=TRUE takes log(rate) -- the blinded
+# framework's y_log_pp convention; the 90+ rate has no zeros (min 0.2pp) -- and
+# writes to output/judicial_regime_assessment_log/ and *_log figures. Levels are
+# then log points, slopes log points/yr. Default (unset) is unchanged.
 ################################################################################
 
 suppressPackageStartupMessages({
@@ -34,8 +38,10 @@ theme_set(theme_minimal(base_family = "serif"))
 MORT_FILE  <- "data/raw/StateMortgagesPercent-90-plusDaysLate-thru-2025-03.csv"
 SCHED_FILE <- "data/raw/sports_gambling_legalization_dates.csv"
 COV_FILE   <- "data/processed/state_covariates_2019.csv"
-OUT_DIR    <- "output/judicial_regime_assessment"
+Y_LOG      <- identical(Sys.getenv("Y_LOG"), "TRUE")
+OUT_DIR    <- paste0("output/judicial_regime_assessment", if (Y_LOG) "_log" else "")
 FIG_DIR    <- "figures"
+FIG_STEM   <- paste0("judicial_regime_delinquency_untreated", if (Y_LOG) "_log" else "")
 ANTICIPATION_MONTHS <- 6
 COVID_START <- as.Date("2020-03-01")
 DESIGN_START <- as.Date("2022-06-01")
@@ -58,6 +64,7 @@ mort <- mw %>%
             delinq_pp = as.numeric(delinq_pp)) %>%
   filter(!is.na(state_abb), month_date >= as.Date("2016-01-01")) %>%
   drop_pre_paspa_states("judicial_regime_assessment") %>%
+  mutate(delinq_pp = if (Y_LOG) log(delinq_pp) else delinq_pp) %>%
   left_join(sched, by = "state_abb") %>%
   # untreated state-months only
   filter(is.na(treat_start) | month_date < treat_start %m-% months(ANTICIPATION_MONTHS)) %>%
@@ -75,11 +82,12 @@ p <- ggplot(monthly, aes(month_date, mean_pp, linetype = regime, shape = regime)
            ymin = -Inf, ymax = Inf, alpha = 0.12) +
   geom_line() +
   scale_linetype_manual(values = c("solid", "dashed")) +
-  labs(x = NULL, y = "90+ days delinquent (% of mortgages)",
+  labs(x = NULL, y = if (Y_LOG) "log of 90+ days delinquent (% of mortgages)"
+           else "90+ days delinquent (% of mortgages)",
        linetype = NULL, shape = NULL) +
   theme(legend.position = "bottom")
-ggsave(file.path(FIG_DIR, "judicial_regime_delinquency_untreated.pdf"), p, width = 6.5, height = 4)
-ggsave(file.path(FIG_DIR, "judicial_regime_delinquency_untreated.png"), p, width = 6.5, height = 4, dpi = 300)
+ggsave(file.path(FIG_DIR, paste0(FIG_STEM, ".pdf")), p, width = 6.5, height = 4)
+ggsave(file.path(FIG_DIR, paste0(FIG_STEM, ".png")), p, width = 6.5, height = 4, dpi = 300)
 
 slope_pp_per_year <- function(d) {
   if (nrow(d) < 12) return(NA_real_)
@@ -150,7 +158,8 @@ xreg <- cov %>% left_join(region, by = "state_abb") %>% count(census_region, reg
 write_csv(xreg, file.path(OUT_DIR, "census_region_by_regime.csv"))
 
 options(width = 150)
-cat("\n(a) Delinquency by regime, untreated state-months (pp; slopes pp/yr)\n")
+cat("\n(a) Delinquency by regime, untreated state-months",
+    if (Y_LOG) "(log points; slopes log pts/yr)\n" else "(pp; slopes pp/yr)\n")
 print(as.data.frame(part_a), digits = 3)
 cat("\n(b) Baseline balance by regime\n"); print(as.data.frame(part_b), digits = 3)
 cat("\nTreatment status by regime\n"); print(as.data.frame(xtab))
