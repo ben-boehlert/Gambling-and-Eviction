@@ -3242,3 +3242,27 @@ Raw wild: postcovid 0.305; spliced never_crosses_target. Size-adjusted wild: pos
 - 2026-10-09 addendum 9: `analysis/diagnostics/mortgage3089_pretrend_anatomy.R` → `output/mortgage3089_pretrend_anatomy/` (permutation placebo, levels, weights, judicial split, extra covariates, calendar gap); ledger + FINDINGS §2 updated. Headline: 30–89 pre-launch decline is small-state and disappears under mortgage weighting; Holm per-coefficient tests anti-conservative (28% placebo false positives)
 - 2026-10-09 addendum 10: `UNIT_WEIGHTS=mortgaged_units` knob added to both pre-trends scripts; all specs re-run weighted, both outcomes (ledger row `pretrends_mortgage_weighted`); figures `figures/mortgage/mortgage_pretrends_twfe_spliced_weighted.png`, `mortgage_pretrends_clean_controls_weighted.png`. 30–89 pre-launch decline gone under weighting; 90+ flat
 - 2026-10-09 addendum 11: `analysis/diagnostics/mortgage_pretrend_linear_slope.R` → `output/mortgage_pretrend_linear_slope/` (single linear pre-trend slope per spec + implied h6–18 bias); ledger + FINDINGS §2 updated
+
+## 2026-10-19 — Maine FED court series re-parsed and extended to 2026-08
+
+**Operations:**
+- Ben added a new copy of the Maine Judicial Branch "15-Year Monthly FED Filing Trends" PDF (newest ref date 2026-09-18) → `data/raw/monthly_expansion/me_raw/fed-monthly15yr-report_ref20260918.pdf` (root original → `deprecated/`)
+- New parser `data_prep/monthly_panel_expansion/07c_parse_me_fed_monthly15yr.R` → `me_fed_state_month_ref20260918.csv` (180 months, 2011-09..2026-08) + `me_fed_county_month_ref20260918.csv` (2,880 county-months); every page's counties and court locations sum to Statewide
+- `data_prep/add_me_to_state_panel.R` now reads the new parse with no relabel (old version → `data_prep/deprecated/`); run: panel 4,429 → 4,444 rows
+- Docs: DATA_PROVENANCE ME row, STATE_SOURCES ME row, CLAUDE.md vintage boundary, MOVES.md, FINDINGS §6 note, rebuild comment; DATA_CURRENCY regenerated
+
+**Decisions:**
+- Read each page's own year header — pages are rolling 15-year windows updated monthly, so the 2026-09-17 Jun–Dec relabel fit only the older copy
+- Splice point unchanged (LSC through 2023-05); rebuild not re-run (ME is KEEP_OLD; LSC plausibility band does not judge court rows)
+
+**Results:**
+- New parse vs 09-17 corrected series: 118/120 exact, max |diff| 1; vs LSC overlap: 63/89 exact, max |diff| 13, r = 0.9998
+- Old copy's newest six months were not revised in the new copy (terminal months look complete)
+- Non-ME panel rows numerically identical; one prior ME month (2023-07) moved by 1 filing
+
+**Commits:**
+- none
+
+**Status:**
+- Done: ME through 2026-08 in the state panel (new vintage)
+- Pending: commit; fresh run_name for any run on this vintage; DATA_CURRENCY still labels ME's source as the LSC basket (generator reads one row's source); FL/Pinellas still open

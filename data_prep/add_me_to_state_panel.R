@@ -1,40 +1,30 @@
 #!/usr/bin/env Rscript
 # ============================================================================
-# add_me_to_state_panel.R  (2026-09-17)
+# add_me_to_state_panel.R  (2026-09-17; court input replaced 2026-10-19)
 #
-# Splice Maine: LIVE LSC through 2023-05, then the FISCAL-YEAR-CORRECTED Maine
-# Judicial Branch series from 2023-06.
-#
-# THE BUG THIS CORRECTS. data/raw/monthly_expansion/me_fed_state_month_
-# courtsource.csv (parsed from the Maine Judicial Branch "15-Year Monthly FED
-# Filing Trends", fed-monthly15yr-report.pdf) labels JUNE THROUGH DECEMBER of
-# every year one year too LATE. Maine's judicial year boundary falls at June in
-# that report, and the parser wrote the year label as a calendar year, so
-# Jun-Dec of judicial year Y landed on calendar year Y instead of Y-1.
-#
-# EVIDENCE (against the live 2026-09-17 LSC download, 89 overlapping months):
-#   as parsed                       : 27 exact (30%), mean |diff| 49.81 filings
-#   relabel Jun-Dec back 12 months  : 64 exact (72%), mean |diff|  0.92, max 13
-#   relabel Jul-Dec back 12 months  :                 mean |diff| 11.15
-# June is the boundary, not July. The residual is LSC's own small revisions --
-# the same +/-1-3 noise every other state shows between LSC vintages. Jan-May
-# never matches the lagged LSC (0 of 40), confirming the shift is Jun-Dec only.
-# The symptom that exposed it: as parsed, Maine showed NO COVID moratorium
-# (2020-06/07/08 = 424/502/546, which are 2019's figures) and then a
-# moratorium-shaped collapse a year late.
+# Splice Maine: LIVE LSC through 2023-05, then the Maine Judicial Branch
+# "15-Year Monthly FED Filing Trends" series from 2023-06.
 #
 # WHY SPLICE RATHER THAN REPLACE. LSC is authoritative where it exists and is
-# already in the panel via the county download. The corrected court series is
-# needed only for 2023-06 onward, where LSC publishes zeros and then stops.
-# Splicing keeps LSC's values and uses the court series only to extend.
+# already in the panel via the county download. The court series is needed only
+# for 2023-06 onward, where LSC publishes zeros and then stops. Splicing keeps
+# LSC's values and uses the court series only to extend.
 #
-# The PDF is NOT in the repo. If it is ever re-downloaded, re-parse it with the
-# June boundary and check this file's numbers rather than trusting the relabel.
+# 2026-10-19: the court input is now the per-page-header parse of the copy with
+# newest ref date 2026-09-18 (data_prep/monthly_panel_expansion/
+# 07c_parse_me_fed_monthly15yr.R), which runs to 2026-08 and needs NO relabel.
+# The 2026-09-17 version of this script read the older single-header parse
+# (me_fed_state_month_courtsource.csv) and shifted Jun-Dec back 12 months. That
+# shift was right for that copy only: the PDF's pages are rolling 15-year
+# windows updated one month at a time, so which pages lag a year depends on the
+# copy's date, not on a June judicial-year boundary. On the overlap the new
+# parse matches the shifted series in 118 of 120 months (max |diff| 1) and LSC
+# in 63 of 89 (max |diff| 13, LSC's own revisions). The 2026-09-17 script is in
+# data_prep/deprecated/add_me_to_state_panel_jun-dec-relabel_2026-09-17.R.
 #
-# Input : data/raw/monthly_expansion/me_fed_state_month_courtsource.csv
+# Input : data/raw/monthly_expansion/me_fed_state_month_ref20260918.csv
 #         data/raw/state_month_panel_with_treatment.csv (ME's LSC rows)
 # Output: data/raw/state_month_panel_with_treatment.csv (ME rows replaced)
-#         data/raw/monthly_expansion/me_fed_state_month_fyfixed.csv (audit)
 # Run from the project root:  Rscript data_prep/add_me_to_state_panel.R
 #
 # ME must also be listed in KEEP_OLD in rebuild_state_month_panel.R, or the
@@ -43,20 +33,15 @@
 suppressMessages({ library(tidyverse); library(lubridate); library(glue) })
 
 PANEL <- "data/raw/state_month_panel_with_treatment.csv"
-COURT <- "data/raw/monthly_expansion/me_fed_state_month_courtsource.csv"
+COURT <- "data/raw/monthly_expansion/me_fed_state_month_ref20260918.csv"
 SPLICE_AT <- as.Date("2023-06-01")   # first month taken from the court series
-LABEL <- "me_jb_fed_fyfixed_2026-09-17"
+LABEL <- "me_jb_fed_ref20260918"
 
 court <- read_csv(COURT, show_col_types = FALSE) %>%
-  mutate(month_date = as.Date(month_date),
-         # THE FIX: Jun-Dec labels are one year too late.
-         month_date = if_else(month(month_date) >= 6,
-                              month_date %m-% months(12), month_date)) %>%
+  mutate(month_date = as.Date(month_date)) %>%
   arrange(month_date) %>%
   select(month_date, filings_count = fed_filings)
-stopifnot("corrected court series has duplicate months" = !anyDuplicated(court$month_date))
-write_csv(court %>% mutate(source = paste0(LABEL, " (Jun-Dec relabelled -12mo)")),
-          "data/raw/monthly_expansion/me_fed_state_month_fyfixed.csv")
+stopifnot("court series has duplicate months" = !anyDuplicated(court$month_date))
 
 panel <- read_csv(PANEL, show_col_types = FALSE) %>% mutate(month_date = as.Date(month_date))
 me_lsc <- panel %>% filter(state_abb == "ME", month_date < SPLICE_AT)
@@ -88,6 +73,6 @@ stopifnot("duplicate state-month after splice" = !anyDuplicated(out[c("state_abb
 write_csv(out, PANEL)
 
 message(glue("ME spliced: {nrow(me_lsc)} LSC months (..{format(max(me_lsc$month_date), '%Y-%m')}) + ",
-             "{nrow(me_ext)} FY-corrected court months ",
+             "{nrow(me_ext)} court months ",
              "({format(min(me_ext$month_date), '%Y-%m')}..{format(max(me_ext$month_date), '%Y-%m')}) ",
              "= {nrow(me_new)} months, no gaps. Panel {nrow(panel)} -> {nrow(out)} rows."))

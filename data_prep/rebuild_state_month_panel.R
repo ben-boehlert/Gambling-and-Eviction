@@ -341,7 +341,8 @@ new <- bind_rows(county_part, keepold_part) %>%
 # refresh. Both states are switchers under the inclusion rule, and NC's entire
 # outcome window (2025-03..2026-03) lives in the locally-added range.
 # ME is no longer listed: since 2026-09-17 it is a KEEP_OLD splice carrying its
-# own panel_source (LSC through 2023-05, me_jb_fed_fyfixed_2026-09-17 after).
+# own panel_source (LSC through 2023-05, me_jb_fed_ref20260918 after; it was
+# me_jb_fed_fyfixed_2026-09-17 until the 2026-10-19 court extension).
 HYBRID_SOURCE <- tribble(
   ~state_abb, ~from,                  ~label,
   "NC",       as.Date("2023-07-01"),  "nc_aoc_summary_ejectment")

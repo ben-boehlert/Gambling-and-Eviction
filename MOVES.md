@@ -194,3 +194,13 @@ Nothing was deleted. Reversal is `mv` back.
 | Old path | New path | Why |
 |---|---|---|
 | `data/processed/mortgage_treatment_panel.csv` (2026-01-23 build) | `data/processed/deprecated/mortgage_treatment_panel_pre-schedule-repair_2026-01-23.csv` | Treatment column predated the 2026-08-10 schedule repair (DE FL KY ME NC VT MO missing). Rebuilt in place on the current schedule by `data_prep/build_mortgage3089_panel.R` with `MORT_FILE`/`OUT_FILE`; rates bit-identical. See `docs/findings-archive/2026-10-09_stale-90plus-panel-correction.md`. |
+
+## 2026-10-19 — Maine FED report re-parsed and spliced through 2026-08
+
+| Old path | New path | Why |
+|---|---|---|
+| `fed-monthly15yr-report.pdf` (repo root, added by Ben) | `data/raw/monthly_expansion/me_raw/fed-monthly15yr-report_ref20260918.pdf` (working copy); root original kept at `deprecated/fed-monthly15yr-report_root-copy_2026-10-19.pdf` | Raw input belongs with the other Maine files |
+| `data/raw/state_month_panel_with_treatment.csv` (4,429 rows) | `data/raw/deprecated/state_month_panel_pre_me_court_extension_2026-10-19.csv` | Pre-splice backup; current file has 4,444 rows |
+| `data/raw/monthly_expansion/me_fed_state_month_fyfixed.csv` | copy at `data/raw/monthly_expansion/deprecated/me_fed_state_month_fyfixed_pre_2026-10-19.csv` (original left in place, no longer written) | Superseded by `me_fed_state_month_ref20260918.csv` |
+| `data_prep/add_me_to_state_panel.R` (2026-09-17, Jun–Dec relabel) | `data_prep/deprecated/add_me_to_state_panel_jun-dec-relabel_2026-09-17.R` | Script now reads the per-page-header parse with no relabel |
+
