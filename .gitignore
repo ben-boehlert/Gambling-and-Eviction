@@ -84,3 +84,24 @@ data/raw/monthly_expansion/md_raw/statistics_pdfs/
 data/raw/maryland/
 della_power_upload.zip
 .claude/worktrees/
+
+# ---- Not for the public repo (2026-10-19 cleanup; see quality_reports/plans/2026-10-19_public-repo-cleanup.md)
+# Kept on disk only. Eviction Lab internal county-month extract (unreleased).
+/ets_county_month.csv
+# Housing Data Coalition NYC housing-court case index (494 MB, case-level). README.md is tracked.
+data/raw/ny_oca/*
+!data/raw/ny_oca/README.md
+# Copyrighted papers; INDEX.md is tracked.
+Literature/*
+!Literature/INDEX.md
+# Grant application, PAP drafts, other private documents
+private/
+*.docx
+~$*
+# Scratch and build artifacts
+/tmp/
+*.o
+*.so
+.claude/worktrees/
+/monthly_county_data_download.csv
+/Rplots.pdf

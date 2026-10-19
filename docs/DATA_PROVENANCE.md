@@ -83,7 +83,7 @@ different files (§2). Any comparison between `monthly_county_data_download.csv`
 | File | Origin | Grain / coverage | Status |
 |---|---|---|---|
 | `monthly_county_data_download.csv` | **LSC CCDI**, `civilcourtdata.lsc.gov` | county-month, 2016-01→2025-09, 32 states + PR/VI | `VERIFIED-REPO` |
-| `ets_county_month.csv` (repo root) | **Eviction Lab internal site-level extract**, supplied by colleague 2026-09-03 | county-month with `xsite` label; 68,040 rows, 55 sites, 25 states, 1999-03→2026-08; counts only, **no denominator** | `VERIFIED-SESSION` |
+| `ets_county_month.csv` (repo root; **local only, gitignored and removed from the unpushed history 2026-10-19**: unreleased internal data) | **Eviction Lab internal site-level extract**, supplied by colleague 2026-09-03 | county-month with `xsite` label; 68,040 rows, 55 sites, 25 states, 1999-03→2026-08; counts only, **no denominator** | `VERIFIED-SESSION` |
 | `ets_merged/merged_ets_sites_monthly.csv`, `merged_ets_states_monthly.csv`, `merged_ets_combined.csv` | Eviction Lab site/state aggregates; built by `data_prep/merge_ets_data.R`, `merge_ets_combined.R` | site- or state-month, no county FIPS, no denominator | `VERIFIED-REPO` |
 | `ets_merged/historical_ets_data_monthly.csv` | Eviction Lab site-month (`xsite`,`N`) | **Scope-inconsistent — do not use.** Its PHILADELPHIA and RICHMOND rows are ~2× the county-resolved value (2016-01: 3,692 vs 1,854; 4,708 vs 2,358); STLOUIS covers a wider geography than the STLOUIS site; CONNECTICUT is the whole state. | `VERIFIED-SESSION` |
 | `combined_monthly_panel.csv` | Derived merge of the above | county-month | `VERIFIED-REPO` |
@@ -107,7 +107,7 @@ Built where LSC/ETS coverage was absent or defective. Scripts in `data_prep/mont
 
 | File | Origin | Status |
 |---|---|---|
-| `county_court-issued_2000_2023_ben_update_5_12.csv`, `..._3_19_R.csv` | State-by-state court statistics, hand-compiled. **Per-state methodology (source URL, filing definition, court type, calendar type, known biases) is documented state-by-state in [`County Court Data Methodology Report.md`](../County%20Court%20Data%20Methodology%20Report.md).** Read that before using any state. | `VERIFIED-REPO` |
+| `county_court-issued_2000_2023_ben_update_5_12.csv`, `..._3_19_R.csv` | State-by-state court statistics, hand-compiled. **Per-state methodology (source URL, filing definition, court type, calendar type, known biases) is documented state-by-state in [`County Court Data Methodology Report.md`](County%20Court%20Data%20Methodology%20Report.md).** Read that before using any state. | `VERIFIED-REPO` |
 | `updated_county_issued_ANNUAL.xlsx` | Same family | `UNDOCUMENTED` |
 
 CT example from that report: CT Judicial Branch Housing Session **and** Non-Housing Session

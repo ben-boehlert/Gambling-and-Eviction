@@ -204,3 +204,29 @@ Nothing was deleted. Reversal is `mv` back.
 | `data/raw/monthly_expansion/me_fed_state_month_fyfixed.csv` | copy at `data/raw/monthly_expansion/deprecated/me_fed_state_month_fyfixed_pre_2026-10-19.csv` (original left in place, no longer written) | Superseded by `me_fed_state_month_ref20260918.csv` |
 | `data_prep/add_me_to_state_panel.R` (2026-09-17, Jun–Dec relabel) | `data_prep/deprecated/add_me_to_state_panel_jun-dec-relabel_2026-09-17.R` | Script now reads the per-page-header parse with no relabel |
 
+
+## 2026-10-19 — Public-repo cleanup and root tidy
+
+Plan: `quality_reports/plans/2026-10-19_public-repo-cleanup.md`. The unpushed history of
+`power-cs-arm-and-shift-mode` was rewritten with `git filter-repo` (origin/main untouched; pre-rewrite
+backup branch `backup/pre-public-cleanup-2026-10-19`). Every stripped file is still on disk and is now
+gitignored.
+
+| Old path | New path | Why |
+|---|---|---|
+| `data/raw/ny_oca/oca_index.csv` (tracked) | same path, untracked; `data/raw/ny_oca/README.md` documents it | 494 MB public case-level NYC housing-court index; over GitHub's limit; unused |
+| `ets_county_month.csv` (tracked) | same path, untracked | Eviction Lab internal extract, not for public release; scripts still read it here |
+| `Literature/*.pdf` (tracked) | same path, untracked; `Literature/INDEX.md` lists them | Copyrighted papers |
+| `Arnold Housing Loss Gambling - Application.docx`, `preanalysis plan v1.docx`, `preanalysis plan v1.1.docx`, `model gambling.docx`, `AV_Pre-Analysis_Plan_Guidance_202507.pdf` (root, tracked) | `private/` (gitignored) | Grant and PAP drafts, third-party guidance |
+| `LP DiD Justification.docx`, `CO Court Website.png` (root, untracked) | `private/` | Private working documents |
+| `A Crisis of Missed Opportunities.pdf`, `ghanem-et-al-2026-…pdf`, `roth-2022-…pdf`, `Robust Signal Maximization in Spillover Experiments.pdf` (root) | `Literature/` | Papers |
+| `Table-of-Contents-for-Web-2025.pdf` | `data/raw/kansas/kansas_courts_annual_report_fy2025_toc.pdf` | Kansas Courts FY2025 annual report (public court document) |
+| `lt-writ-data-2014-2019-by-circuit_0.pdf` | `data/raw/new_hampshire/lt-writ-data-2014-2019-by-circuit_0.pdf` | NH landlord/tenant writ source document |
+| `County.csv`, `JusticeCivil_1336701014.csv` | `data/raw/misc/` (README there) | Unreferenced exports with unrecorded provenance |
+| `County Court Data Methodology Report.md` | `docs/County Court Data Methodology Report.md` | Documentation belongs in docs/; references updated |
+| `monthly_county_data_download.csv` (root copy, tracked) | `deprecated/root_cleanup_2026-10-19/monthly_county_data_download_root-copy.csv` | Stale copy of the 2026-09-17 bulk download; scripts read `data/raw/` |
+| `monthly_county_data_download 9_17.csv`, `monthly_state_data_download 9_17.csv` | `deprecated/root_cleanup_2026-10-19/` | The 2026-09-17 LSC bulk downloads (stale; see CLAUDE.md hybrid box) |
+| `WI/`, `2018CasesFiled.pdf`, `2019CasesFiled.pdf`, `Cluster-robust inference A guide to empirical practice.pdf` | `deprecated/root_cleanup_2026-10-19/` | Byte-identical copies of files already in `data/raw/monthly_expansion/{wi_raw,or_raw}/` and `Literature/` |
+| `judicial_regime_assessment/` (root, untracked) | `deprecated/root_cleanup_2026-10-19/` | Stray output; the script writes to `output/judicial_regime_assessment/` |
+| `Rplots.pdf`, `~$eanalysis plan v1.docx` | `deprecated/root_cleanup_2026-10-19/` | R device default output; Word lock file |
+| compiled `*.o`, `tmp/`, `.claude/worktrees/` | untracked in place | Build artifacts and scratch |
