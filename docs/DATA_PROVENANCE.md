@@ -46,6 +46,25 @@ county-month file, downloaded from
 > itself** and cannot be fixed by re-downloading. (ID was on this list at 2025-05 until its
 > 2026-09-14 swap to the Idaho Judicial Branch series, current to 2026-06.)
 
+> **UPDATE 2026-09-17 (evening): the bulk download is stale, not just incomplete — and the
+> local file now carries LSC-site months too.** LSC's bulk CSV at the URL above ends **2025-09
+> for every state** (re-verified on a fresh 2026-09-17 pull), but each county's page at
+> `civilcourtdata.lsc.gov/data/eviction/<state>/<county>/` ships its full monthly series as
+> Gatsby static JSON (`/page-data/data/eviction/<state>/<county>/page-data.json`) through
+> **2026-06**, with the same fields (`filings_count`, `percent_of_historical_average`).
+> `data_prep/pull_lsc_site_county_month.R` scrapes all 1,461 county pages (sitemap-enumerated);
+> the site emits a zero row for every unreported county-month, which the puller drops so the
+> semantics match the bulk file. `data_prep/append_lsc_site_months.R` appends **only new
+> (fips, month) keys after 2025-09** — 7,082 rows on 2026-09-17, every existing row
+> byte-identical, renter denominators carried forward per county. LSC's revisions to shared
+> history (1,112 keys; MN 590, CT 193, NY 169; median |rel| 4.5%) are written to
+> `data/processed/lsc_site_revisions_2026-09-17.csv` and **deliberately not applied**. The
+> local file is therefore **130,927 rows**: bulk LSC + NC AOC (3,600) + LSC-site 2025-10→2026-06
+> (7,082). ME's court rows were removed from this file earlier the same day (Maine is spliced at
+> the state-panel level). **To refresh LSC, run the two scripts; never overwrite the file with
+> the bulk CSV.** Raw page JSON is cached (gitignored) under
+> `data/raw/monthly_expansion/lsc_site/pages_<date>/`.
+
 
 This file supplies the outcome for **29 of the 42 states** in the state panel. Every
 description of it as "Eviction Tracking System" data is wrong — see §5 for the four places

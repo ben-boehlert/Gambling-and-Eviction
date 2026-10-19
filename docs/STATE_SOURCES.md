@@ -46,7 +46,7 @@ DeKalb**, i.e. Atlanta proper. Read the county count and the renter column toget
 | **MO** | Eviction Lab | Partial | Fixed basket from 2020-01, 29 of 115 counties — `basket_share` **0.34**, the thinnest in the panel. Scope changed from statewide to a basket in the 2026-09-14 rebuild; MO **levels are not statewide**. | 77 | 2020-01–2026-05 | 364k |
 | **MS** | LSC CCDI | **One county** | Desoto — 1 of 82 | 99 | 2016-01–2024-03 | 15k |
 | **MT** | LSC CCDI | Partial | Yellowstone, Missoula, Gallatin, Flathead, Cascade, Lewis And Clark — 6 of 56 | 116 | 2016-01–2025-09 | 92k |
-| **NC** | LSC CCDI | Statewide | 100 counties, largest: Mecklenburg, Wake, Guilford, Durham, … — 100 of 100 | 126 | 2016-01–2026-06 | 1,408k |
+| **NC** | LSC CCDI (2016-01–2023-06) + **NC AOC Summary Ejectment** (2023-07–2026-06) | Statewide | 100 counties, largest: Mecklenburg, Wake, Guilford, Durham, … — 100 of 100 | 126 | 2016-01–2026-06 | 1,408k |
 | **ND** | LSC CCDI | Partial | Cass, Grand Forks, Burleigh, Ward, Williams, Stark — 6 of 53 | 113 | 2016-01–2025-05 | 88k |
 | **NH** | NH Judicial Branch | Statewide | NH Judicial Branch monthly Landlord/Tenant **writ** filings. | 83 | 2019-01–2025-11 | 152k |
 | **NM** | Eviction Lab | Partial | Fixed basket from 2020-01, 14 of 33 counties — `basket_share` **0.48**. Scope changed from statewide to a basket in the 2026-09-14 rebuild; NM **levels are not statewide**. | 77 | 2020-01–2026-05 | 222k |

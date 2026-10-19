@@ -1,0 +1,7 @@
+state_abb,month_date,filings_count,lsc_pct_of_hist_avg,lsc_rel_to_local,s_state,z,band,lsc_level_basis,position,pass
+CO,2023-10-01,3626,121.4,123.1,5.45,4.24,77-123%,level,terminal,1
+GA,2023-05-01,864,46.1,46.1,6.84,-7.88,52-148%,level x season,interior,1
+MN,2024-01-01,557,43.8,42.7,6.1,-9.4,57-143%,level x season,interior,1
+MN,2025-09-01,1800,159.3,156.3,6.1,9.23,57-143%,level x season,interior,1
+OH,2025-06-01,1230,45,47.4,8.27,-6.36,65-135%,level x season,terminal,1
+UT,2026-06-01,412,70,59.1,6.63,-6.16,72-128%,level x season,terminal,1
